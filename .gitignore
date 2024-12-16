@@ -1,0 +1,11 @@
+# General
+yarn-error.log
+node_modules
+.DS_STORE
+.vscode
+
+# Config files
+.env
+
+# Avoid ignoring gitkeep
+!/**/.gitkeep

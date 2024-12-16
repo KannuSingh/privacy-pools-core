@@ -1,1 +1,1 @@
-# privacy-pool-core
+# Privacy Pool Core
