@@ -213,6 +213,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@openzeppelin/contracts@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.1.0.tgz#4e61162f2a2bf414c4e10c45eca98ce5f1aadbd4"
+  integrity sha512-p1ULhl7BXzjjbha5aqst+QMLY+4/LCWADXOCsmLHRM77AqiPjnd9vvUN9sosUfhL9JGKpZ0TjEGxgvnizmWGSA==
+
 "@scure/base@~1.1.6":
   version "1.1.9"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.9.tgz#e5e142fbbfe251091f9c5f1dd4c834ac04c3dbd1"
@@ -255,6 +260,13 @@
   integrity sha512-Xxr6BBRCAOQixvonOye19wnzyDiUtTeqldOOmj3CkeblonbccA12PFwlufvRdrpjXxqnmUaeiU5EOA+7s5diUQ==
   dependencies:
     undici-types "~6.20.0"
+
+"@zk-kit/lean-imt.sol@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@zk-kit/lean-imt.sol/-/lean-imt.sol-2.0.0.tgz#4b0aee47854b5844455f9361396062139416e12b"
+  integrity sha512-e9pAm+IXveLPy7b1h05ipIo6U44vp8g/2E+Ocx3PIloMu7lgTXFkIeZj/qZ/iLgEMsF74T0dsg7aVIT0B0nsDA==
+  dependencies:
+    poseidon-solidity "0.0.5"
 
 JSONStream@^1.3.5:
   version "1.3.5"
@@ -1485,6 +1497,11 @@ pluralize@^8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/pluralize/-/pluralize-8.0.0.tgz#1a6fa16a38d12a1901e0320fa017051c539ce3b1"
   integrity sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==
+
+poseidon-solidity@0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/poseidon-solidity/-/poseidon-solidity-0.0.5.tgz#3f93e01cfe25f6d2f2fac49734fbb00961b84655"
+  integrity sha512-NzrvSwHzvZgT4hvg2GyGqeR+UOU/eLSEt4wAoXEua+VaR7NTKKwx1X9bPlh1VMBEVEno+IWvkRBbidFGzTeAqQ==
 
 possible-typed-array-names@^1.0.0:
   version "1.0.0"

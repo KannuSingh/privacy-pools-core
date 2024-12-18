@@ -42,5 +42,9 @@
     "lint-staged": ">=10",
     "solhint-community": "4.0.0",
     "sort-package-json": "2.10.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0",
+    "@zk-kit/lean-imt.sol": "^2.0.0"
   }
 }
