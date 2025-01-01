@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 import {ProofLib} from './lib/ProofLib.sol';
 
 import {AccessControl} from '@oz/access/AccessControl.sol';
+
+import {Initializable} from '@oz/proxy/utils/Initializable.sol';
 import {UUPSUpgradeable} from '@oz/proxy/utils/UUPSUpgradeable.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
@@ -11,7 +13,11 @@ import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
-contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
+/**
+ * @title Entrypoint
+ * @notice Serves as the main entrypoint for a series of ASP-operated Privacy Pools
+ */
+contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoint {
   using SafeERC20 for IERC20;
   using ProofLib for ProofLib.Proof;
 
@@ -19,19 +25,39 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
   bytes32 public constant ADMIN_ROLE = 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42;
   address public ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+  /// @inheritdoc IEntrypoint
   mapping(uint256 _scope => IPrivacyPool _pool) public scopeToPool;
+
+  /// @inheritdoc IEntrypoint
   mapping(IERC20 _asset => AssetConfig _config) public assetConfig;
+
+  /// @inheritdoc IEntrypoint
   AssociationSetData[] public associationSets;
+
+  /*///////////////////////////////////////////////////////////////
+                          INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(address _owner, address _admin) public initializer {
+    _grantRole(OWNER_ROLE, _owner);
+    _grantRole(ADMIN_ROLE, _admin);
+  }
 
   /*///////////////////////////////////////////////////////////////
                       ASSOCIATION SET METHODS
     //////////////////////////////////////////////////////////////*/
 
-  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ADMIN_ROLE) {
+  /// @inheritdoc IEntrypoint
+  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ADMIN_ROLE) returns (uint256 _index) {
     require(_root != 0, EmptyRoot());
     require(_ipfsHash != 0, EmptyIPFSHash());
 
     associationSets.push(AssociationSetData(_root, _ipfsHash, block.timestamp));
+    _index = associationSets.length;
 
     emit RootUpdated(_root, _ipfsHash, block.timestamp);
   }
@@ -40,6 +66,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
                           DEPOSIT METHODS
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IEntrypoint
   function deposit(uint256 _precommitment) external payable returns (uint256 _commitment) {
     AssetConfig memory _config = assetConfig[IERC20(ETH)];
 
@@ -56,9 +83,10 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
     // Deposit commitment into pool
     _commitment = _pool.deposit{value: _amountAfterFees}(msg.sender, _amountAfterFees, _precommitment);
 
-    emit Deposited(msg.sender, _pool, _amountAfterFees);
+    emit Deposited(msg.sender, _pool, _commitment, _amountAfterFees);
   }
 
+  /// @inheritdoc IEntrypoint
   function deposit(IERC20 _asset, uint256 _value, uint256 _precommitment) external returns (uint256 _commitment) {
     AssetConfig memory _config = assetConfig[_asset];
 
@@ -78,13 +106,14 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
     // Deposit commitment into pool
     _commitment = _pool.deposit(msg.sender, _amountAfterFees, _precommitment);
 
-    emit Deposited(msg.sender, _pool, _amountAfterFees);
+    emit Deposited(msg.sender, _pool, _commitment, _amountAfterFees);
   }
 
   /*///////////////////////////////////////////////////////////////
                                RELAY
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IEntrypoint
   function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
     // Fetch pool by proof scope
     IPrivacyPool _pool = scopeToPool[_proof.scope()];
@@ -125,6 +154,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
                           POOL MANAGEMENT 
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IEntrypoint
   function registerPool(
     IERC20 _asset,
     IPrivacyPool _pool,
@@ -149,6 +179,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
     emit PoolRegistered(_pool, _asset, _scope);
   }
 
+  /// @inheritdoc IEntrypoint
   function removePool(IERC20 _asset) external onlyRole(ADMIN_ROLE) {
     IPrivacyPool _pool = assetConfig[_asset].pool;
     require(address(_pool) != address(0), PoolNotFound());
@@ -161,19 +192,30 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, IEntrypoint {
     emit PoolRemoved(_pool, _asset, _scope);
   }
 
+  /// @inheritdoc IEntrypoint
   function windDownPool(IPrivacyPool _pool) external onlyRole(OWNER_ROLE) {
     _pool.windDown();
     emit PoolWindDown(_pool);
+  }
+
+  /// @inheritdoc IEntrypoint
+  function withdrawFees(IERC20 _asset, address _recipient) external onlyRole(ADMIN_ROLE) {
+    uint256 _balance = _asset.balanceOf(address(this));
+    _asset.safeTransfer(_recipient, _balance);
+
+    emit FeesWithdrawn(_asset, _recipient, _balance);
   }
 
   /*///////////////////////////////////////////////////////////////
                            VIEW METHODS 
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IEntrypoint
   function latestRoot() external view returns (uint256 _root) {
     _root = associationSets[associationSets.length].root;
   }
 
+  /// @inheritdoc IEntrypoint
   function rootByIndex(uint256 _index) external view returns (uint256 _root) {
     _root = associationSets[_index].root;
   }
