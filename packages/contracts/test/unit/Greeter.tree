@@ -1,25 +1,112 @@
-Greeter::constructor
-├── when passing valid greeting string
-│   ├── it deploys
-│   ├── it sets the greeting string
-│   ├── it sets the owner as sender
-│   └── it sets the token used
-└── when passing an empty greeting string
-    └── it reverts
+Entrypoint::constructor
+└── should disable initializers
+    └── it reverts when initialized again
 
+Entrypoint::initialize
+└── when called with owner and admin addresses
+    ├── it sets the owner role correctly
+    ├── it sets the admin role correctly
+    └── it emits RoleGranted events
 
-Greeter::greet
-└── when called
-    ├── it returns the greeting string
-    └── it returns the token balance of the contract
-
-
-Greeter::setGreeting
-├── when called by the owner
-│   ├── when passing a valid greeting string
-│   │   ├── it sets the greeting string
-│   │   └── it emit GreetingSet
-│   └── when passing an empty greeting string
+Entrypoint::updateRoot
+├── when called by admin
+│   ├── when passing valid parameters
+│   │   ├── it updates the association set data
+│   │   ├── it returns correct index
+│   │   └── it emits RootUpdated
+│   ├── when passing empty root
+│   │   └── it reverts
+│   └── when passing empty IPFS hash
 │       └── it reverts
-└── when called by a non-owner
+└── when called by non-admin
     └── it reverts
+
+Entrypoint::deposit (ETH)
+├── when called with valid parameters
+│   ├── it accepts ETH deposit
+│   ├── it deducts correct fees
+│   ├── it creates commitment
+│   ├── it transfers ETH to pool
+│   └── it emits Deposited
+├── when deposit amount below minimum
+│   └── it reverts
+└── when pool not found
+    └── it reverts
+
+Entrypoint::deposit (ERC20)
+├── when called with valid parameters
+│   ├── it accepts token deposit
+│   ├── it deducts correct fees
+│   ├── it creates commitment
+│   ├── it transfers tokens to pool
+│   └── it emits Deposited
+├── when deposit amount below minimum
+│   └── it reverts
+└── when pool not found
+    └── it reverts
+
+Entrypoint::relay
+├── when called with valid withdrawal
+│   ├── it processes the withdrawal
+│   ├── it deducts correct fees
+│   ├── it transfers funds to recipient
+│   ├── it transfers fees to fee recipient
+│   └── it emits WithdrawalRelayed
+├── when called with invalid procesooor
+│   └── it reverts
+├── when pool not found
+│   └── it reverts
+└── when pool state invalid
+    └── it reverts
+
+Entrypoint::registerPool
+├── when called by admin
+│   ├── when registering new pool
+│   │   ├── it sets pool configuration
+│   │   ├── it maps scope to pool
+│   │   ├── it approves pool for asset
+│   │   └── it emits PoolRegistered
+│   ├── when pool already registered for asset
+│   │   └── it reverts
+│   └── when scope already registered
+│       └── it reverts
+└── when called by non-admin
+    └── it reverts
+
+Entrypoint::removePool
+├── when called by admin
+│   ├── when removing existing pool
+│   │   ├── it removes pool configuration
+│   │   ├── it removes scope mapping
+│   │   └── it emits PoolRemoved
+│   └── when pool not found
+│       └── it reverts
+└── when called by non-admin
+    └── it reverts
+
+Entrypoint::windDownPool
+├── when called by owner
+│   ├── it winds down pool
+│   └── it emits PoolWindDown
+└── when called by non-owner
+    └── it reverts
+
+Entrypoint::withdrawFees
+├── when called by admin
+│   ├── when fees exist
+│   │   ├── it transfers full balance
+│   │   └── it emits FeesWithdrawn
+│   └── when no fees exist
+│       └── it reverts
+└── when called by non-admin
+    └── it reverts
+
+Entrypoint::latestRoot
+└── when called
+    ├── it returns latest root
+    └── it matches last association set
+
+Entrypoint::rootByIndex
+└── when called
+    ├── it returns root at index
+    └── it matches association set at index
