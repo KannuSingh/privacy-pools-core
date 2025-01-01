@@ -6,20 +6,18 @@ import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
-
-interface IVerifier {
-  function verifyProof(ProofLib.Proof memory _proof) external returns (bool);
-}
+import {IVerifier} from 'interfaces/IVerifier.sol';
 
 abstract contract State {
   using InternalLeanIMT for LeanIMTData;
 
+  uint256 public nonce;
+  string public constant version = '0.1.0';
+  bool public dead;
+
   IEntrypoint public immutable ENTRYPOINT;
   IVerifier public immutable VERIFIER;
   address private immutable _POSEIDON;
-  bool public dead;
-  string public constant version = '0.1.0';
-  uint256 public nonce;
 
   LeanIMTData internal merkleTree;
 
@@ -32,16 +30,17 @@ abstract contract State {
     _POSEIDON = _poseidon;
   }
 
-  error NotEntrypoint();
+  error OnlyEntrypoint();
   error PoolIsDead();
+  error NullifierAlreadySpent();
 
   modifier onlyEntrypoint() {
-    require(msg.sender == address(ENTRYPOINT), NotEntrypoint());
+    require(msg.sender == address(ENTRYPOINT), OnlyEntrypoint());
     _;
   }
 
   function _spend(uint256 _nullifierHash) internal {
-    require(!nullifierHashes[_nullifierHash], 'nullifier already spent');
+    require(!nullifierHashes[_nullifierHash], NullifierAlreadySpent());
     nullifierHashes[_nullifierHash] = true;
   }
 

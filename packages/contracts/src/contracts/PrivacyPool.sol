@@ -7,20 +7,23 @@ import {ProofLib} from './lib/ProofLib.sol';
 import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
+// TODO: compile poseidon contract and replace keccak256
+// TODO: compile groth16 verifier contracts
 abstract contract PrivacyPool is State, IPrivacyPool {
   using ProofLib for ProofLib.Proof;
 
   uint256 public immutable SCOPE;
   IERC20 public immutable ASSET;
 
-  event Deposited();
-  event PoolDied();
-  event Ragequit();
-  event Withdrawn();
-
-  error InvalidCommitment();
-  error InvalidNullifier();
-  error InvalidProcesooor();
+  modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
+    require(msg.sender == _w.procesooor, InvalidProcesooor());
+    require(_p.scope() == SCOPE, ScopeMismatch());
+    require(_p.context() == uint256(keccak256(abi.encode(_w, SCOPE))), ContextMismatch());
+    require(_isKnownRoot(_p.stateRoot()), UnknownStateRoot());
+    require(_p.ASPRoot() == ENTRYPOINT.latestRoot(), OutdatedASPRoot());
+    require(_p.withdrawnAmount() > 0, InvalidWithdrawalAmount());
+    _;
+  }
 
   constructor(
     address _entrypoint,
@@ -28,101 +31,107 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     address _asset,
     address _poseidon
   ) State(_entrypoint, _verifier, _poseidon) {
+    require(_asset != address(0), ZeroAddress());
+    require(_verifier != address(0), ZeroAddress());
+    require(_poseidon != address(0), ZeroAddress());
+    require(_entrypoint != address(0), ZeroAddress());
+
     ASSET = IERC20(_asset);
     SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
   }
 
-  // only callable by entrypoint
+  /*///////////////////////////////////////////////////////////////
+                             USER METHODS 
+    //////////////////////////////////////////////////////////////*/
+
   function deposit(
     address _depositor,
     uint256 _value,
     uint256 _precommitmentHash
   ) external payable onlyEntrypoint returns (uint256 _commitmentHash) {
-    // check deposits are enabled
+    // Check deposits are enabled
     require(!dead, PoolIsDead());
 
-    // compute label
+    // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
     labelToDepositor[_label] = _depositor;
 
-    // compute commitment hash
+    // Compute commitment hash
     _commitmentHash = uint256(keccak256(abi.encodePacked(_value, _label, _precommitmentHash)));
 
-    // insert commitment in state (revert if already present)
+    // Insert commitment in state (revert if already present)
     _insert(_commitmentHash);
 
-    // pull funds from depositor
+    // Pull funds from depositor
     _handleValueInput(msg.sender, _value);
 
-    // emit event
+    // TODO: populate event data
     emit Deposited();
   }
 
-  modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
-    require(msg.sender == _w.procesooor, InvalidProcesooor());
-    require(_p.scope() == SCOPE);
-    require(_p.context() == uint256(keccak256(abi.encode(_w, SCOPE))));
-    require(!_isInState(_p.nullifierHash()));
-    require(_isKnownRoot(_p.stateRoot()));
-    require(_p.ASPRoot() == ENTRYPOINT.latestRoot());
-    _;
-  }
-
   function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external validWithdrawal(_w, _p) {
-    // verify proof with Groth16 verifier
+    // Verify proof with Groth16 verifier
     VERIFIER.verifyProof(_p);
 
-    // spend nullifier
-    _spend(_p.nullifierHash());
-    // insert new commitment in state
+    // Spend nullifier for existing commitment
+    _spend(_p.existingNullifierHash());
+
+    // Insert new commitment in state
     _insert(_p.newCommitmentHash());
 
-    // transfer out funds to procesooor
+    // Transfer out funds to procesooor
     _handleValueOutput(_w.procesooor, _p.value());
 
-    // emit event
+    // TODO: populate event data
     emit Withdrawn();
   }
 
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
-    require(labelToDepositor[_label] == msg.sender, 'only og depositor can ragequit');
+    // Ensure caller is original depositor
+    require(labelToDepositor[_label] == msg.sender, OnlyOriginalDepositor());
 
+    // Compute nullifier hash
     uint256 _nullifierHash = uint256(keccak256(abi.encodePacked(_nullifier)));
 
+    // Compute precommitment hash
     uint256 _precommitmentHash = uint256(keccak256(abi.encodePacked(_nullifier, _secret)));
 
-    // compute commitment hash using caller address
-    uint256 _commitmentHash = uint256(keccak256(abi.encodePacked(_value, _label, _precommitmentHash)));
+    // Compute commitment hash
+    uint256 _commitment = uint256(keccak256(abi.encodePacked(_value, _label, _precommitmentHash)));
 
-    // check commitment exists in state
-    if (!_isInState(_commitmentHash)) {
+    // Check commitment exists in state
+    if (!_isInState(_commitment)) {
       revert InvalidCommitment();
     }
 
-    // spend commitment
+    // Spend commitment nullifier
     _spend(_nullifierHash);
 
-    // transfer funds to caller
+    // Transfer funds to ragequitter
     _handleValueOutput(msg.sender, _value);
 
-    // emit event
+    // TODO: populate event data
     emit Ragequit();
   }
 
-  // only callable by entrypoint
+  /*///////////////////////////////////////////////////////////////
+                             WIND DOWN
+    //////////////////////////////////////////////////////////////*/
+
   function windDown() external onlyEntrypoint {
-    // check pool is alive
+    // Check pool is still alive
     require(!dead, PoolIsDead());
-    // die
+    // Die
     dead = true;
 
-    // emit event
     emit PoolDied();
   }
 
-  // virtual method to override in asset specific implementations
+  /*///////////////////////////////////////////////////////////////
+                          ASSET OVERRIDES
+    //////////////////////////////////////////////////////////////*/
+
   function _handleValueInput(address _sender, uint256 _value) internal virtual;
 
-  // virtual method to override in asset specific implementations
   function _handleValueOutput(address _recipient, uint256 _value) internal virtual;
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+// TODO: once proof is defined, update proof body and indices
 library ProofLib {
   struct Proof {
     uint256[2] pA;
@@ -17,16 +18,12 @@ library ProofLib {
     return _p.pubSignals[1];
   }
 
-  function nullifierHash(Proof memory _p) public pure returns (uint256) {
+  function existingNullifierHash(Proof memory _p) public pure returns (uint256) {
     return _p.pubSignals[2];
   }
 
   function withdrawnAmount(Proof memory _p) public pure returns (uint256) {
     return _p.pubSignals[3];
-  }
-
-  function recipient(Proof memory _p) public pure returns (uint256) {
-    return _p.pubSignals[4];
   }
 
   function scope(Proof memory _p) public pure returns (uint256) {

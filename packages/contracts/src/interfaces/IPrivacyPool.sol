@@ -11,6 +11,22 @@ interface IPrivacyPool is IState {
     bytes data;
   }
 
+  event Deposited();
+  event PoolDied();
+  event Ragequit();
+  event Withdrawn();
+
+  error InvalidCommitment();
+  error InvalidNullifier();
+  error InvalidProcesooor();
+  error ScopeMismatch();
+  error ContextMismatch();
+  error UnknownStateRoot();
+  error OutdatedASPRoot();
+  error OnlyOriginalDepositor();
+  error InvalidWithdrawalAmount();
+  error ZeroAddress();
+
   function deposit(
     address _depositor,
     uint256 _value,
@@ -18,6 +34,8 @@ interface IPrivacyPool is IState {
   ) external payable returns (uint256 _commitment);
 
   function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external;
+
+  function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external;
 
   function windDown() external;
 
