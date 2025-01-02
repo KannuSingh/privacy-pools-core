@@ -9,10 +9,20 @@ import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
 // TODO: compile poseidon contract and replace keccak256
 // TODO: compile groth16 verifier contracts
+
+/**
+ * @title PrivacyPool
+ * @notice Allows publicly depositing and privately withdrawing funds.
+ * @dev Withdrawals require a valid proof of being approved by an ASP.
+ * @dev Deposits can be irreversibly suspended by the Entrypoint, while withdrawals can't.
+ */
 abstract contract PrivacyPool is State, IPrivacyPool {
   using ProofLib for ProofLib.Proof;
 
+  /// @inheritdoc IPrivacyPool
   uint256 public immutable SCOPE;
+
+  /// @inheritdoc IPrivacyPool
   IERC20 public immutable ASSET;
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
@@ -44,6 +54,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
                              USER METHODS 
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IPrivacyPool
   function deposit(
     address _depositor,
     uint256 _value,
@@ -69,6 +80,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     emit Deposited();
   }
 
+  /// @inheritdoc IPrivacyPool
   function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external validWithdrawal(_w, _p) {
     // Verify proof with Groth16 verifier
     VERIFIER.verifyProof(_p);
@@ -86,6 +98,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     emit Withdrawn();
   }
 
+  /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor
     require(labelToDepositor[_label] == msg.sender, OnlyOriginalDepositor());
@@ -118,6 +131,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
                              WIND DOWN
     //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc IPrivacyPool
   function windDown() external onlyEntrypoint {
     // Check pool is still alive
     require(!dead, PoolIsDead());
@@ -131,7 +145,19 @@ abstract contract PrivacyPool is State, IPrivacyPool {
                           ASSET OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
+  /**
+   * @notice Handle receiving an asset
+   * @dev To be implemented by an asset specific contract
+   * @param _sender The address of the user sending funds
+   * @param _value The amount of asset being received
+   */
   function _handleValueInput(address _sender, uint256 _value) internal virtual;
 
+  /**
+   * @notice Handle sending an asset
+   * @dev To be implemented by an asset specific contract
+   * @param _recipient The address of the user receiving funds
+   * @param _value The amount of asset being sent
+   */
   function _handleValueOutput(address _recipient, uint256 _value) internal virtual;
 }
