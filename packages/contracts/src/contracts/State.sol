@@ -34,7 +34,6 @@ abstract contract State is IState {
   /// @inheritdoc IState
   uint32 public currentRootIndex = 0;
 
-  address private immutable _POSEIDON;
   LeanIMTData internal _merkleTree;
 
   /// @inheritdoc IState
@@ -47,10 +46,9 @@ abstract contract State is IState {
     _;
   }
 
-  constructor(address _entrypoint, address _verifier, address _poseidon) {
+  constructor(address _entrypoint, address _verifier) {
     ENTRYPOINT = IEntrypoint(_entrypoint);
     VERIFIER = IVerifier(_verifier);
-    _POSEIDON = _poseidon;
   }
 
   /*///////////////////////////////////////////////////////////////

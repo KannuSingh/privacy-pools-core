@@ -7,12 +7,7 @@ contract PrivacyPoolSimple is PrivacyPool {
   error InsufficientValue();
   error FailedToSendETH();
 
-  constructor(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidon
-  ) PrivacyPool(_entrypoint, _verifier, _asset, _poseidon) {}
+  constructor(address _entrypoint, address _verifier, address _asset) PrivacyPool(_entrypoint, _verifier, _asset) {}
 
   function _handleValueInput(address, uint256 _amount) internal override(PrivacyPool) {
     if (msg.value != _amount) revert InsufficientValue();

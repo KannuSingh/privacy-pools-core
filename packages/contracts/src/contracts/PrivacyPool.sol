@@ -39,15 +39,9 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _;
   }
 
-  constructor(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidon
-  ) State(_entrypoint, _verifier, _poseidon) {
+  constructor(address _entrypoint, address _verifier, address _asset) State(_entrypoint, _verifier) {
     if (_asset == address(0)) revert ZeroAddress();
     if (_verifier == address(0)) revert ZeroAddress();
-    if (_poseidon == address(0)) revert ZeroAddress();
     if (_entrypoint == address(0)) revert ZeroAddress();
 
     ASSET = IERC20(_asset);
