@@ -34,7 +34,8 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.1.0",
-    "@zk-kit/lean-imt.sol": "^2.0.0"
+    "@zk-kit/lean-imt.sol": "^2.0.0",
+    "poseidon-solidity": "^0.0.5"
   },
   "devDependencies": {
     "@commitlint/cli": "19.3.0",

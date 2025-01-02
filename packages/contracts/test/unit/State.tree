@@ -1,0 +1,83 @@
+State::constructor
+├── when passing valid addresses
+│   ├── it sets entrypoint correctly
+│   ├── it sets verifier correctly
+│   ├── it sets poseidon correctly
+│   ├── it initializes nonce to zero
+│   ├── it sets dead to false
+│   ├── it initializes root history size
+│   └── it sets current root index
+├── when passing zero addresses
+│   ├── when entrypoint is zero
+│   │   └── it reverts
+│   ├── when verifier is zero
+│   │   └── it reverts
+│   └── when poseidon is zero
+│       └── it reverts
+└── when initialization parameters invalid
+    └── it reverts
+
+State::_spend
+├── when nullifier not spent
+│   ├── it marks nullifier as spent
+│   ├── it maintains other nullifier states
+│   └── it allows multiple spends in same block
+├── when nullifier already spent
+│   └── it reverts with NullifierAlreadySpent
+└── when nullifier is zero
+    └── it handles edge case appropriately
+
+State::_insert
+├── when leaf not in state
+│   ├── it inserts leaf correctly
+│   ├── it updates merkle tree
+│   ├── it increments root index correctly
+│   ├── it updates roots mapping
+│   ├── it maintains historical roots
+│   ├── it handles root history rotation
+│   └── it maintains tree properties
+├── when leaf already in state
+│   └── it reverts
+├── when tree at different depths
+│   ├── when tree empty
+│   │   └── it handles first insertion
+│   ├── when tree partially filled
+│   │   └── it maintains correct structure
+│   └── when tree requires growth
+│       └── it handles depth increase
+└── when handling edge cases
+    ├── when leaf is zero
+    │   └── it processes correctly
+    ├── when at root history size limit
+    │   └── it rotates correctly
+    └── when concurrent insertions
+        └── it maintains consistency
+
+State::_isKnownRoot
+├── when root is zero
+│   └── it returns false
+├── when root exists in history
+│   ├── it returns true for latest root
+│   ├── it returns true for historical roots
+│   └── it handles wrapped indices
+├── when root not in history
+│   └── it returns false
+└── when checking edge cases
+    ├── when history is empty
+    │   └── it returns false
+    └── when history is full
+        └── it handles rotation correctly
+
+State::_isInState
+├── when leaf exists
+│   ├── it returns true
+│   └── it works for leaves at different depths
+├── when leaf doesn't exist
+│   └── it returns false
+└── when checking edge cases
+    ├── when tree is empty
+    │   └── it returns false
+    ├── when leaf is zero
+    │   └── it handles appropriately
+    └── when tree is full
+        └── it maintains accuracy
