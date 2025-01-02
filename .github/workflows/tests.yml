@@ -6,7 +6,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-working-directory: packages/contracts
+defaults:
+  run:
+    working-directory: packages/contracts
 
 env:
   MAINNET_RPC: ${{ secrets.MAINNET_RPC }}

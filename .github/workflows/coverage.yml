@@ -5,7 +5,9 @@ on: [push]
 env:
   COVERAGE_SENSITIVITY_PERCENT: 1
 
-working-directory: packages/contracts
+defaults:
+  run:
+    working-directory: packages/contracts
 
 jobs:
   upload-coverage:
