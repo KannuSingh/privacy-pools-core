@@ -17,6 +17,8 @@ abstract contract State is IState {
 
   /// @inheritdoc IState
   string public constant VERSION = '0.1.0';
+  /// @inheritdoc IState
+  uint32 public constant ROOT_HISTORY_SIZE = 30;
 
   /// @inheritdoc IState
   IEntrypoint public immutable ENTRYPOINT;
@@ -26,6 +28,11 @@ abstract contract State is IState {
   uint256 public nonce;
   /// @inheritdoc IState
   bool public dead;
+
+  /// @inheritdoc IState
+  mapping(uint256 _index => uint256 _root) public roots;
+  /// @inheritdoc IState
+  uint32 public currentRootIndex = 0;
 
   address private immutable _POSEIDON;
   LeanIMTData internal _merkleTree;
@@ -66,14 +73,27 @@ abstract contract State is IState {
    */
   function _insert(uint256 _leaf) internal {
     _merkleTree._insert(_leaf);
+
+    uint32 newRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+    currentRootIndex = newRootIndex;
+    roots[newRootIndex] = _merkleTree._root();
   }
 
   /**
    * @notice Returns whether the root is a known root
    * @param _root The root to check
    */
-  // TODO: implement cached roots
-  function _isKnownRoot(uint256 _root) internal returns (bool) {}
+  function _isKnownRoot(uint256 _root) internal view returns (bool _known) {
+    if (_root == 0) {
+      return false;
+    }
+
+    for (uint32 _i = currentRootIndex; _i < ROOT_HISTORY_SIZE; _i++) {
+      if (roots[_i] == _root) return true;
+    }
+
+    return false;
+  }
 
   /**
    * @notice Returns whether a leaf is in the state

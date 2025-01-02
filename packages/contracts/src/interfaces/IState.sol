@@ -39,6 +39,12 @@ interface IState {
   function VERSION() external view returns (string memory _version);
 
   /**
+   * @notice Returns the root history size for root caching
+   * @return _size The amount of valid roots to store
+   */
+  function ROOT_HISTORY_SIZE() external view returns (uint32 _size);
+
+  /**
    * @notice Returns the configured Entrypoint contract
    * @return _entrypoint The Entrypoint contract
    */
@@ -51,6 +57,12 @@ interface IState {
   function VERIFIER() external view returns (IVerifier _verifier);
 
   /**
+   * @notice Returns the current root index
+   * @return _index The current index
+   */
+  function currentRootIndex() external view returns (uint32 _index);
+
+  /**
    * @notice Returns the current label nonce
    * @return _nonce The current nonce
    */
@@ -61,6 +73,13 @@ interface IState {
    * @return _dead The dead boolean
    */
   function dead() external view returns (bool _dead);
+
+  /**
+   * @notice Returns the root stored at an index
+   * @param _index The root index
+   * @return _root The root value
+   */
+  function roots(uint256 _index) external view returns (uint256 _root);
 
   /**
    * @notice Returns the spending status of a nullifier hash
