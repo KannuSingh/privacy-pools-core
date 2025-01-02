@@ -29,10 +29,31 @@ interface IPrivacyPool is IState {
                               EVENTS
     //////////////////////////////////////////////////////////////*/
 
-  // TODO: data TBD
-  event Deposited();
-  event Withdrawn();
-  event Ragequit();
+  /**
+   * @notice Emitted when making a user deposit
+   * @param _depositor The address of the depositor
+   * @param _commitment The deposit commitment hash
+   * @param _label The deposit generated label
+   * @param _value The deposited amount
+   * @param _newRoot The updated state root
+   */
+  event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _newRoot);
+
+  /**
+   * @notice Emitted when processing a withdrawal
+   * @param _processooor The address which processed the withdrawal
+   * @param _value The withdrawn amount
+   * @param _spentNullifier The spent nullifier
+   */
+  event Withdrawn(address indexed _processooor, uint256 _value, uint256 _spentNullifier);
+
+  /**
+   * @notice Emitted when ragequitting a commitment
+   * @param _ragequitter The address who ragequit
+   * @param _commitment The ragequit commitment
+   * @param _value The ragequit amount
+   */
+  event Ragequit(address indexed _ragequitter, uint256 _commitment, uint256 _value);
 
   /**
    * @notice Emitted irreversibly suspending deposits

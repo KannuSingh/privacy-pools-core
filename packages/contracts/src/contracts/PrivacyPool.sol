@@ -10,7 +10,6 @@ import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
-// TODO: compile poseidon contract and replace keccak256
 // TODO: compile groth16 verifier contracts
 
 /**
@@ -64,7 +63,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     address _depositor,
     uint256 _value,
     uint256 _precommitmentHash
-  ) external payable onlyEntrypoint returns (uint256 _commitmentHash) {
+  ) external payable onlyEntrypoint returns (uint256 _commitment) {
     // Check deposits are enabled
     if (dead) revert PoolIsDead();
 
@@ -72,16 +71,15 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
     labelToDepositor[_label] = _depositor;
 
-    _commitmentHash = PoseidonT4.hash([_value, _label, _precommitmentHash]);
+    _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
     // Insert commitment in state (revert if already present)
-    uint256 _newRoot = _insert(_commitmentHash);
+    uint256 _newRoot = _insert(_commitment);
 
     // Pull funds from depositor
     _handleValueInput(msg.sender, _value);
 
-    // TODO: populate event data
-    emit Deposited();
+    emit Deposited(_depositor, _commitment, _label, _value, _newRoot);
   }
 
   /// @inheritdoc IPrivacyPool
@@ -98,8 +96,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Transfer out funds to procesooor
     _handleValueOutput(_w.processooor, _p.value());
 
-    // TODO: populate event data
-    emit Withdrawn();
+    emit Withdrawn(_w.processooor, _p.value(), _p.existingNullifierHash());
   }
 
   /// @inheritdoc IPrivacyPool
@@ -129,8 +126,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Transfer funds to ragequitter
     _handleValueOutput(msg.sender, _value);
 
-    // TODO: populate event data
-    emit Ragequit();
+    emit Ragequit(msg.sender, _commitment, _value);
   }
 
   /*///////////////////////////////////////////////////////////////
