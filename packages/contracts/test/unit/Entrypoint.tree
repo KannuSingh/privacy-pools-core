@@ -23,7 +23,7 @@ Entrypoint::updateRoot
 └── When caller lacks admin role
     └── It reverts with AccessControlError
 
-Entrypoint::deposit ETH
+Entrypoint::deposit
 ├── Given pool exists
 │   ├── Given value meets minimum
 │   │   ├── It deducts correct fees
@@ -35,7 +35,7 @@ Entrypoint::deposit ETH
 └── When pool not found
     └── It reverts with PoolNotFound
 
-Entrypoint::deposit ERC20
+Entrypoint::deposit
 ├── Given pool exists
 │   ├── Given value meets minimum
 │   │   ├── It transfers tokens from sender

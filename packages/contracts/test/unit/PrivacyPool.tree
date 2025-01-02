@@ -8,8 +8,8 @@ PrivacyPool::constructor
     └── It reverts with ZeroAddress
 
 PrivacyPool::deposit
-├── Given the caller is entrypoint
-│   ├── Given an active pool
+├── Given caller is entrypoint
+│   ├── Given pool is active
 │   │   ├── When depositing valid value and commitment
 │   │   │   ├── It increments global nonce
 │   │   │   ├── It computes label as keccak of scope and nonce
@@ -28,9 +28,9 @@ PrivacyPool::deposit
     └── It reverts with OnlyEntrypoint
 
 PrivacyPool::withdraw
-├── Given the caller is processooor
-│   ├── Given a valid proof
-│   │   ├── Given a known state root
+├── Given caller is processooor
+│   ├── Given valid proof
+│   │   ├── Given known state root
 │   │   │   ├── Given latest ASP root
 │   │   │   │   ├── When withdrawing nonzero amount
 │   │   │   │   │   ├── It verifies proof with verifier
@@ -87,17 +87,4 @@ PrivacyPool::handleValueInput
     ├── Given sufficient approval
     │   └── It transfers tokens from sender
     └── When insufficient approval
-        └── It reverts
-
-PrivacyPool::handleValueOutput
-├── Given asset is ETH
-│   ├── Given sufficient balance
-│   │   ├── It sends ETH to recipient
-│   │   └── It handles send result
-│   └── When insufficient balance
-│       └── It reverts
-└── Given asset is ERC20
-    ├── Given sufficient balance
-    │   └── It transfers tokens to recipient
-    └── When insufficient balance
         └── It reverts
