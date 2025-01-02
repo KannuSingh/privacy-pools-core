@@ -158,6 +158,11 @@ interface IEntrypoint {
    */
   error EmptyRoot();
 
+  /**
+   * @notice Thrown when failing to send ETH to an account
+   */
+  error ETHTransferFailed();
+
   /*//////////////////////////////////////////////////////////////
                                 LOGIC
     //////////////////////////////////////////////////////////////*/

@@ -23,7 +23,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
   bytes32 public constant ADMIN_ROLE = 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42;
-  address public ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /// @inheritdoc IEntrypoint
   mapping(uint256 _scope => IPrivacyPool _pool) public scopeToPool;
@@ -42,7 +42,9 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     _disableInitializers();
   }
 
-  function initialize(address _owner, address _admin) public initializer {
+  receive() external payable {}
+
+  function initialize(address _owner, address _admin) external initializer {
     _grantRole(OWNER_ROLE, _owner);
     _grantRole(ADMIN_ROLE, _admin);
   }
@@ -53,8 +55,8 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /// @inheritdoc IEntrypoint
   function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ADMIN_ROLE) returns (uint256 _index) {
-    require(_root != 0, EmptyRoot());
-    require(_ipfsHash != 0, EmptyIPFSHash());
+    if (_root == 0) revert EmptyRoot();
+    if (_ipfsHash == 0) revert EmptyIPFSHash();
 
     associationSets.push(AssociationSetData(_root, _ipfsHash, block.timestamp));
     _index = associationSets.length;
@@ -72,10 +74,12 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     // Fetch ETH pool
     IPrivacyPool _pool = _config.pool;
-    require(address(_pool) != address(0), PoolNotFound());
+    if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Check deposited value is bigger than minimum
-    require(msg.value >= _config.minimumDepositAmount, MinimumDepositAmount());
+    if (msg.value < _config.minimumDepositAmount) {
+      revert MinimumDepositAmount();
+    }
 
     // Deduct fees
     uint256 _amountAfterFees = _deductFee(msg.value, _config.feeBPS);
@@ -92,10 +96,12 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     // Fetch pool by asset
     IPrivacyPool _pool = _config.pool;
-    require(address(_pool) != address(0), PoolNotFound());
+    if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Check deposited value is bigger than minimum
-    require(_value >= _config.minimumDepositAmount, MinimumDepositAmount());
+    if (_value < _config.minimumDepositAmount) {
+      revert MinimumDepositAmount();
+    }
 
     // Deduct fees
     uint256 _amountAfterFees = _deductFee(_value, _config.feeBPS);
@@ -117,13 +123,15 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
     // Fetch pool by proof scope
     IPrivacyPool _pool = scopeToPool[_proof.scope()];
-    require(address(_pool) != address(0), PoolNotFound());
+    if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Store pool asset
     IERC20 _asset = _pool.ASSET();
 
-    // Check allowed procesooor is this Entrypoint
-    require(_withdrawal.procesooor == address(this), InvalidProcessooor());
+    // Check allowed processooor is this Entrypoint
+    if (_withdrawal.processooor != address(this)) {
+      revert InvalidProcessooor();
+    }
 
     uint256 _balanceBefore = _asset.balanceOf(address(this));
 
@@ -145,7 +153,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     // Check pool balance has not been reduced
     uint256 _balanceAfter = _asset.balanceOf(address(this));
-    require(_balanceBefore >= _balanceAfter, InvalidPoolState());
+    if (_balanceBefore < _balanceAfter) revert InvalidPoolState();
 
     emit WithdrawalRelayed(msg.sender, _data.recipient, _asset, _withdrawnAmount, _withdrawnAmount - _amountAfterFees);
   }
@@ -163,10 +171,14 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   ) external onlyRole(ADMIN_ROLE) {
     AssetConfig storage _config = assetConfig[_asset];
 
-    require(address(_config.pool) == address(0), AssetPoolAlreadyRegistered());
+    if (address(_config.pool) != address(0)) {
+      revert AssetPoolAlreadyRegistered();
+    }
 
     uint256 _scope = _pool.SCOPE();
-    require(address(scopeToPool[_scope]) == address(0), ScopePoolAlreadyRegistered());
+    if (address(scopeToPool[_scope]) != address(0)) {
+      revert ScopePoolAlreadyRegistered();
+    }
 
     scopeToPool[_scope] = _pool;
 
@@ -182,7 +194,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   /// @inheritdoc IEntrypoint
   function removePool(IERC20 _asset) external onlyRole(ADMIN_ROLE) {
     IPrivacyPool _pool = assetConfig[_asset].pool;
-    require(address(_pool) != address(0), PoolNotFound());
+    if (address(_pool) == address(0)) revert PoolNotFound();
 
     uint256 _scope = _pool.SCOPE();
 
@@ -200,8 +212,15 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /// @inheritdoc IEntrypoint
   function withdrawFees(IERC20 _asset, address _recipient) external onlyRole(ADMIN_ROLE) {
-    uint256 _balance = _asset.balanceOf(address(this));
-    _asset.safeTransfer(_recipient, _balance);
+    uint256 _balance;
+    if (_asset == IERC20(ETH)) {
+      _balance = address(this).balance;
+      (bool _success,) = _recipient.call{value: _balance}('');
+      if (!_success) revert ETHTransferFailed();
+    } else {
+      _balance = _asset.balanceOf(address(this));
+      _asset.safeTransfer(_recipient, _balance);
+    }
 
     emit FeesWithdrawn(_asset, _recipient, _balance);
   }
@@ -224,9 +243,18 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
                         INTERNAL METHODS 
     //////////////////////////////////////////////////////////////*/
 
+  /**
+   * @notice Authorize an upgrade
+   * @dev Inherited from `UUPSUpgradeable`
+   */
+  function _authorizeUpgrade(address) internal override onlyRole(OWNER_ROLE) {}
+
+  /**
+   * @notice Deduct fees from an amount
+   * @param _amount The amount before fees
+   * @param _feeBPS The fee in basis points
+   */
   function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
-
-  function _authorizeUpgrade(address newImplementation) internal override onlyRole(OWNER_ROLE) {}
 }

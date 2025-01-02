@@ -26,12 +26,14 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   IERC20 public immutable ASSET;
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
-    require(msg.sender == _w.procesooor, InvalidProcesooor());
-    require(_p.scope() == SCOPE, ScopeMismatch());
-    require(_p.context() == uint256(keccak256(abi.encode(_w, SCOPE))), ContextMismatch());
-    require(_isKnownRoot(_p.stateRoot()), UnknownStateRoot());
-    require(_p.ASPRoot() == ENTRYPOINT.latestRoot(), OutdatedASPRoot());
-    require(_p.withdrawnAmount() > 0, InvalidWithdrawalAmount());
+    if (msg.sender != _w.processooor) revert InvalidProcesooor();
+    if (_p.scope() != SCOPE) revert ScopeMismatch();
+    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) {
+      revert ContextMismatch();
+    }
+    if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
+    if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert OutdatedASPRoot();
+    if (_p.withdrawnAmount() == 0) revert InvalidWithdrawalAmount();
     _;
   }
 
@@ -41,10 +43,10 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     address _asset,
     address _poseidon
   ) State(_entrypoint, _verifier, _poseidon) {
-    require(_asset != address(0), ZeroAddress());
-    require(_verifier != address(0), ZeroAddress());
-    require(_poseidon != address(0), ZeroAddress());
-    require(_entrypoint != address(0), ZeroAddress());
+    if (_asset == address(0)) revert ZeroAddress();
+    if (_verifier == address(0)) revert ZeroAddress();
+    if (_poseidon == address(0)) revert ZeroAddress();
+    if (_entrypoint == address(0)) revert ZeroAddress();
 
     ASSET = IERC20(_asset);
     SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
@@ -61,7 +63,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     uint256 _precommitmentHash
   ) external payable onlyEntrypoint returns (uint256 _commitmentHash) {
     // Check deposits are enabled
-    require(!dead, PoolIsDead());
+    if (dead) revert PoolIsDead();
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
@@ -92,7 +94,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _insert(_p.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _handleValueOutput(_w.procesooor, _p.value());
+    _handleValueOutput(_w.processooor, _p.value());
 
     // TODO: populate event data
     emit Withdrawn();
@@ -101,7 +103,9 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor
-    require(labelToDepositor[_label] == msg.sender, OnlyOriginalDepositor());
+    if (labelToDepositor[_label] != msg.sender) {
+      revert OnlyOriginalDepositor();
+    }
 
     // Compute nullifier hash
     uint256 _nullifierHash = uint256(keccak256(abi.encodePacked(_nullifier)));
@@ -134,7 +138,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function windDown() external onlyEntrypoint {
     // Check pool is still alive
-    require(!dead, PoolIsDead());
+    if (dead) revert PoolIsDead();
     // Die
     dead = true;
 

@@ -15,11 +15,11 @@ contract PrivacyPoolSimple is PrivacyPool {
   ) PrivacyPool(_entrypoint, _verifier, _asset, _poseidon) {}
 
   function _handleValueInput(address, uint256 _amount) internal override(PrivacyPool) {
-    require(msg.value == _amount, InsufficientValue());
+    if (msg.value != _amount) revert InsufficientValue();
   }
 
   function _handleValueOutput(address _recipient, uint256 _amount) internal override(PrivacyPool) {
     (bool _success,) = _recipient.call{value: _amount}('');
-    require(_success, FailedToSendETH());
+    if (!_success) revert FailedToSendETH();
   }
 }
