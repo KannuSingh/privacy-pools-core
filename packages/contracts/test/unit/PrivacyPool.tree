@@ -1,0 +1,111 @@
+PrivacyPool::constructor
+├── when passing valid addresses
+│   ├── it sets asset correctly
+│   ├── it computes scope correctly
+│   ├── it initializes state components
+│   ├── it sets up pool configuration
+│   └── it enables deposits
+├── when passing zero addresses
+│   ├── when asset is zero
+│   │   └── it reverts with ZeroAddress
+│   ├── when verifier is zero
+│   │   └── it reverts with ZeroAddress
+│   ├── when poseidon is zero
+│   │   └── it reverts with ZeroAddress
+│   └── when entrypoint is zero
+│       └── it reverts with ZeroAddress
+└── when initialization fails
+    └── it reverts
+
+PrivacyPool::deposit
+├── when called by entrypoint
+│   ├── when pool alive
+│   │   ├── it increments nonce correctly
+│   │   ├── it computes label deterministically
+│   │   ├── it maps label to depositor
+│   │   ├── it computes commitment correctly
+│   │   ├── it inserts commitment in state
+│   │   ├── it handles value transfer correctly
+│   │   ├── it maintains correct balances
+│   │   └── it emits Deposited with correct params
+│   ├── when pool dead
+│   │   └── it reverts with PoolIsDead
+│   └── when handling edge cases
+│       ├── when value is zero
+│       │   └── it processes correctly
+│       ├── when commitment exists
+│       │   └── it reverts
+│       └── when nonce wraps
+│           └── it handles overflow
+└── when called by non-entrypoint
+    └── it reverts with OnlyEntrypoint
+
+PrivacyPool::withdraw
+├── when called with valid withdrawal
+│   ├── proof verification
+│   │   ├── it verifies proof correctly
+│   │   ├── it validates scope
+│   │   ├── it validates context
+│   │   └── it checks root freshness
+│   ├── nullifier handling
+│   │   ├── it spends nullifier
+│   │   └── it prevents double spends
+│   ├── commitment handling
+│   │   ├── it inserts new commitment
+│   │   └── it maintains tree state
+│   ├── value transfer
+│   │   ├── it transfers correct amount
+│   │   ├── it maintains pool balance
+│   │   └── it handles transfer edge cases
+│   └── event emission
+│       └── it emits Withdrawn with correct params
+├── when validation fails
+│   ├── when called by wrong processooor
+│   │   └── it reverts with InvalidProcesooor
+│   ├── when scope mismatches
+│   │   └── it reverts with ScopeMismatch
+│   ├── when context invalid
+│   │   └── it reverts with ContextMismatch
+│   ├── when state root unknown
+│   │   └── it reverts with UnknownStateRoot
+│   ├── when ASP root outdated
+│   │   └── it reverts with OutdatedASPRoot
+│   └── when withdrawal amount zero
+│       └── it reverts with InvalidWithdrawalAmount
+└── when handling edge cases
+    ├── when proof manipulation attempted
+    │   └── it prevents attacks
+    ├── when concurrent withdrawals
+    │   └── it maintains consistency
+    └── when pool balance low
+        └── it handles insufficient funds
+
+PrivacyPool::ragequit
+├── when called by depositor
+│   ├── when commitment valid
+│   │   ├── it validates depositor correctly
+│   │   ├── it computes nullifier hash
+│   │   ├── it computes precommitment hash
+│   │   ├── it computes commitment correctly
+│   │   ├── it verifies commitment in state
+│   │   ├── it spends nullifier
+│   │   ├── it transfers value correctly
+│   │   └── it emits Ragequit with correct params
+│   └── when commitment invalid
+│       └── it reverts with InvalidCommitment
+├── when called by non-depositor
+│   └── it reverts with OnlyOriginalDepositor
+└── when handling edge cases
+    ├── when commitment spent
+    │   └── it reverts
+    ├── when value manipulation attempted
+    │   └── it prevents attacks
+    └── when concurrent ragequits
+        └── it maintains consistency
+
+PrivacyPool::windDown
+├── when called by entrypoint
+│   ├── when pool alive
+│   │   ├── it marks pool as dead
+│   │   ├── it prevents new deposits
+│

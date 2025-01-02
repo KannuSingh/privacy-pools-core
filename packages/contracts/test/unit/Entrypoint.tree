@@ -1,112 +1,205 @@
 Entrypoint::constructor
-└── should disable initializers
-    └── it reverts when initialized again
+└── when deployed
+    ├── it disables initializers
+    └── it doesn't set any roles
 
 Entrypoint::initialize
-└── when called with owner and admin addresses
-    ├── it sets the owner role correctly
-    ├── it sets the admin role correctly
-    └── it emits RoleGranted events
+├── when called first time
+│   ├── it grants owner role to owner address
+│   ├── it grants admin role to admin address
+│   ├── it sets up roles hierarchy correctly
+│   ├── it allows receiving ETH
+│   └── it emits RoleGranted events
+├── when called with zero addresses
+│   ├── when owner is zero
+│   │   └── it reverts
+│   └── when admin is zero
+│       └── it reverts
+└── when called after initialization
+    └── it reverts
 
 Entrypoint::updateRoot
 ├── when called by admin
-│   ├── when passing valid parameters
-│   │   ├── it updates the association set data
+│   ├── when passing valid root and IPFS hash
+│   │   ├── it adds new association set
+│   │   ├── it sets correct timestamp
 │   │   ├── it returns correct index
-│   │   └── it emits RootUpdated
+│   │   ├── it maintains sequential indexing
+│   │   ├── it preserves previous sets
+│   │   └── it emits RootUpdated with correct params
 │   ├── when passing empty root
-│   │   └── it reverts
-│   └── when passing empty IPFS hash
-│       └── it reverts
+│   │   └── it reverts with EmptyRoot
+│   ├── when passing empty IPFS hash
+│   │   └── it reverts with EmptyIPFSHash
+│   └── when updating multiple times
+│       ├── it maintains correct order
+│       └── it preserves historical data
 └── when called by non-admin
+    ├── when called by owner
+    │   └── it reverts
+    └── when called by regular user
+        └── it reverts
+
+Entrypoint::deposit(ETH)
+├── when pool exists
+│   ├── when value meets minimum
+│   │   ├── it calculates fees correctly
+│   │   ├── it forwards correct amount to pool
+│   │   ├── it retains fees in contract
+│   │   ├── it handles dust amounts correctly
+│   │   ├── it manages pool balance properly
+│   │   └── it emits Deposited with correct params
+│   ├── when value exactly equals minimum
+│   │   ├── it processes deposit
+│   │   └── it calculates fees correctly
+│   ├── when value below minimum
+│   │   └── it reverts with MinimumDepositAmount
+│   └── when pool is at capacity
+│       └── it reverts
+├── when pool doesn't exist
+│   └── it reverts with PoolNotFound
+└── when sending extra ETH
     └── it reverts
 
-Entrypoint::deposit (ETH)
-├── when called with valid parameters
-│   ├── it accepts ETH deposit
-│   ├── it deducts correct fees
-│   ├── it creates commitment
-│   ├── it transfers ETH to pool
-│   └── it emits Deposited
-├── when deposit amount below minimum
-│   └── it reverts
-└── when pool not found
-    └── it reverts
-
-Entrypoint::deposit (ERC20)
-├── when called with valid parameters
-│   ├── it accepts token deposit
-│   ├── it deducts correct fees
-│   ├── it creates commitment
-│   ├── it transfers tokens to pool
-│   └── it emits Deposited
-├── when deposit amount below minimum
-│   └── it reverts
-└── when pool not found
-    └── it reverts
+Entrypoint::deposit(ERC20)
+├── when pool exists
+│   ├── when value meets minimum
+│   │   ├── when sufficient allowance
+│   │   │   ├── it transfers tokens from sender
+│   │   │   ├── it calculates fees correctly
+│   │   │   ├── it retains fees in contract
+│   │   │   ├── it forwards correct amount to pool
+│   │   │   ├── it handles non-standard tokens
+│   │   │   ├── it handles rebasing tokens
+│   │   │   ├── it handles fee-on-transfer tokens
+│   │   │   └── it emits Deposited with correct params
+│   │   └── when insufficient allowance
+│   │       └── it reverts
+│   ├── when value exactly equals minimum
+│   │   ├── it processes deposit
+│   │   └── it calculates fees correctly
+│   ├── when value below minimum
+│   │   └── it reverts with MinimumDepositAmount
+│   └── when pool is at capacity
+│       └── it reverts
+├── when pool doesn't exist
+│   └── it reverts with PoolNotFound
+└── when token has special behavior
+    ├── when token is pausable
+    │   └── it handles paused state
+    ├── when token has blacklist
+    │   └── it handles blacklisted addresses
+    └── when token has transfer restrictions
+        └── it handles transfer limitations
 
 Entrypoint::relay
-├── when called with valid withdrawal
-│   ├── it processes the withdrawal
-│   ├── it deducts correct fees
-│   ├── it transfers funds to recipient
-│   ├── it transfers fees to fee recipient
-│   └── it emits WithdrawalRelayed
-├── when called with invalid procesooor
-│   └── it reverts
-├── when pool not found
-│   └── it reverts
-└── when pool state invalid
-    └── it reverts
+├── when pool exists
+│   ├── when processooor is valid
+│   │   ├── when proof is valid
+│   │   │   ├── it processes withdrawal correctly
+│   │   │   ├── it calculates fee splits accurately
+│   │   │   ├── it transfers correct amount to recipient
+│   │   │   ├── it transfers correct fees to fee recipient
+│   │   │   ├── it maintains pool balance invariant
+│   │   │   ├── it handles zero fee cases
+│   │   │   ├── it handles maximum fee cases
+│   │   │   └── it emits WithdrawalRelayed with correct params
+│   │   ├── when proof is invalid
+│   │   │   └── it reverts
+│   │   └── when withdrawal amount exceeds balance
+│   │       └── it reverts
+│   ├── when processooor is invalid
+│   │   └── it reverts with InvalidProcessooor
+│   └── when pool state changes during transaction
+│       └── it handles race conditions
+├── when pool doesn't exist
+│   └── it reverts with PoolNotFound
+└── when system is under stress
+    ├── it handles high gas scenarios
+    └── it maintains consistent state
 
 Entrypoint::registerPool
 ├── when called by admin
-│   ├── when registering new pool
-│   │   ├── it sets pool configuration
+│   ├── when pool not registered
+│   │   ├── it registers pool correctly
+│   │   ├── it sets correct asset configuration
+│   │   ├── it sets minimum deposit amount
+│   │   ├── it sets fee basis points
 │   │   ├── it maps scope to pool
-│   │   ├── it approves pool for asset
-│   │   └── it emits PoolRegistered
-│   ├── when pool already registered for asset
-│   │   └── it reverts
-│   └── when scope already registered
-│       └── it reverts
+│   │   ├── it approves pool for asset transfers
+│   │   ├── it handles ETH pools
+│   │   ├── it handles ERC20 pools
+│   │   └── it emits PoolRegistered with correct params
+│   ├── when asset pool exists
+│   │   └── it reverts with AssetPoolAlreadyRegistered
+│   ├── when scope pool exists
+│   │   └── it reverts with ScopePoolAlreadyRegistered
+│   └── when invalid parameters
+│       ├── when zero address pool
+│       │   └── it reverts
+│       ├── when zero minimum deposit
+│       │   └── it reverts
+│       └── when fee exceeds maximum
+│           └── it reverts
 └── when called by non-admin
-    └── it reverts
+    ├── when called by owner
+    │   └── it reverts
+    └── when called by regular user
+        └── it reverts
 
 Entrypoint::removePool
 ├── when called by admin
-│   ├── when removing existing pool
-│   │   ├── it removes pool configuration
-│   │   ├── it removes scope mapping
-│   │   └── it emits PoolRemoved
-│   └── when pool not found
-│       └── it reverts
+│   ├── when pool exists
+│   │   ├── it removes pool mapping
+│   │   ├── it removes asset config
+│   │   ├── it maintains other pool configurations
+│   │   └── it emits PoolRemoved with correct params
+│   └── when pool doesn't exist
+│       └── it reverts with PoolNotFound
 └── when called by non-admin
     └── it reverts
 
 Entrypoint::windDownPool
 ├── when called by owner
-│   ├── it winds down pool
-│   └── it emits PoolWindDown
+│   ├── when pool exists
+│   │   ├── it calls pool windDown successfully
+│   │   ├── it maintains pool in registry
+│   │   └── it emits PoolWindDown
+│   └── when pool doesn't exist
+│       └── it reverts
 └── when called by non-owner
-    └── it reverts
+    ├── when called by admin
+    │   └── it reverts
+    └── when called by regular user
+        └── it reverts
 
 Entrypoint::withdrawFees
 ├── when called by admin
-│   ├── when fees exist
-│   │   ├── it transfers full balance
-│   │   └── it emits FeesWithdrawn
-│   └── when no fees exist
-│       └── it reverts
+│   ├── for ETH
+│   │   ├── when balance exists
+│   │   │   ├── it transfers full balance
+│   │   │   ├── it handles transfer success
+│   │   │   └── it emits FeesWithdrawn
+│   │   └── when zero balance
+│   │       └── it completes successfully
+│   └── for ERC20
+│       ├── when balance exists
+│       │   ├── it transfers full balance
+│       │   ├── it handles transfer success
+│       │   └── it emits FeesWithdrawn
+│       └── when zero balance
+│           └── it completes successfully
 └── when called by non-admin
     └── it reverts
 
-Entrypoint::latestRoot
-└── when called
-    ├── it returns latest root
-    └── it matches last association set
-
-Entrypoint::rootByIndex
-└── when called
-    ├── it returns root at index
-    └── it matches association set at index
+Entrypoint::view functions
+├── latestRoot
+│   ├── when sets exist
+│   │   └── it returns latest root
+│   └── when no sets exist
+│       └── it returns zero
+└── rootByIndex
+    ├── when index valid
+    │   └── it returns correct root
+    └── when index invalid
+        └── it reverts

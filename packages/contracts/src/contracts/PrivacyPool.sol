@@ -73,7 +73,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _commitmentHash = uint256(keccak256(abi.encodePacked(_value, _label, _precommitmentHash)));
 
     // Insert commitment in state (revert if already present)
-    _insert(_commitmentHash);
+    uint256 _newRoot = _insert(_commitmentHash);
 
     // Pull funds from depositor
     _handleValueInput(msg.sender, _value);
