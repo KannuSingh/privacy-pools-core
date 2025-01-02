@@ -198,6 +198,8 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     uint256 _scope = _pool.SCOPE();
 
+    _asset.approve(address(_pool), 0);
+
     delete scopeToPool[_scope];
     delete assetConfig[_asset];
 
