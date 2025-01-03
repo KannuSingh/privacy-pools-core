@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import {ProofLib} from '../contracts/lib/ProofLib.sol';
-import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IState} from 'interfaces/IState.sol';
 
 /**
@@ -63,6 +62,11 @@ interface IPrivacyPool is IState {
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when failing to verify a withdrawal proof through the Groth16 verifier
+   */
+  error InvalidProof();
 
   /**
    * @notice Thrown when trying to spend a commitment that does not exist in the state
@@ -168,8 +172,7 @@ interface IPrivacyPool is IState {
 
   /**
    * @notice Returns the pool asset
-   * @return _asset The IERC20 cast asset
+   * @return _asset The asset address
    */
-  function ASSET() external view returns (IERC20 _asset);
+  function ASSET() external view returns (address _asset);
 }
-

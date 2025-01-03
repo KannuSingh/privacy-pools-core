@@ -8,9 +8,9 @@ import {Initializable} from '@oz/proxy/utils/Initializable.sol';
 import {UUPSUpgradeable} from '@oz/proxy/utils/UUPSUpgradeable.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
+import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
-import {IERC20} from '@oz/interfaces/IERC20.sol';
 
 /**
  * @title Entrypoint
@@ -126,16 +126,14 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Store pool asset
-    IERC20 _asset = _pool.ASSET();
+    IERC20 _asset = IERC20(_pool.ASSET());
+
+    uint256 _balanceBefore = _assetBalance(_asset);
 
     // Check allowed processooor is this Entrypoint
     if (_withdrawal.processooor != address(this)) {
       revert InvalidProcessooor();
     }
-
-    // TODO: add check for eth balance
-    uint256 _balanceBefore = _asset.balanceOf(address(this));
-    // 10.000 usdc
 
     // Process withdrawal
     _pool.withdraw(_withdrawal, _proof);
@@ -147,15 +145,13 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     // Deduct fees
     uint256 _amountAfterFees = _deductFee(_withdrawnAmount, _data.feeBPS);
 
-    // TODO: handle ETH
-    // Transfer withdrawn amount less fees to withdrawal recipient
-    _asset.safeTransferFrom(address(this), _data.recipient, _amountAfterFees);
+    _transfer(_asset, _data.recipient, _amountAfterFees);
 
     // Transfer fees to fee recipient
-    _asset.safeTransferFrom(address(this), _data.feeRecipient, _withdrawnAmount - _amountAfterFees);
+    _transfer(_asset, _data.feeRecipient, _withdrawnAmount - _amountAfterFees);
 
     // Check pool balance has not been reduced
-    uint256 _balanceAfter = _asset.balanceOf(address(this));
+    uint256 _balanceAfter = _assetBalance(_asset);
     if (_balanceBefore < _balanceAfter) revert InvalidPoolState();
 
     emit WithdrawalRelayed(msg.sender, _data.recipient, _asset, _withdrawnAmount, _withdrawnAmount - _amountAfterFees);
@@ -262,5 +258,21 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
-}
 
+  function _assetBalance(IERC20 _asset) internal view returns (uint256 _balance) {
+    if (_asset == IERC20(ETH)) {
+      _balance = address(this).balance;
+    } else {
+      _balance = _asset.balanceOf(address(this));
+    }
+  }
+
+  function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
+    if (_asset == IERC20(ETH)) {
+      (bool _success,) = _recipient.call{value: _amount}('');
+      if (!_success) revert ETHTransferFailed();
+    } else {
+      _asset.safeTransfer(_recipient, _amount);
+    }
+  }
+}

@@ -25,7 +25,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   uint256 public immutable SCOPE;
 
   /// @inheritdoc IPrivacyPool
-  IERC20 public immutable ASSET;
+  address public immutable ASSET;
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
@@ -44,7 +44,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (_verifier == address(0)) revert ZeroAddress();
     if (_entrypoint == address(0)) revert ZeroAddress();
 
-    ASSET = IERC20(_asset);
+    ASSET = _asset;
     SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
   }
 
@@ -70,7 +70,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Insert commitment in state (revert if already present)
     uint256 _newRoot = _insert(_commitment);
 
-    // Pull funds from caller 
+    // Pull funds from caller
     _handleValueInput(msg.sender, _value);
 
     emit Deposited(_depositor, _commitment, _label, _value, _newRoot);
@@ -79,8 +79,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external validWithdrawal(_w, _p) {
     // Verify proof with Groth16 verifier
-    // TODO: add custom error
-    if (!VERIFIER.verifyProof(_p)) revert();
+    if (!VERIFIER.verifyProof(_p)) revert InvalidProof();
 
     // Spend nullifier for existing commitment
     _spend(_p.existingNullifierHash());
@@ -89,12 +88,12 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _insert(_p.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _handleValueOutput(_w.processooor, _p.withdrawnValue());
+    _handleValueOutput(_w.processooor, _p.withdrawnAmount());
 
-    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash());
+    emit Withdrawn(_w.processooor, _p.withdrawnAmount(), _p.existingNullifierHash());
   }
 
-  // TODO: improve without revealing nullifier and secret. maybe add two step
+  // TODO: improve without publicly revealing nullifier and secret. maybe add two step
   /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor
@@ -159,4 +158,3 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    */
   function _handleValueOutput(address _recipient, uint256 _value) internal virtual;
 }
-
