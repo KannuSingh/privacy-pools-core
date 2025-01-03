@@ -79,7 +79,8 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external validWithdrawal(_w, _p) {
     // Verify proof with Groth16 verifier
-    VERIFIER.verifyProof(_p);
+    // TODO: add custom error
+    if (!VERIFIER.verifyProof(_p)) revert();
 
     // Spend nullifier for existing commitment
     _spend(_p.existingNullifierHash());
@@ -88,11 +89,12 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _insert(_p.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _handleValueOutput(_w.processooor, _p.value());
+    _handleValueOutput(_w.processooor, _p.withdrawnValue());
 
-    emit Withdrawn(_w.processooor, _p.value(), _p.existingNullifierHash());
+    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash());
   }
 
+  // TODO: improve without revealing nullifier and secret. maybe add two step
   /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor

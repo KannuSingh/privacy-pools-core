@@ -23,7 +23,7 @@ abstract contract State is IState {
   /// @inheritdoc IState
   IEntrypoint public immutable ENTRYPOINT;
   /// @inheritdoc IState
-  IVerifier public immutable VERIFIER;
+  IVerifier public immutable VERIFIER; // groth16 verifier contract output of snarkjs
   /// @inheritdoc IState
   uint256 public nonce;
   /// @inheritdoc IState
@@ -32,7 +32,7 @@ abstract contract State is IState {
   /// @inheritdoc IState
   mapping(uint256 _index => uint256 _root) public roots;
   /// @inheritdoc IState
-  uint32 public currentRootIndex = 0;
+  uint32 public currentRootIndex;
 
   LeanIMTData internal _merkleTree;
 
@@ -86,6 +86,7 @@ abstract contract State is IState {
       return false;
     }
 
+    // TODO: fix
     for (uint32 _i = currentRootIndex; _i < ROOT_HISTORY_SIZE; _i++) {
       if (roots[_i] == _root) return true;
     }

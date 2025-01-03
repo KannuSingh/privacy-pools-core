@@ -81,7 +81,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       revert MinimumDepositAmount();
     }
 
-    // Deduct fees
+    // Deduct deposit fees
     uint256 _amountAfterFees = _deductFee(msg.value, _config.feeBPS);
 
     // Deposit commitment into pool
@@ -133,7 +133,9 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       revert InvalidProcessooor();
     }
 
+    // TODO: add check for eth balance
     uint256 _balanceBefore = _asset.balanceOf(address(this));
+    // 10.000 usdc
 
     // Process withdrawal
     _pool.withdraw(_withdrawal, _proof);
@@ -145,6 +147,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     // Deduct fees
     uint256 _amountAfterFees = _deductFee(_withdrawnAmount, _data.feeBPS);
 
+    // TODO: handle ETH
     // Transfer withdrawn amount less fees to withdrawal recipient
     _asset.safeTransferFrom(address(this), _data.recipient, _amountAfterFees);
 
