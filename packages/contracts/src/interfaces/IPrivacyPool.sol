@@ -99,9 +99,9 @@ interface IPrivacyPool is IState {
   error UnknownStateRoot();
 
   /**
-   * @notice Thrown when providing an outdated ASP root
+   * @notice Thrown when providing an unknown or outdated ASP root
    */
-  error OutdatedASPRoot();
+  error IncorrectASPRoot();
 
   /**
    * @notice Thrown when trying to ragequit while not being the original depositor

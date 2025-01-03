@@ -39,7 +39,7 @@ abstract contract State is IState {
   /// @inheritdoc IState
   mapping(uint256 _nullifierHash => bool _spent) public nullifierHashes;
   /// @inheritdoc IState
-  mapping(uint256 _label => address _depositor) public labelToDepositor;
+  mapping(uint256 _label => address _depositor) public deposits;
 
   modifier onlyEntrypoint() {
     if (msg.sender != address(ENTRYPOINT)) revert OnlyEntrypoint();

@@ -34,7 +34,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
       revert ContextMismatch();
     }
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
-    if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert OutdatedASPRoot();
+    if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
     if (_p.withdrawnAmount() == 0) revert InvalidWithdrawalAmount();
     _;
   }
@@ -63,7 +63,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
-    labelToDepositor[_label] = _depositor;
+    deposits[_label] = _depositor;
 
     _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
@@ -97,7 +97,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor
-    if (labelToDepositor[_label] != msg.sender) {
+    if (deposits[_label] != msg.sender) {
       revert OnlyOriginalDepositor();
     }
 

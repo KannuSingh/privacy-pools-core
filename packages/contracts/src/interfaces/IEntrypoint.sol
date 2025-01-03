@@ -19,24 +19,24 @@ interface IEntrypoint {
    * @notice Struct for the asset configuration
    * @param pool The Privacy Pool contracts for the asset
    * @param minimumDepositAmount The minimum amount that can be deposited
-   * @param feeBPS The deposit fee in basis points
+   * @param vettingfeeBPS The deposit fee in basis points
    */
   struct AssetConfig {
     IPrivacyPool pool;
     uint256 minimumDepositAmount;
-    uint256 feeBPS;
+    uint256 vettingFeeBPS;
   }
 
   /**
    * @notice Struct for the relay fee data
    * @param recipient The recipient of the funds withdrawn from the pool
    * @param feeRecipient The recipient of the fee
-   * @param feeBPS The relay fee in basis points
+   * @param relayfeeBPS The relay fee in basis points
    */
   struct FeeData {
     address recipient;
     address feeRecipient;
-    uint256 feeBPS;
+    uint256 relayFeeBPS;
   }
 
   /**
@@ -202,9 +202,14 @@ interface IEntrypoint {
    * @param _asset The asset of the pool
    * @param _pool The address of the Privacy Pool contract
    * @param _minimumDepositAmount The minimum deposit amount for the asset
-   * @param _feeBPS The deposit fee in basis points
+   * @param _vettingFeeBPS The deposit fee in basis points
    */
-  function registerPool(IERC20 _asset, IPrivacyPool _pool, uint256 _minimumDepositAmount, uint256 _feeBPS) external;
+  function registerPool(
+    IERC20 _asset,
+    IPrivacyPool _pool,
+    uint256 _minimumDepositAmount,
+    uint256 _vettingFeeBPS
+  ) external;
 
   /**
    * @notice Remove a Privacy Pool from the registry
@@ -241,12 +246,12 @@ interface IEntrypoint {
    * @param _asset The asset address
    * @return _pool The Privacy Pool contract
    * @return _minimumDepositAmount The minimum deposit amount
-   * @return _feeBPS The deposit fee in basis points
+   * @return _vettingFeeBPS The deposit fee in basis points
    */
   function assetConfig(IERC20 _asset)
     external
     view
-    returns (IPrivacyPool _pool, uint256 _minimumDepositAmount, uint256 _feeBPS);
+    returns (IPrivacyPool _pool, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS);
 
   /**
    * @notice Returns the association set data at an index

@@ -81,8 +81,8 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       revert MinimumDepositAmount();
     }
 
-    // Deduct deposit fees
-    uint256 _amountAfterFees = _deductFee(msg.value, _config.feeBPS);
+    // Deduct vetting fees
+    uint256 _amountAfterFees = _deductFee(msg.value, _config.vettingFeeBPS);
 
     // Deposit commitment into pool
     _commitment = _pool.deposit{value: _amountAfterFees}(msg.sender, _amountAfterFees, _precommitment);
@@ -103,8 +103,8 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       revert MinimumDepositAmount();
     }
 
-    // Deduct fees
-    uint256 _amountAfterFees = _deductFee(_value, _config.feeBPS);
+    // Deduct vetting fees
+    uint256 _amountAfterFees = _deductFee(_value, _config.vettingFeeBPS);
 
     // Transfer assets from user to Entrypoint using `SafeERC20`
     _asset.safeTransferFrom(msg.sender, address(this), _value);
@@ -143,7 +143,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     uint256 _withdrawnAmount = _proof.withdrawnAmount();
 
     // Deduct fees
-    uint256 _amountAfterFees = _deductFee(_withdrawnAmount, _data.feeBPS);
+    uint256 _amountAfterFees = _deductFee(_withdrawnAmount, _data.relayFeeBPS);
 
     _transfer(_asset, _data.recipient, _amountAfterFees);
 
@@ -166,7 +166,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     IERC20 _asset,
     IPrivacyPool _pool,
     uint256 _minimumDepositAmount,
-    uint256 _feeBPS
+    uint256 _vettingFeeBPS
   ) external onlyRole(ADMIN_ROLE) {
     AssetConfig storage _config = assetConfig[_asset];
 
@@ -183,7 +183,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     _config.pool = _pool;
     _config.minimumDepositAmount = _minimumDepositAmount;
-    _config.feeBPS = _feeBPS;
+    _config.vettingFeeBPS = _vettingFeeBPS;
 
     _asset.approve(address(_pool), type(uint256).max);
 

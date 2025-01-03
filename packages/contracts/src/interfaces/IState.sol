@@ -93,5 +93,5 @@ interface IState {
    * @param _label The label
    * @return _depositor The original depositor
    */
-  function labelToDepositor(uint256 _label) external view returns (address _depositor);
+  function deposits(uint256 _label) external view returns (address _depositor);
 }
