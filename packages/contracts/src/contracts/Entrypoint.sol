@@ -4,14 +4,13 @@ pragma solidity 0.8.28;
 import {ProofLib} from './lib/ProofLib.sol';
 
 import {AccessControl} from '@oz/access/AccessControl.sol';
-
 import {Initializable} from '@oz/proxy/utils/Initializable.sol';
 import {UUPSUpgradeable} from '@oz/proxy/utils/UUPSUpgradeable.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
-import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+import {IERC20} from '@oz/interfaces/IERC20.sol';
 
 /**
  * @title Entrypoint
@@ -36,7 +35,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                           INITIALIZATION
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   constructor() {
     _disableInitializers();
@@ -45,13 +44,14 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   receive() external payable {}
 
   function initialize(address _owner, address _admin) external initializer {
+    _setRoleAdmin(DEFAULT_ADMIN_ROLE, OWNER_ROLE);
     _grantRole(OWNER_ROLE, _owner);
     _grantRole(ADMIN_ROLE, _admin);
   }
 
   /*///////////////////////////////////////////////////////////////
                       ASSOCIATION SET METHODS
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
   function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ADMIN_ROLE) returns (uint256 _index) {
@@ -66,7 +66,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                           DEPOSIT METHODS
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
   function deposit(uint256 _precommitment) external payable returns (uint256 _commitment) {
@@ -117,7 +117,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                                RELAY
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
   function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
@@ -160,7 +160,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                           POOL MANAGEMENT 
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
   function registerPool(
@@ -229,7 +229,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                            VIEW METHODS 
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
   function latestRoot() external view returns (uint256 _root) {
@@ -243,7 +243,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /*///////////////////////////////////////////////////////////////
                         INTERNAL METHODS 
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Authorize an upgrade
@@ -260,3 +260,4 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
 }
+

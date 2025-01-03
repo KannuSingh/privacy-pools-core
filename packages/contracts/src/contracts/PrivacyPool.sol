@@ -50,7 +50,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
   /*///////////////////////////////////////////////////////////////
                              USER METHODS 
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IPrivacyPool
   function deposit(
@@ -70,7 +70,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Insert commitment in state (revert if already present)
     uint256 _newRoot = _insert(_commitment);
 
-    // Pull funds from depositor
+    // Pull funds from caller 
     _handleValueInput(msg.sender, _value);
 
     emit Deposited(_depositor, _commitment, _label, _value, _newRoot);
@@ -125,7 +125,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
   /*///////////////////////////////////////////////////////////////
                              WIND DOWN
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IPrivacyPool
   function windDown() external onlyEntrypoint {
@@ -139,7 +139,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
   /*///////////////////////////////////////////////////////////////
                           ASSET OVERRIDES
-    //////////////////////////////////////////////////////////////*/
+  //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Handle receiving an asset
@@ -157,3 +157,4 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    */
   function _handleValueOutput(address _recipient, uint256 _value) internal virtual;
 }
+
