@@ -259,6 +259,11 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
 
+  /**
+   * @notice Fetch asset balance for the Entrypoint
+   * @param _asset The asset address
+   * @return _balance The asset balance
+   */
   function _assetBalance(IERC20 _asset) internal view returns (uint256 _balance) {
     if (_asset == IERC20(ETH)) {
       _balance = address(this).balance;
@@ -266,6 +271,12 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       _balance = _asset.balanceOf(address(this));
     }
   }
+  /**
+   * @notice Transfer out an asset to a recipient
+   * @param _asset The asset to send
+   * @param _recipient The recipient address
+   * @param _amount The amount to send
+   */
 
   function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
     if (_asset == IERC20(ETH)) {
