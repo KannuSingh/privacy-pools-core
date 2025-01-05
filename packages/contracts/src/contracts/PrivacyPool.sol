@@ -158,4 +158,3 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    */
   function _push(address _recipient, uint256 _value) internal virtual;
 }
-

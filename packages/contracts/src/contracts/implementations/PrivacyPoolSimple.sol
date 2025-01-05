@@ -32,4 +32,3 @@ contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
     if (!_success) revert FailedToSendETH();
   }
 }
-

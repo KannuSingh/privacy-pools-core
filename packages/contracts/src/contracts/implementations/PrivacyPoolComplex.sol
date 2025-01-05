@@ -34,4 +34,3 @@ contract PrivacyPoolComplex is PrivacyPool, IPrivacyPoolComplex {
     IERC20(ASSET).safeTransferFrom(address(this), _recipient, _amount);
   }
 }
-
