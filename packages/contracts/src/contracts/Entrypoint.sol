@@ -152,7 +152,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     // Check pool balance has not been reduced
     uint256 _balanceAfter = _assetBalance(_asset);
-    if (_balanceBefore < _balanceAfter) revert InvalidPoolState();
+    if (_balanceBefore > _balanceAfter) revert InvalidPoolState();
 
     emit WithdrawalRelayed(msg.sender, _data.recipient, _asset, _withdrawnAmount, _withdrawnAmount - _amountAfterFees);
   }
@@ -287,3 +287,4 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     }
   }
 }
+
