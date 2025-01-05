@@ -71,7 +71,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     uint256 _newRoot = _insert(_commitment);
 
     // Pull funds from caller
-    _handleValueInput(msg.sender, _value);
+    _pull(msg.sender, _value);
 
     emit Deposited(_depositor, _commitment, _label, _value, _newRoot);
   }
@@ -88,7 +88,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _insert(_p.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _handleValueOutput(_w.processooor, _p.withdrawnAmount());
+    _push(_w.processooor, _p.withdrawnAmount());
 
     emit Withdrawn(_w.processooor, _p.withdrawnAmount(), _p.existingNullifierHash());
   }
@@ -119,7 +119,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _spend(_nullifierHash);
 
     // Transfer funds to ragequitter
-    _handleValueOutput(msg.sender, _value);
+    _push(msg.sender, _value);
 
     emit Ragequit(msg.sender, _commitment, _value);
   }
@@ -148,7 +148,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    * @param _sender The address of the user sending funds
    * @param _value The amount of asset being received
    */
-  function _handleValueInput(address _sender, uint256 _value) internal virtual;
+  function _pull(address _sender, uint256 _value) internal virtual;
 
   /**
    * @notice Handle sending an asset
@@ -156,5 +156,6 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    * @param _recipient The address of the user receiving funds
    * @param _value The amount of asset being sent
    */
-  function _handleValueOutput(address _recipient, uint256 _value) internal virtual;
+  function _push(address _recipient, uint256 _value) internal virtual;
 }
+

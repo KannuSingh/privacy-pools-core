@@ -271,13 +271,13 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
       _balance = _asset.balanceOf(address(this));
     }
   }
+
   /**
    * @notice Transfer out an asset to a recipient
    * @param _asset The asset to send
    * @param _recipient The recipient address
    * @param _amount The amount to send
    */
-
   function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
     if (_asset == IERC20(ETH)) {
       (bool _success,) = _recipient.call{value: _amount}('');

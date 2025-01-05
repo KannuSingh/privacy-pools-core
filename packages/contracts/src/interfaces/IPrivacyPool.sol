@@ -176,3 +176,39 @@ interface IPrivacyPool is IState {
    */
   function ASSET() external view returns (address _asset);
 }
+
+/**
+ * @title IPrivacyPoolSimple
+ * @notice Interface for the PrivacyPool native asset implementation
+ */
+interface IPrivacyPoolSimple is IPrivacyPool {
+  /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when sending less amount of native asset than required
+   */
+  error InsufficientValue();
+
+  /**
+   * @notice Thrown when failing to send native asset to an account
+   */
+  error FailedToSendETH();
+}
+
+/**
+ * @title IPrivacyPoolComplex
+ * @notice Interface for the PrivacyPool ERC20 implementation
+ */
+interface IPrivacyPoolComplex is IPrivacyPool {
+  /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when sending sending any amount of native asset
+   */
+  error NativeAssetNotAccepted();
+}
+
