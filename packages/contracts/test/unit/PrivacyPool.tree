@@ -1,0 +1,90 @@
+PrivacyPool::constructor
+├── Given valid addresses
+│   ├── It sets asset address
+│   ├── It computes scope from chain id and asset
+│   ├── It initializes base state contract
+│   └── It enables deposits by default
+└── When any address is zero
+    └── It reverts with ZeroAddress
+
+PrivacyPool::deposit
+├── Given caller is entrypoint
+│   ├── Given pool is active
+│   │   ├── When depositing valid value and commitment
+│   │   │   ├── It increments global nonce
+│   │   │   ├── It computes label as keccak of scope and nonce
+│   │   │   ├── It maps label to depositor address
+│   │   │   ├── It computes commitment hash correctly
+│   │   │   ├── It inserts commitment in merkle tree
+│   │   │   ├── It handles asset transfer
+│   │   │   └── It emits Deposited event
+│   │   ├── When depositing zero value
+│   │   │   └── It processes deposit normally
+│   │   └── When commitment exists in tree
+│   │       └── It reverts with merkle insertion error
+│   └── When pool is dead
+│       └── It reverts with PoolIsDead
+└── When caller is not entrypoint
+    └── It reverts with OnlyEntrypoint
+
+PrivacyPool::withdraw
+├── Given caller is processooor
+│   ├── Given valid proof
+│   │   ├── Given known state root
+│   │   │   ├── Given latest ASP root
+│   │   │   │   ├── When withdrawing nonzero amount
+│   │   │   │   │   ├── It verifies proof with verifier
+│   │   │   │   │   ├── It spends nullifier hash
+│   │   │   │   │   ├── It inserts new commitment
+│   │   │   │   │   ├── It transfers value to processooor
+│   │   │   │   │   └── It emits Withdrawn event
+│   │   │   │   └── When withdrawing zero amount
+│   │   │   │       └── It reverts with InvalidWithdrawalAmount
+│   │   │   └── When ASP root is outdated
+│   │   │       └── It reverts with OutdatedASPRoot
+│   │   └── When state root unknown
+│   │       └── It reverts with UnknownStateRoot
+│   └── When proof scope mismatches
+│       └── It reverts with ScopeMismatch
+└── When caller is not processooor
+    └── It reverts with InvalidProcesooor
+
+PrivacyPool::ragequit
+├── Given caller is original depositor
+│   ├── Given commitment exists in state
+│   │   ├── When nullifier not spent
+│   │   │   ├── It computes nullifier hash correctly
+│   │   │   ├── It computes precommitment hash correctly
+│   │   │   ├── It verifies commitment matches input
+│   │   │   ├── It spends nullifier
+│   │   │   ├── It transfers value to depositor
+│   │   │   └── It emits Ragequit event
+│   │   └── When nullifier already spent
+│   │       └── It reverts with NullifierAlreadySpent
+│   └── When commitment not in state
+│       └── It reverts with InvalidCommitment
+└── When caller is not original depositor
+    └── It reverts with OnlyOriginalDepositor
+
+PrivacyPool::windDown
+├── Given caller is entrypoint
+│   ├── Given pool is active
+│   │   ├── It sets dead to true
+│   │   └── It emits PoolDied event
+│   └── When pool is already dead
+│       └── It reverts with PoolIsDead
+└── When caller is not entrypoint
+    └── It reverts with OnlyEntrypoint
+
+PrivacyPool::handleValueInput
+├── Given asset is ETH
+│   ├── Given caller sent ETH
+│   │   ├── It verifies value matches msg value
+│   │   └── It processes ETH deposit
+│   └── When ETH amount mismatches
+│       └── It reverts
+└── Given asset is ERC20
+    ├── Given sufficient approval
+    │   └── It transfers tokens from sender
+    └── When insufficient approval
+        └── It reverts

@@ -1,5 +1,7 @@
 {
+  "name": "@privacy-pool-core/circuits",
   "description": "Circomkit examples",
+  "version": "1.0.0",
   "scripts": {
     "start": "npx ts-node ./src/index.ts",
     "test": "npx mocha"
