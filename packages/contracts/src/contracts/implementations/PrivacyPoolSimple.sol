@@ -11,8 +11,13 @@ import {IPrivacyPoolSimple} from 'interfaces/IPrivacyPool.sol';
 contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
   constructor(
     address _entrypoint,
-    address _verifier
-  ) PrivacyPool(_entrypoint, _verifier, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {}
+    address _verifier,
+    address _poseidonT2,
+    address _poseidonT3,
+    address _poseidonT4
+  )
+    PrivacyPool(_entrypoint, _verifier, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, _poseidonT2, _poseidonT3, _poseidonT4)
+  {}
 
   /**
    * @notice Handle receiving native asset asset

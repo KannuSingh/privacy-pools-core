@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
+import {IPoseidonT2, IPoseidonT3, IPoseidonT4} from 'interfaces/IPoseidon.sol';
 
 import {IState} from 'interfaces/IState.sol';
 import {IVerifier} from 'interfaces/IVerifier.sol';
@@ -24,6 +25,13 @@ abstract contract State is IState {
   IEntrypoint public immutable ENTRYPOINT;
   /// @inheritdoc IState
   IVerifier public immutable VERIFIER; // groth16 verifier contract output of snarkjs
+  /// @inheritdoc IState
+  IPoseidonT2 public immutable POSEIDON_T2;
+  /// @inheritdoc IState
+  IPoseidonT3 public immutable POSEIDON_T3;
+  /// @inheritdoc IState
+  IPoseidonT4 public immutable POSEIDON_T4;
+
   /// @inheritdoc IState
   uint256 public nonce;
   /// @inheritdoc IState
@@ -46,9 +54,12 @@ abstract contract State is IState {
     _;
   }
 
-  constructor(address _entrypoint, address _verifier) {
+  constructor(address _entrypoint, address _verifier, address _poseidonT2, address _poseidonT3, address _poseidonT4) {
     ENTRYPOINT = IEntrypoint(_entrypoint);
     VERIFIER = IVerifier(_verifier);
+    POSEIDON_T2 = IPoseidonT2(_poseidonT2);
+    POSEIDON_T3 = IPoseidonT3(_poseidonT3);
+    POSEIDON_T4 = IPoseidonT4(_poseidonT4);
   }
 
   /*///////////////////////////////////////////////////////////////
