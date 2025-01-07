@@ -21,7 +21,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   using ProofLib for ProofLib.Proof;
 
   bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
-  bytes32 public constant ADMIN_ROLE = 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42;
+  bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /// @inheritdoc IEntrypoint
@@ -43,10 +43,10 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   receive() external payable {}
 
-  function initialize(address _owner, address _admin) external initializer {
+  function initialize(address _owner, address _postman) external initializer {
     _setRoleAdmin(DEFAULT_ADMIN_ROLE, OWNER_ROLE);
     _grantRole(OWNER_ROLE, _owner);
-    _grantRole(ADMIN_ROLE, _admin);
+    _grantRole(ASP_POSTMAN, _postman);
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
-  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ADMIN_ROLE) returns (uint256 _index) {
+  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ASP_POSTMAN) returns (uint256 _index) {
     if (_root == 0) revert EmptyRoot();
     if (_ipfsHash == 0) revert EmptyIPFSHash();
 
@@ -167,7 +167,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     IPrivacyPool _pool,
     uint256 _minimumDepositAmount,
     uint256 _vettingFeeBPS
-  ) external onlyRole(ADMIN_ROLE) {
+  ) external onlyRole(OWNER_ROLE) {
     AssetConfig storage _config = assetConfig[_asset];
 
     if (address(_config.pool) != address(0)) {
@@ -191,7 +191,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   }
 
   /// @inheritdoc IEntrypoint
-  function removePool(IERC20 _asset) external onlyRole(ADMIN_ROLE) {
+  function removePool(IERC20 _asset) external onlyRole(OWNER_ROLE) {
     IPrivacyPool _pool = assetConfig[_asset].pool;
     if (address(_pool) == address(0)) revert PoolNotFound();
 
@@ -206,13 +206,30 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   }
 
   /// @inheritdoc IEntrypoint
+  function updatePoolConfiguration(
+    IERC20 _asset,
+    uint256 _minimumDepositAmount,
+    uint256 _vettingFeeBPS
+  ) external onlyRole(OWNER_ROLE) {
+    AssetConfig storage _config = assetConfig[_asset];
+    if (address(_config.pool) == address(0)) {
+      revert PoolNotFound();
+    }
+
+    _config.minimumDepositAmount = _minimumDepositAmount;
+    _config.vettingFeeBPS = _vettingFeeBPS;
+
+    emit PoolConfigurationUpdated(_config.pool, _asset, _minimumDepositAmount, _vettingFeeBPS);
+  }
+
+  /// @inheritdoc IEntrypoint
   function windDownPool(IPrivacyPool _pool) external onlyRole(OWNER_ROLE) {
     _pool.windDown();
     emit PoolWindDown(_pool);
   }
 
   /// @inheritdoc IEntrypoint
-  function withdrawFees(IERC20 _asset, address _recipient) external onlyRole(ADMIN_ROLE) {
+  function withdrawFees(IERC20 _asset, address _recipient) external onlyRole(OWNER_ROLE) {
     uint256 _balance;
     if (_asset == IERC20(ETH)) {
       _balance = address(this).balance;

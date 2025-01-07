@@ -114,6 +114,17 @@ interface IEntrypoint {
    */
   event PoolRemoved(IPrivacyPool _pool, IERC20 _asset, uint256 _scope);
 
+  /**
+   * @notice Emitted when updating the configuration of a Privacy Pool
+   * @param _pool The Privacy Pool contract
+   * @param _asset The asset of the pool
+   * @param _newMinimumDepositAmount The updated minimum deposit amount
+   * @param _newVettingFeeBPS The updated vetting fee in basis points
+   */
+  event PoolConfigurationUpdated(
+    IPrivacyPool _pool, IERC20 _asset, uint256 _newMinimumDepositAmount, uint256 _newVettingFeeBPS
+  );
+
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
@@ -216,6 +227,14 @@ interface IEntrypoint {
    * @param _asset The asset of the pool
    */
   function removePool(IERC20 _asset) external;
+
+  /**
+   * @notice Updates the configuration of a specific pool
+   * @param _asset The asset of the pool to update
+   * @param _minimumDepositAmount The new minimum deposit amount
+   * @param _vettingFeeBPS The new vetting fee in basis points
+   */
+  function updatePoolConfiguration(IERC20 _asset, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS) external;
 
   /**
    * @notice Irreversebly halt deposits from a Privacy Pool

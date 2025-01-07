@@ -69,7 +69,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
-    deposits[_label] = _depositor;
+    deposits[_label] = Deposit(_depositor, _value);
 
     _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitmentHash]);
 
@@ -103,7 +103,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
     // Ensure caller is original depositor
-    if (deposits[_label] != msg.sender) {
+    if (deposits[_label].depositor != msg.sender) {
       revert OnlyOriginalDepositor();
     }
 

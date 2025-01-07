@@ -12,6 +12,20 @@ import {IVerifier} from 'interfaces/IVerifier.sol';
  */
 interface IState {
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Struct for the deposit data
+   * @param depositor The address of the depositor
+   * @param amount The deposited amount
+   */
+  struct Deposit {
+    address depositor;
+    uint256 amount;
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
 
@@ -124,6 +138,7 @@ interface IState {
    * @notice Returns the original depositor that generated a label
    * @param _label The label
    * @return _depositor The original depositor
+   * @return _amount The amount of deposit
    */
-  function deposits(uint256 _label) external view returns (address _depositor);
+  function deposits(uint256 _label) external view returns (address _depositor, uint256 _amount);
 }
