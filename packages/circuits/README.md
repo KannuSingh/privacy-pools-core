@@ -1,3 +1,5 @@
+To use circomspect locally: `cargo install circomspect` then `yarn circomspec` from the packages/circuits directory.
+
 # Circomkit Examples
 
 In this repository, we are using [Circomkit](https://github.com/erhant/circomkit) to test some example circuits using Mocha. The circuits and the statements that they prove are as follows:

@@ -1,12 +1,8 @@
 {
-  "name": "solidity-foundry-boilerplate",
+  "name": "@privacy-pool-core/contracts",
   "version": "1.0.0",
-  "description": "Production ready Solidity boilerplate with Foundry",
-  "homepage": "https://github.com/defi-wonderland/solidity-foundry-boilerplate#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/defi-wonderland/solidity-foundry-boilerplate.git"
-  },
+  "description": "Solidity smart contracts for the Privacy Pool protocol",
+  "repository": "https://github.com/defi-wonderland/privacy-pool-core", 
   "license": "MIT",
   "author": "Wonderland",
   "scripts": {

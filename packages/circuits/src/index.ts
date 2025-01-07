@@ -4,25 +4,32 @@ async function main() {
   // create circomkit
   const circomkit = new Circomkit({
     protocol: "groth16",
+    include: ["../../node_modules/circomlib/circuits", "../../node_modules/maci-circuits/circom"],
+    inspect: true,
   });
 
-  // artifacts output at `build/multiplier_3` directory
-  await circomkit.compile("multiplier_3", {
-    file: "multiplier",
-    template: "Multiplier",
-    params: [3],
+  // artifacts output at `build/commitment` directory
+  await circomkit.compile("commitment", {
+    file: "commitment",
+    template: "CommitmentHasher",
+    pubs: ["value", "label", "nullifier", "secret"],
   });
 
-  // proof & public signals at `build/multiplier_3/my_input` directory
-  await circomkit.prove("multiplier_3", "my_input", { in: [3, 5, 7] });
+  // artifacts output at `build/withdraw` directory
+  await circomkit.compile("withdraw", {
+    file: "withdraw",
+    template: "Withdraw",
+    params: [32],
+    pubs: ["withdrawnValue", "stateRoot", "stateTreeDepth", "ASPRoot", "ASPTreeDepth", "context"],
+  });
 
-  // verify with proof & public signals at `build/multiplier_3/my_input`
-  const ok = await circomkit.verify("multiplier_3", "my_input");
-  if (ok) {
-    circomkit.log("Proof verified!", "success");
-  } else {
-    circomkit.log("Verification failed.", "error");
-  }
+  // artifacts output at `build/merkleTree` directory
+  await circomkit.compile("merkleTree", {
+    file: "merkleTree",
+    template: "LeanIMTInclusionProof",
+    params: [32],
+    pubs: ["leaf", "leafIndex", "siblings", "actualDepth"],
+  });
 }
 
 main()

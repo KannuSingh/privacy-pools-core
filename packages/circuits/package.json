@@ -1,14 +1,22 @@
 {
   "name": "@privacy-pool-core/circuits",
-  "description": "Circomkit examples",
   "version": "1.0.0",
+  "description": "Circom circuits for the Privacy Pool protocol",
   "scripts": {
-    "start": "npx ts-node ./src/index.ts",
-    "test": "npx mocha"
+    "compile": "npx ts-node ./src/index.ts",
+    "test": "npx mocha",
+    "test:merkle": "npx mocha --ignore tests/commitment.test.ts --ignore tests/withdrawal.test.ts",
+    "test:withdraw": "npx mocha --ignore tests/commitment.test.ts --ignore tests/lean-imt.test.ts",
+    "circomspect": "circomspect -L ../../node_modules/circomlib/circuits/comparators.circom -L ../../node_modules/circomlib/circuits/mux1.circom -L ../../node_modules/circomlib/circuits/poseidon.circom ./circuits/*"
   },
   "dependencies": {
-    "circomkit": "^0.0.22",
-    "circomlib": "^2.0.5"
+    "@zk-kit/lean-imt": "^2.2.2",
+    "chai": "^5.1.2",
+    "circomkit": "^0.3.2",
+    "circomlib": "^2.0.5",
+    "maci-circuits": "^2.5.0",
+    "maci-crypto": "^2.5.0",
+    "viem": "^2.21.57"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.1",
