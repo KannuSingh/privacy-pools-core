@@ -1,174 +1,120 @@
-<img src="https://raw.githubusercontent.com/defi-wonderland/brand/v1.0.0/external/solidity-foundry-boilerplate-banner.png" alt="wonderland banner" align="center" />
-<br />
+# Privacy Pool Contracts
 
-<div align="center"><strong>Start your next Solidity project with Foundry in seconds</strong></div>
-<div align="center">A highly scalable foundation focused on DX and best practices</div>
+This package contains the smart contract implementations for the Privacy Pool protocol, built using Foundry. The contracts enable private asset transfers through a system of deposits and zero-knowledge withdrawals with built-in compliance mechanisms.
 
-<br />
+## Protocol Overview
 
-## Features
+The protocol enables users to deposit assets publicly and withdraw them privately, provided they can prove membership in an approved set of addresses. Each supported asset (native or ERC20) has its own dedicated pool contract that inherits from a common `PrivacyPool` implementation.
 
-<dl>
-  <dt>Sample contracts</dt>
-  <dd>Basic Greeter contract with an external interface.</dd>
+### Deposit Flow
 
-  <dt>Foundry setup</dt>
-  <dd>Foundry configuration with multiple custom profiles and remappings.</dd>
+When a user deposits funds, they:
 
-  <dt>Deployment scripts</dt>
-  <dd>Sample scripts to deploy contracts on both mainnet and testnet.</dd>
+1. Generate commitment parameters (nullifier and secret)
+2. Send the deposit transaction through the Entrypoint
+3. The Entrypoint routes the deposit to the appropriate pool
+4. The pool records the commitment in its state tree
+5. The depositor receives a deposit identifier (label) and a commitment hash
 
-  <dt>Sample Integration, Unit, Property-based fuzzed and symbolic tests</dt>
-  <dd>Example tests showcasing mocking, assertions and configuration for mainnet forking. As well it includes everything needed in order to check code coverage.</dd>
-  <dd>Unit tests are built based on the <a href="https://twitter.com/PaulRBerg/status/1682346315806539776">Branched-Tree Technique</a>, using <a href="https://github.com/alexfertel/bulloak">Bulloak</a>.
-  <dd>Formal verification and property-based fuzzing are achieved with <a href="https://github.com/a16z/halmos">Halmos</a> and <a href="https://github.com/crytic/medusa">Medusa</a> (resp.).
+### Withdrawal Flow
 
-  <dt>Linter</dt>
-  <dd>Simple and fast solidity linting thanks to forge fmt.</dd>
-  <dd>Find missing natspec automatically.</dd>
+To withdraw funds privately, users:
 
-  <dt>Github workflows CI</dt>
-  <dd>Run all tests and see the coverage as you push your changes.</dd>
-  <dd>Export your Solidity interfaces and contracts as packages, and publish them to NPM.</dd>
-</dl>
+1. Generate a zero-knowledge proof demonstrating:
+   - Ownership of a valid deposit commitment
+   - Membership in the approved address set
+   - Correctness of the withdrawal amount
+2. Submit the withdrawal transaction through a relayer
+3. The pool verifies the proof and processes the withdrawal
+4. A new commitment is created for the remaining funds (even if it is zero)
 
-## Setup
+### Emergency Exit (`ragequit`) 
 
-1. Install Foundry by following the instructions from [their repository](https://github.com/foundry-rs/foundry#installation).
-2. Copy the `.env.example` file to `.env` and fill in the variables.
-3. Install the dependencies by running: `yarn install`. In case there is an error with the commands, run `foundryup` and try them again.
+The protocol implements a ragequit mechanism that allows original depositors to withdraw their funds directly in case of emergency. This process:
 
-## Build
+1. Requires the original deposit label
+2. Reveals the nullifier and secret
+3. Bypasses the approved address set verification
+4. Can only be executed by the original depositor
+5. Withdraws the full deposit amount
 
-The default way to build the code is suboptimal but fast, you can run it via:
+## Contract Architecture
+
+### Core Contracts
+
+**`State.sol`**
+The base contract implementing fundamental state management:
+
+- Manages the Merkle tree state using LeanIMT
+- Tracks tree roots with a sliding window (30 latest roots)
+- Records used nullifiers to prevent double spending
+- Maps deposit labels to original depositors
+- Implements tree operations
+
+**`PrivacyPool.sol`**
+An abstract contract inheriting from State.sol that implements the core protocol logic:
+
+Standard Operations:
+
+- Deposit processing (through Entrypoint only)
+- Withdrawal verification and processing
+- Wind down mechanism for pool deprecation
+- Ragequit mechanism for non-approved withdrawals
+- Abstract methods for asset transfers
+
+### Pool Implementations
+
+**`PrivacyPoolSimple.sol`**
+Implements `PrivacyPool` for native asset:
+
+- Handles native asset deposits through `payable` functions
+- Implements native asset transfer logic
+- Validates transaction values
+
+**`PrivacyPoolComplex.sol`**
+Implements `PrivacyPool` for ERC20 tokens:
+
+- Manages token approvals and transfers
+- Implements safe ERC20 operations
+
+### Protocol Coordination
+
+**`Entrypoint.sol`**
+Manages protocol-wide operations:
+
+- Routes deposits to appropriate pools
+- Maintains the approved address set (ASP)
+- Processes withdrawal relays
+- Handles fee collection and distribution
+- Manages pool registration and removal
+- Controls protocol upgrades and access control
+
+### Supporting Libraries
+
+**`ProofLib.sol`**
+Handles accessing a proof signals values.
+
+**`Poseidon.sol`**
+Poseidon hashers generated using `circomlibjs`.
+
+## Development
+
+### Prerequisites
+
+- Foundry
+- Node.js 20+
+- Yarn
+
+### Building
 
 ```bash
+# Compile contracts
 yarn build
 ```
 
-In order to build a more optimized code ([via IR](https://docs.soliditylang.org/en/v0.8.15/ir-breaking-changes.html#solidity-ir-based-codegen-changes)), run:
+### Testing
 
 ```bash
-yarn build:optimized
-```
-
-## Running tests
-
-Unit tests should be isolated from any externalities, while Integration usually run in a fork of the blockchain. In this boilerplate you will find example of both.
-
-In order to run both unit and integration tests, run:
-
-```bash
+# Run contract tests
 yarn test
 ```
-
-In order to just run unit tests, run:
-
-```bash
-yarn test:unit
-```
-
-In order to run unit tests and run way more fuzzing than usual (5x), run:
-
-```bash
-yarn test:unit:deep
-```
-
-In order to just run integration tests, run:
-
-```bash
-yarn test:integration
-```
-
-In order to start the Medusa fuzzing campaign (requires [Medusa](https://github.com/crytic/medusa/blob/master/docs/src/getting_started/installation.md) installed), run:
-
-```bash
-yarn test:fuzz
-```
-
-In order to just run the symbolic execution tests (requires [Halmos](https://github.com/a16z/halmos/blob/main/README.md#installation) installed), run:
-
-```bash
-yarn test:symbolic
-```
-
-In order to check your current code coverage, run:
-
-```bash
-yarn coverage
-```
-
-<br>
-
-## Deploy & verify
-
-### Setup
-
-Configure the `.env` variables and source them:
-
-```bash
-source .env
-```
-
-Import your private keys into Foundry's encrypted keystore:
-
-```bash
-cast wallet import $MAINNET_DEPLOYER_NAME --interactive
-```
-
-```bash
-cast wallet import $SEPOLIA_DEPLOYER_NAME --interactive
-```
-
-### Sepolia
-
-```bash
-yarn deploy:sepolia
-```
-
-### Mainnet
-
-```bash
-yarn deploy:mainnet
-```
-
-The deployments are stored in ./broadcast
-
-See the [Foundry Book for available options](https://book.getfoundry.sh/reference/forge/forge-create.html).
-
-## Export And Publish
-
-Export TypeScript interfaces from Solidity contracts and interfaces providing compatibility with TypeChain. Publish the exported packages to NPM.
-
-To enable this feature, make sure you've set the `NPM_TOKEN` on your org's secrets. Then set the job's conditional to `true`:
-
-```yaml
-jobs:
-  export:
-    name: Generate Interfaces And Contracts
-    # Remove the following line if you wish to export your Solidity contracts and interfaces and publish them to NPM
-    if: true
-    ...
-```
-
-Also, remember to update the `package_name` param to your package name:
-
-```yaml
-- name: Export Solidity - ${{ matrix.export_type }}
-  uses: defi-wonderland/solidity-exporter-action@1dbf5371c260add4a354e7a8d3467e5d3b9580b8
-  with:
-    # Update package_name with your package name
-    package_name: "my-cool-project"
-    ...
-
-
-- name: Publish to NPM - ${{ matrix.export_type }}
-  # Update `my-cool-project` with your package name
-  run: cd export/my-cool-project-${{ matrix.export_type }} && npm publish --access public
-  ...
-```
-
-You can take a look at our [solidity-exporter-action](https://github.com/defi-wonderland/solidity-exporter-action) repository for more information and usage examples.
-
-## Licensing
-The primary license for the boilerplate is MIT, see [`LICENSE`](https://github.com/defi-wonderland/solidity-foundry-boilerplate/blob/main/LICENSE)
