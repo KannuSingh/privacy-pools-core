@@ -17,10 +17,12 @@ interface IPrivacyPool is IState {
    * @notice Struct for the withdrawal request
    * @dev The integrity of this data is ensured by the `context` signal in the proof
    * @param processooor The allowed address to process the withdrawal
+   * @param scope The unique pool identifier
    * @param data Encoded arbitrary data used by the Entrypoint
    */
   struct Withdrawal {
     address processooor;
+    uint256 scope;
     bytes data;
   }
 
@@ -211,3 +213,4 @@ interface IPrivacyPoolComplex is IPrivacyPool {
    */
   error NativeAssetNotAccepted();
 }
+

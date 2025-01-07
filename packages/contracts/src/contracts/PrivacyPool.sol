@@ -26,13 +26,12 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
-    if (_p.scope() != SCOPE) revert ScopeMismatch();
     if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) {
       revert ContextMismatch();
     }
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
     if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
-    if (_p.withdrawnAmount() == 0) revert InvalidWithdrawalAmount();
+    if (_p.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
     _;
   }
 
@@ -95,9 +94,9 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _insert(_p.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _push(_w.processooor, _p.withdrawnAmount());
+    _push(_w.processooor, _p.withdrawnValue());
 
-    emit Withdrawn(_w.processooor, _p.withdrawnAmount(), _p.existingNullifierHash());
+    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash());
   }
 
   // TODO: improve without publicly revealing nullifier and secret. maybe add two step
@@ -165,3 +164,4 @@ abstract contract PrivacyPool is State, IPrivacyPool {
    */
   function _push(address _recipient, uint256 _value) internal virtual;
 }
+
