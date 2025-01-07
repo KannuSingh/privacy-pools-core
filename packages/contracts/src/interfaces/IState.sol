@@ -31,6 +31,18 @@ interface IState {
   error NullifierAlreadySpent();
 
   /*///////////////////////////////////////////////////////////////
+                              EVENTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Emitted when inserting a leaf into the Merkle Tree
+   * @param _index The index of the leaf in the tree
+   * @param _leaf The leaf value
+   * @param _root The updated root
+   */
+  event LeafInserted(uint256 _index, uint256 _leaf, uint256 _root);
+
+  /*///////////////////////////////////////////////////////////////
                               VIEWS 
   //////////////////////////////////////////////////////////////*/
 

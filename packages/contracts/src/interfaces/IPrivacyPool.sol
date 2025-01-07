@@ -33,12 +33,10 @@ interface IPrivacyPool is IState {
   /**
    * @notice Emitted when making a user deposit
    * @param _depositor The address of the depositor
-   * @param _commitment The deposit commitment hash
    * @param _label The deposit generated label
    * @param _value The deposited amount
-   * @param _newRoot The updated state root
    */
-  event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _newRoot);
+  event Deposited(address indexed _depositor, uint256 _label, uint256 _value);
 
   /**
    * @notice Emitted when processing a withdrawal

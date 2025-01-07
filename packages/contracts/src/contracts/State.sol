@@ -80,14 +80,16 @@ abstract contract State is IState {
    * @dev Reverts if the leaf is already in the state. Deletes the oldest known root
    * @param _leaf The leaf to insert
    */
-  function _insert(uint256 _leaf) internal returns (uint256 _updatedRoot) {
-    _updatedRoot = _merkleTree._insert(_leaf);
+  function _insert(uint256 _leaf) internal {
+    uint256 _updatedRoot = _merkleTree._insert(_leaf);
 
     uint32 newRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
     currentRootIndex = newRootIndex;
     roots[newRootIndex] = _updatedRoot;
 
     delete roots[currentRootIndex - ROOT_HISTORY_SIZE];
+
+    emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }
 
   /**
