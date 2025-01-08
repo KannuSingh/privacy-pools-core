@@ -87,8 +87,6 @@ abstract contract State is IState {
     currentRootIndex = newRootIndex;
     roots[newRootIndex] = _updatedRoot;
 
-    delete roots[currentRootIndex - ROOT_HISTORY_SIZE];
-
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }
 

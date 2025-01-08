@@ -6,7 +6,6 @@ pragma solidity 0.8.28;
  * @notice Facilitates accessing the public signals of a Groth16 proof.
  */
 library ProofLib {
-
   /**
    * @notice Semantic version of the library
    */
@@ -107,4 +106,3 @@ library ProofLib {
     return _p.pubSignals[7];
   }
 }
-

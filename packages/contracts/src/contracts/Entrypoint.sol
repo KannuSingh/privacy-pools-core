@@ -304,4 +304,3 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     }
   }
 }
-
