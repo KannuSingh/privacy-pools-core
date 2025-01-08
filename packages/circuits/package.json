@@ -7,7 +7,12 @@
     "test": "npx mocha",
     "test:merkle": "npx mocha --ignore tests/commitment.test.ts --ignore tests/withdrawal.test.ts",
     "test:withdraw": "npx mocha --ignore tests/commitment.test.ts --ignore tests/lean-imt.test.ts",
-    "circomspect": "circomspect -L ../../node_modules/circomlib/circuits/comparators.circom -L ../../node_modules/circomlib/circuits/mux1.circom -L ../../node_modules/circomlib/circuits/poseidon.circom ./circuits/*"
+    "circomspect": "circomspect -L ../../node_modules/circomlib/circuits/comparators.circom -L ../../node_modules/circomlib/circuits/mux1.circom -L ../../node_modules/circomlib/circuits/poseidon.circom ./circuits/*",
+    "info:withdraw": "npx circomkit info withdraw",
+    "setup:withdraw": "npx circomkit setup withdraw",
+    "prove:withdraw": "npx circomkit prove withdraw default",
+    "verify:withdraw": "npx circomkit verify withdraw default",
+    "gencontract:withdraw": "snarkjs zkey export solidityverifier build/withdraw/groth16_pkey.zkey Verifier.sol"
   },
   "dependencies": {
     "@zk-kit/lean-imt": "^2.2.2",
