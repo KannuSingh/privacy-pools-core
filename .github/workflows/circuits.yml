@@ -1,6 +1,13 @@
-name: CI
+name: Circuits
 
-on: [push]
+on:
+  push:
+    paths:
+      - "packages/circuits/**"
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - "packages/circuits/**"
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -12,7 +19,7 @@ defaults:
 
 jobs:
   test:
-    name: Run Circuits Tests
+    name: Tests
     runs-on: ubuntu-latest
 
     steps:
