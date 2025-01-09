@@ -251,4 +251,3 @@ contract Groth16Verifier {
     }
   }
 }
-
