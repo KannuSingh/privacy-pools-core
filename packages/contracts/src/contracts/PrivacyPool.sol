@@ -7,8 +7,6 @@ import {ProofLib} from './lib/ProofLib.sol';
 import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
-// TODO: compile groth16 verifier contracts
-
 /**
  * @title PrivacyPool
  * @notice Allows publicly depositing and privately withdrawing funds.

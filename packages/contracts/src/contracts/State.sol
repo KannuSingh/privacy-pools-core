@@ -99,7 +99,7 @@ abstract contract State is IState {
       return false;
     }
 
-    for (uint32 _i = currentRootIndex; _i < currentRootIndex - ROOT_HISTORY_SIZE; --_i) {
+    for (uint32 _i = 1; _i <= ROOT_HISTORY_SIZE; ++_i) {
       if (roots[_i] == _root) return true;
     }
 

@@ -38,6 +38,6 @@ contract PrivacyPoolComplex is PrivacyPool, IPrivacyPoolComplex {
    * @param _amount The amount of asset being sent
    */
   function _push(address _recipient, uint256 _amount) internal override(PrivacyPool) {
-    IERC20(ASSET).safeTransferFrom(address(this), _recipient, _amount);
+    IERC20(ASSET).safeTransfer(_recipient, _amount);
   }
 }

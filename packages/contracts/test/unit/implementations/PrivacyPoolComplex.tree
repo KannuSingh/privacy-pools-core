@@ -1,0 +1,17 @@
+PrivacyPoolComplex::constructor
+├── Given valid addresses
+│   ├── It sets asset address
+│   ├── It computes scope from chain id and asset
+│   ├── It initializes base state contract
+│   └── It enables deposits by default
+└── When any address is zero
+    └── It reverts with ZeroAddress
+
+PrivacyPoolComplex::_pull
+├── Given msg.value is not zero
+│   └── It reverts with NativeAssetNotAccepted
+├── Given msg.value is zero
+    └── It transfers _amount of asset from _sender to the pool
+
+PrivacyPoolComplex::_push
+└── It transfers _amount of asset from the pool to _recipient

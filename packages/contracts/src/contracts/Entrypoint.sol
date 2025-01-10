@@ -249,7 +249,7 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /// @inheritdoc IEntrypoint
   function latestRoot() external view returns (uint256 _root) {
-    _root = associationSets[associationSets.length].root;
+    _root = associationSets[associationSets.length - 1].root;
   }
 
   /// @inheritdoc IEntrypoint

@@ -88,6 +88,17 @@ Entrypoint::removePool
 └── When caller lacks admin role
     └── It reverts with AccessControlError
 
+Entrypoint::updatePoolConfiguration
+├── Given caller has admin role
+│   ├── Given valid pool and configuration
+│   │   ├── It updates minimum deposit amount
+│   │   ├── It updates fee basis points
+│   │   └── It emits PoolConfigurationUpdated event
+│   └── When pool not found
+│       └── It reverts with PoolNotFound
+└── When caller lacks admin role
+    └── It reverts with AccessControlError
+
 Entrypoint::windDownPool
 ├── Given caller has owner role
 │   ├── Given pool exists
@@ -101,16 +112,16 @@ Entrypoint::windDownPool
 Entrypoint::withdrawFees
 ├── Given caller has admin role
 │   ├── Given asset is ETH
-│   │   ├── When balance exists
+│   │   ├── When ETH balance exists
 │   │   │   ├── It transfers full balance
 │   │   │   └── It emits FeesWithdrawn event
-│   │   └── When transfer fails
+│   │   └── When ETH transfer fails
 │   │       └── It reverts with ETHTransferFailed
 │   └── Given asset is ERC20
-│       ├── When balance exists
+│       ├── When token balance exists
 │       │   ├── It transfers full balance
 │       │   └── It emits FeesWithdrawn event
-│       └── When transfer fails
+│       └── When token transfer fails
 │           └── It reverts
 └── When caller lacks admin role
     └── It reverts with AccessControlError
