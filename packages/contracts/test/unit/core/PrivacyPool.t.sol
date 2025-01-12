@@ -315,10 +315,11 @@ contract UnitDeposit is UnitPrivacyPool {
     vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
     vm.assume(_existingCommitment != 0);
-    vm.assume(_existingCommitment != _commitment);
 
     _existingCommitment = bound(_existingCommitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
     _commitment = bound(_commitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
+
+    vm.assume(_existingCommitment != _commitment);
 
     _pool.insertLeafInShadowTree(_existingCommitment);
     _pool.insertLeaf(_existingCommitment);
