@@ -19,10 +19,27 @@ interface IState {
    * @notice Struct for the deposit data
    * @param depositor The address of the depositor
    * @param amount The deposited amount
+   * @param whenRagequitteable The end of the ragequit cooldown period
    */
   struct Deposit {
     address depositor;
     uint256 amount;
+    uint256 whenRagequitteable;
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                               ENUMS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Enum representing statuses of a nullifier
+   */
+  enum NullifierStatus {
+    NONE,
+    SPENT, // Nullifier is spent
+    RAGEQUIT_PENDING, // Nullifier is being ragequitted
+    RAGEQUIT_FINALIZED // Nullifier has been ragequitted
+
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -54,7 +71,12 @@ interface IState {
   /**
    * @notice Thrown when trying to spend a nullifier that has already been spent
    */
-  error NullifierAlreadySpent();
+  error InvalidNullifierStatusChange();
+
+  /**
+   * @notice Thrown when trying to initiate the ragequitting process of a commitment before the waiting period
+   */
+  error NotYetRagequitteable();
 
   /*///////////////////////////////////////////////////////////////
                               VIEWS 
@@ -128,17 +150,21 @@ interface IState {
   function roots(uint256 _index) external view returns (uint256 _root);
 
   /**
-   * @notice Returns the spending status of a nullifier hash
+   * @notice Returns the status of a nullifier hash
    * @param _nullifierHash The nullifier hash
-   * @return _spent The boolean indicating if the nullifier has been spent
+   * @return _status The nullifier hash status
    */
-  function nullifierHashes(uint256 _nullifierHash) external view returns (bool _spent);
+  function nullifierHashes(uint256 _nullifierHash) external view returns (NullifierStatus _status);
 
   /**
    * @notice Returns the original depositor that generated a label
    * @param _label The label
    * @return _depositor The original depositor
    * @return _amount The amount of deposit
+   * @return _whenRagequitteable The timestamp on which the user can initiate the ragequit
    */
-  function deposits(uint256 _label) external view returns (address _depositor, uint256 _amount);
+  function deposits(uint256 _label)
+    external
+    view
+    returns (address _depositor, uint256 _amount, uint256 _whenRagequitteable);
 }

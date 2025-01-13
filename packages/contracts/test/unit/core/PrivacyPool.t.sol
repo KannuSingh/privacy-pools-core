@@ -58,11 +58,11 @@ contract PoolForTest is PrivacyPool {
   }
 
   function mockDeposit(address _depositor, uint256 _label) external {
-    deposits[_label] = Deposit(_depositor, 1);
+    deposits[_label] = Deposit(_depositor, 1, block.timestamp + 1 weeks);
   }
 
-  function mockNullifierAlreadySpent(uint256 _nullifierHash) external {
-    nullifierHashes[_nullifierHash] = true;
+  function mockNullifierStatus(uint256 _nullifierHash, IState.NullifierStatus _status) external {
+    nullifierHashes[_nullifierHash] = _status;
   }
 
   function insertLeafInShadowTree(uint256 _leaf) external returns (uint256 _root) {
@@ -295,7 +295,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
-    (address _retrievedDepositor, uint256 _retrievedAmount) = _pool.deposits(_label);
+    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
     assertEq(_retrievedDepositor, _depositor);
     assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
@@ -342,7 +342,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
-    (address _retrievedDepositor, uint256 _retrievedAmount) = _pool.deposits(_label);
+    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
     assertEq(_retrievedDepositor, _depositor);
     assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
@@ -381,7 +381,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
-    (address _retrievedDepositor, uint256 _retrievedAmount) = _pool.deposits(_label);
+    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
     assertEq(_retrievedDepositor, _depositor);
     assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
@@ -472,7 +472,45 @@ contract UnitWithdraw is UnitPrivacyPool {
 
     _pool.withdraw(_w, _p);
 
-    assertTrue(_pool.nullifierHashes(_p.existingNullifierHash()));
+    assertEq(uint256(_pool.nullifierHashes(_p.existingNullifierHash())), uint256(IState.NullifierStatus.SPENT));
+  }
+
+  function test_WithdrawWhenWithdrawingNullifierAlreadySpent(
+    IPrivacyPool.Withdrawal memory _w,
+    ProofLib.Proof memory _p
+  )
+    external
+    givenCallerIsProcessooor(_w.processooor)
+    givenValidProof(_w, _p)
+    givenKnownStateRoot(_p.stateRoot())
+    givenLatestASPRoot(_p.ASPRoot())
+  {
+    vm.mockCall(_VERIFIER, abi.encodeCall(IVerifier.verifyProof, (_p)), abi.encode(true));
+    vm.expectCall(_VERIFIER, abi.encodeCall(IVerifier.verifyProof, (_p)));
+
+    _pool.mockNullifierStatus(_p.existingNullifierHash(), IState.NullifierStatus.SPENT);
+
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.withdraw(_w, _p);
+  }
+
+  function test_WithdrawWhenWithdrawingNullifierForRagequit(
+    IPrivacyPool.Withdrawal memory _w,
+    ProofLib.Proof memory _p
+  )
+    external
+    givenCallerIsProcessooor(_w.processooor)
+    givenValidProof(_w, _p)
+    givenKnownStateRoot(_p.stateRoot())
+    givenLatestASPRoot(_p.ASPRoot())
+  {
+    vm.mockCall(_VERIFIER, abi.encodeCall(IVerifier.verifyProof, (_p)), abi.encode(true));
+    vm.expectCall(_VERIFIER, abi.encodeCall(IVerifier.verifyProof, (_p)));
+
+    _pool.mockNullifierStatus(_p.existingNullifierHash(), IState.NullifierStatus.RAGEQUIT_PENDING);
+
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.withdraw(_w, _p);
   }
 
   /**
@@ -537,37 +575,115 @@ contract UnitWithdraw is UnitPrivacyPool {
 /**
  * @notice Unit tests for the ragequit function
  */
-contract UnitRagequit is UnitPrivacyPool {
+contract UnitInitiateRagequit is UnitPrivacyPool {
   /**
    * @notice Test for the ragequit function when the nullifier is not spent
    */
-  function test_RagequitWhenNullifierNotSpent(
+  function test_InitiateRagequitWhenNullifierNotSpentAndCooldownElapsed(
     address _depositor,
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _secret,
     uint256 _nullifierHash,
     uint256 _precommitmentHash,
     uint256 _commitment
   ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
+    _mockAndExpect(
+      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
+    );
+
+    _mockAndExpect(
+      _POSEIDON_T4,
+      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
+      abi.encode(_commitment)
+    );
 
     vm.expectEmit(address(_pool));
-    emit PoolForTest.Pushed(_depositor, _value);
+    emit IPrivacyPool.RagequitInitiated(_depositor, _commitment, _label, _value);
 
-    vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Ragequit(_depositor, _commitment, _value);
-
-    _pool.ragequit(_value, _label, _nullifier, _secret);
-    assert(_pool.nullifierHashes(_nullifierHash));
+    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+    assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_PENDING));
   }
 
   /**
    * @notice Test for the ragequit function when the nullifier is already spent
    */
-  function test_RagequitWhenNullifierAlreadySpent(
-    // solhint-disable-next-line no-unused-vars
+  function test_InitiateRagequitWhenNullifierAlreadySpent(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _nullifierHash,
+    uint256 _precommitmentHash,
+    uint256 _commitment
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
+    _mockAndExpect(
+      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
+    );
+
+    _mockAndExpect(
+      _POSEIDON_T4,
+      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
+      abi.encode(_commitment)
+    );
+
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.SPENT);
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+  }
+
+  /**
+   * @notice Test for the ragequit function when the commitment is not in the state
+   */
+  function test_InitiateRagequitWhenCommitmentNotInState(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _nullifierHash,
+    uint256 _precommitmentHash,
+    uint256 _commitment
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    _mockAndExpect(
+      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
+    );
+    _mockAndExpect(
+      _POSEIDON_T4,
+      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
+      abi.encode(_commitment)
+    );
+
+    vm.expectRevert(IPrivacyPool.InvalidCommitment.selector);
+    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+  }
+
+  /**
+   * @notice Test for the ragequit function when the caller is not the original depositor
+   */
+  function test_InitiateRagequitWhenCallerIsNotOriginalDepositor(
+    address _caller,
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _precommitmentHash
+  ) external {
+    vm.assume(_caller != _depositor);
+    _pool.mockDeposit(_depositor, _label);
+    vm.expectRevert(IPrivacyPool.OnlyOriginalDepositor.selector);
+    vm.prank(_caller);
+    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+  }
+}
+
+/**
+ * @notice Unit tests for the ragequit function
+ */
+contract UnitFinalizeRagequit is UnitPrivacyPool {
+  /**
+   * @notice Test for the ragequit function when the nullifier is not spent
+   */
+  function test_FinalizeRagequitWhenNullifierNotSpent(
     address _depositor,
     uint256 _value,
     uint256 _label,
@@ -578,16 +694,84 @@ contract UnitRagequit is UnitPrivacyPool {
     uint256 _commitment
   ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
     _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
-    _pool.mockNullifierAlreadySpent(_nullifierHash);
-    vm.expectRevert(IState.NullifierAlreadySpent.selector);
-    _pool.ragequit(_value, _label, _nullifier, _secret);
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.RAGEQUIT_PENDING);
+
+    vm.expectEmit(address(_pool));
+    emit PoolForTest.Pushed(_depositor, _value);
+
+    vm.expectEmit(address(_pool));
+    emit IPrivacyPool.RagequitFinalized(_depositor, _commitment, _label, _value);
+
+    vm.warp(block.timestamp + 1 weeks);
+
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
+    assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_FINALIZED));
+  }
+  /**
+   * @notice Test for the ragequit function when the nullifier is already spent
+   */
+
+  function test_FinalizeRagequitWhenNotRagequitteableYet(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _precommitmentHash,
+    uint256 _commitment,
+    uint256 _timestamp
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
+    _timestamp = bound(_timestamp, block.timestamp, block.timestamp + 1 weeks - 1);
+
+    vm.warp(_timestamp);
+
+    vm.expectRevert(IState.NotYetRagequitteable.selector);
+    _pool.finalizeRagequit(_value, _label, _precommitmentHash, _nullifier);
+  }
+  /**
+   * @notice Test for the ragequit function when the nullifier is not pending for ragequit
+   */
+
+  function test_FinalizeRagequitWhenNullifierNotRagequitPending(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _secret,
+    uint256 _nullifierHash,
+    uint256 _precommitmentHash,
+    uint256 _commitment
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
+    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.NONE);
+    vm.warp(block.timestamp + 1 weeks);
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
+  }
+
+  /**
+   * @notice Test for the ragequit function when the nullifier is already spent
+   */
+  function test_FinalizeRagequitWhenNullifierAlreadySpent(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _secret,
+    uint256 _nullifierHash,
+    uint256 _precommitmentHash,
+    uint256 _commitment
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
+    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.SPENT);
+    vm.warp(block.timestamp + 1 weeks);
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
   }
 
   /**
    * @notice Test for the ragequit function when the commitment is not in the state
    */
-  function test_RagequitWhenCommitmentNotInState(
-    // solhint-disable-next-line no-unused-vars
+  function test_FinalizeRagequitWhenCommitmentNotInState(
     address _depositor,
     uint256 _value,
     uint256 _label,
@@ -598,14 +782,16 @@ contract UnitRagequit is UnitPrivacyPool {
     uint256 _commitment
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
     _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
+    vm.warp(block.timestamp + 1 weeks);
+
     vm.expectRevert(IPrivacyPool.InvalidCommitment.selector);
-    _pool.ragequit(_value, _label, _nullifier, _secret);
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
   }
 
   /**
    * @notice Test for the ragequit function when the caller is not the original depositor
    */
-  function test_RagequitWhenCallerIsNotOriginalDepositor(
+  function test_FinalizeRagequitWhenCallerIsNotOriginalDepositor(
     address _caller,
     address _depositor,
     uint256 _value,
@@ -617,7 +803,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _pool.mockDeposit(_depositor, _label);
     vm.expectRevert(IPrivacyPool.OnlyOriginalDepositor.selector);
     vm.prank(_caller);
-    _pool.ragequit(_value, _label, _nullifier, _secret);
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
   }
 }
 

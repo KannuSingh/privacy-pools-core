@@ -6,6 +6,21 @@ import {ProofLib} from './lib/ProofLib.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
+// init rq
+// provide value, label, precommitment, nullifier
+// comm = hash(value, label, precom)
+// null hash = hash(nullifier)
+// store comm as rqtiable
+// spend nullifier hash
+
+// fin rq
+// provide value, label, nullifier, secret
+// comm = hash(value, label, precom)
+// null hash = hash(nullifier)
+// check null hash is spent
+// check hash(null, secret) matches precom
+// transfer value
+
 /**
  * @title PrivacyPool
  * @notice Allows publicly depositing and privately withdrawing funds.
@@ -23,9 +38,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
-    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) {
-      revert ContextMismatch();
-    }
+    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) revert ContextMismatch();
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
     if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
     _;
@@ -65,7 +78,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
-    deposits[_label] = Deposit(_depositor, _value);
+    deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
 
     _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitmentHash]);
 
@@ -83,8 +96,8 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Verify proof with Groth16 verifier
     if (!VERIFIER.verifyProof(_p)) revert InvalidProof();
 
-    // Spend nullifier for existing commitment
-    _spend(_p.existingNullifierHash());
+    // Mark commitment nullifier as spent
+    _process(_p.existingNullifierHash(), NullifierStatus.SPENT);
 
     // Insert new commitment in state
     _insert(_p.newCommitmentHash());
@@ -95,13 +108,32 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash());
   }
 
-  // TODO: improve without publicly revealing nullifier and secret. maybe add two step
   /// @inheritdoc IPrivacyPool
-  function ragequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
-    // Ensure caller is original depositor
-    if (deposits[_label].depositor != msg.sender) {
-      revert OnlyOriginalDepositor();
-    }
+  function initiateRagequit(uint256 _value, uint256 _label, uint256 _precommitment, uint256 _nullifier) external {
+    // Check if caller is original depositor
+    if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
+
+    // Compute nullifier hash
+    uint256 _nullifierHash = POSEIDON_T2.poseidon([_nullifier]);
+
+    // Compute commitment hash
+    uint256 _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitment]);
+
+    // Check commitment exists in state
+    if (!_isInState(_commitment)) revert InvalidCommitment();
+
+    // Mark nullifier hash as pending for ragequit
+    _process(_nullifierHash, NullifierStatus.RAGEQUIT_PENDING);
+
+    emit RagequitInitiated(msg.sender, _commitment, _label, _value);
+  }
+
+  /// @inheritdoc IPrivacyPool
+  function finalizeRagequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
+    // Check if caller is original depositor
+    if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
+    // Check if ragequit cooldown has elapsed
+    if (deposits[_label].whenRagequitteable > block.timestamp) revert NotYetRagequitteable();
 
     // Compute nullifier hash
     uint256 _nullifierHash = POSEIDON_T2.poseidon([_nullifier]);
@@ -113,17 +145,15 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     uint256 _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitmentHash]);
 
     // Check commitment exists in state
-    if (!_isInState(_commitment)) {
-      revert InvalidCommitment();
-    }
+    if (!_isInState(_commitment)) revert InvalidCommitment();
 
-    // Spend commitment nullifier
-    _spend(_nullifierHash);
+    // Spend ragequitteable nullifier hash
+    _process(_nullifierHash, NullifierStatus.RAGEQUIT_FINALIZED);
 
     // Transfer funds to ragequitter
     _push(msg.sender, _value);
 
-    emit Ragequit(msg.sender, _commitment, _value);
+    emit RagequitFinalized(msg.sender, _commitment, _label, _value);
   }
 
   /*///////////////////////////////////////////////////////////////

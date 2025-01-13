@@ -45,7 +45,7 @@ abstract contract State is IState {
   LeanIMTData internal _merkleTree;
 
   /// @inheritdoc IState
-  mapping(uint256 _nullifierHash => bool _spent) public nullifierHashes;
+  mapping(uint256 _nullifierHash => NullifierStatus _spent) public nullifierHashes;
   /// @inheritdoc IState
   mapping(uint256 _label => Deposit _deposit) public deposits;
 
@@ -67,12 +67,28 @@ abstract contract State is IState {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Stores a nullifier hash as spent
-   * @param _nullifierHash The nullifier hash to spend
+   * @notice Updates a nullifier hash status
+   * @param _nullifierHash The nullifier hash to update
    */
-  function _spend(uint256 _nullifierHash) internal {
-    if (nullifierHashes[_nullifierHash]) revert NullifierAlreadySpent();
-    nullifierHashes[_nullifierHash] = true;
+  function _process(uint256 _nullifierHash, NullifierStatus _new) internal {
+    // Fetch current nullifier hash status
+    NullifierStatus _current = nullifierHashes[_nullifierHash];
+
+    // Withdrawal = none -> spent
+    bool _withdrawPath = _current == NullifierStatus.NONE && _new == NullifierStatus.SPENT;
+
+    // Initialize ragequit = none -> pending ragequit
+    bool _initRagequitPath = _current == NullifierStatus.NONE && _new == NullifierStatus.RAGEQUIT_PENDING;
+
+    // Finalize ragequit = pending ragequit -> finalized ragequit
+    bool _finalizeRagequitPath =
+      _current == NullifierStatus.RAGEQUIT_PENDING && _new == NullifierStatus.RAGEQUIT_FINALIZED;
+
+    // Check status change is a known valid one
+    if (!(_withdrawPath || _initRagequitPath || _finalizeRagequitPath)) revert InvalidNullifierStatusChange();
+
+    // Store new status
+    nullifierHashes[_nullifierHash] = _new;
   }
 
   /**
@@ -95,9 +111,7 @@ abstract contract State is IState {
    * @param _root The root to check
    */
   function _isKnownRoot(uint256 _root) internal view returns (bool _known) {
-    if (_root == 0) {
-      return false;
-    }
+    if (_root == 0) return false;
 
     for (uint32 _i = 1; _i <= ROOT_HISTORY_SIZE; ++_i) {
       if (roots[_i] == _root) return true;
