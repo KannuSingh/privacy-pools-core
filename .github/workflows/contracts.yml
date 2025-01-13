@@ -1,11 +1,13 @@
 name: Contracts
 
 on:
+  push:
+    paths:
+      - "packages/contracts/**"
   pull_request:
     branches: [main, dev]
     paths:
       - "packages/contracts/**"
-    types: [opened, sychronize, reopened]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

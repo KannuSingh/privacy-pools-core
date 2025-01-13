@@ -1,11 +1,13 @@
 name: SDK
 
 on:
+  push:
+    paths:
+      - "packages/sdk/**"
   pull_request:
     branches: [main, dev]
     paths:
       - "packages/sdk/**"
-    types: [opened, sychronize, reopened]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
