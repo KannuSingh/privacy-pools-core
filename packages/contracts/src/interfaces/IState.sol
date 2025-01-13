@@ -107,24 +107,6 @@ interface IState {
   function VERIFIER() external view returns (IVerifier _verifier);
 
   /**
-   * @notice Returns the configured PoseidonT2 contract
-   * @return _poseidon The PoseidonT2 hasher contract
-   */
-  function POSEIDON_T2() external view returns (IPoseidonT2 _poseidon);
-
-  /**
-   * @notice Returns the configured PoseidonT3 contract
-   * @return _poseidon The PoseidonT3 hasher contract
-   */
-  function POSEIDON_T3() external view returns (IPoseidonT3 _poseidon);
-
-  /**
-   * @notice Returns the configured PoseidonT4 contract
-   * @return _poseidon The PoseidonT4 hasher contract
-   */
-  function POSEIDON_T4() external view returns (IPoseidonT4 _poseidon);
-
-  /**
    * @notice Returns the current root index
    * @return _index The current index
    */

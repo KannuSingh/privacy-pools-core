@@ -13,14 +13,7 @@ import {IPrivacyPoolComplex} from 'interfaces/IPrivacyPool.sol';
 contract PrivacyPoolComplex is PrivacyPool, IPrivacyPoolComplex {
   using SafeERC20 for IERC20;
 
-  constructor(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) PrivacyPool(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4) {}
+  constructor(address _entrypoint, address _verifier, address _asset) PrivacyPool(_entrypoint, _verifier, _asset) {}
 
   /**
    * @notice Handle pulling an ERC20 asset

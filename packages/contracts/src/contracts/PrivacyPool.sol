@@ -4,6 +4,10 @@ pragma solidity 0.8.28;
 import {State} from './State.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
+import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
+import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
+import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
+
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
 /**
@@ -29,20 +33,10 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _;
   }
 
-  constructor(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) State(_entrypoint, _verifier, _poseidonT2, _poseidonT3, _poseidonT4) {
+  constructor(address _entrypoint, address _verifier, address _asset) State(_entrypoint, _verifier) {
     if (_asset == address(0)) revert ZeroAddress();
     if (_verifier == address(0)) revert ZeroAddress();
     if (_entrypoint == address(0)) revert ZeroAddress();
-    if (_poseidonT2 == address(0)) revert ZeroAddress();
-    if (_poseidonT3 == address(0)) revert ZeroAddress();
-    if (_poseidonT4 == address(0)) revert ZeroAddress();
 
     ASSET = _asset;
     SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
@@ -65,7 +59,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
     deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
 
-    _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitmentHash]);
+    _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
     // Insert commitment in state (revert if already present)
     uint256 _updatedRoot = _insert(_commitment);
@@ -99,10 +93,10 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
 
     // Compute nullifier hash
-    uint256 _nullifierHash = POSEIDON_T2.poseidon([_nullifier]);
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
 
     // Compute commitment hash
-    uint256 _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitment]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
     // Check commitment exists in state
     if (!_isInState(_commitment)) revert InvalidCommitment();
@@ -121,13 +115,13 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (deposits[_label].whenRagequitteable > block.timestamp) revert NotYetRagequitteable();
 
     // Compute nullifier hash
-    uint256 _nullifierHash = POSEIDON_T2.poseidon([_nullifier]);
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
 
     // Compute precommitment hash
-    uint256 _precommitmentHash = POSEIDON_T3.poseidon([_nullifier, _secret]);
+    uint256 _precommitmentHash = PoseidonT3.hash([_nullifier, _secret]);
 
     // Compute commitment hash
-    uint256 _commitment = POSEIDON_T4.poseidon([_value, _label, _precommitmentHash]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
     // Check commitment exists in state
     if (!_isInState(_commitment)) revert InvalidCommitment();

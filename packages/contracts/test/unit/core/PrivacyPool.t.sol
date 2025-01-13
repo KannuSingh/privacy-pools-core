@@ -4,6 +4,10 @@ pragma solidity 0.8.28;
 import {Test} from 'forge-std/Test.sol';
 import {InternalLeanIMT, LeafAlreadyExists, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
+import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
+import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
+import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
+
 import {IPrivacyPool, PrivacyPool} from 'contracts/PrivacyPool.sol';
 import {ProofLib} from 'contracts/lib/ProofLib.sol';
 
@@ -24,14 +28,7 @@ contract PoolForTest is PrivacyPool {
 
   LeanIMTData public merkleTreeCopy;
 
-  constructor(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) PrivacyPool(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4) {}
+  constructor(address _entrypoint, address _verifier, address _asset) PrivacyPool(_entrypoint, _verifier, _asset) {}
 
   function _pull(address _sender, uint256 _value) internal override {
     emit Pulled(_sender, _value);
@@ -58,6 +55,7 @@ contract PoolForTest is PrivacyPool {
   }
 
   function mockDeposit(address _depositor, uint256 _label) external {
+    deposits[_label] = Deposit(_depositor, 1, block.timestamp + 1 weeks);
     deposits[_label] = Deposit(_depositor, 1, block.timestamp + 1 weeks);
   }
 
@@ -87,9 +85,6 @@ contract UnitPrivacyPool is Test {
   address internal immutable _ENTRYPOINT = makeAddr('entrypoint');
   address internal immutable _VERIFIER = makeAddr('verifier');
   address internal immutable _ASSET = makeAddr('asset');
-  address internal immutable _POSEIDON_T2 = makeAddr('poseidonT2');
-  address internal immutable _POSEIDON_T3 = makeAddr('poseidonT3');
-  address internal immutable _POSEIDON_T4 = makeAddr('poseidonT4');
 
   /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -161,7 +156,7 @@ contract UnitPrivacyPool is Test {
   //////////////////////////////////////////////////////////////*/
 
   function setUp() public {
-    _pool = new PoolForTest(_ENTRYPOINT, _VERIFIER, _ASSET, _POSEIDON_T2, _POSEIDON_T3, _POSEIDON_T4);
+    _pool = new PoolForTest(_ENTRYPOINT, _VERIFIER, _ASSET);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
   }
 
@@ -173,30 +168,6 @@ contract UnitPrivacyPool is Test {
     vm.mockCall(_contract, _call, _return);
     vm.expectCall(_contract, _call);
   }
-
-  function _mockPoseidonHashes(
-    uint256 _value,
-    uint256 _label,
-    uint256 _nullifier,
-    uint256 _secret,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) internal {
-    _mockAndExpect(
-      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
-    );
-    _mockAndExpect(
-      _POSEIDON_T3,
-      abi.encodeWithSignature('poseidon(uint256[2])', [_nullifier, _secret]),
-      abi.encode(_precommitmentHash)
-    );
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
-  }
 }
 
 /**
@@ -207,54 +178,28 @@ contract UnitConstructor is UnitPrivacyPool {
    * @notice Test for the constructor given valid addresses
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorGivenValidAddresses(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) external {
-    vm.assume(
-      _entrypoint != address(0) && _verifier != address(0) && _asset != address(0) && _poseidonT2 != address(0)
-        && _poseidonT3 != address(0) && _poseidonT4 != address(0)
-    );
+  function test_ConstructorGivenValidAddresses(address _entrypoint, address _verifier, address _asset) external {
+    vm.assume(_entrypoint != address(0) && _verifier != address(0) && _asset != address(0));
 
-    _pool = new PoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    _pool = new PoolForTest(_entrypoint, _verifier, _asset);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint);
     assertEq(address(_pool.VERIFIER()), _verifier);
     assertEq(_pool.ASSET(), _asset);
     assertEq(_pool.SCOPE(), _scope);
-    assertEq(address(_pool.POSEIDON_T2()), _poseidonT2);
-    assertEq(address(_pool.POSEIDON_T3()), _poseidonT3);
-    assertEq(address(_pool.POSEIDON_T4()), _poseidonT4);
   }
 
   /**
    * @notice Test for the constructor when any address is zero
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorWhenAnyAddressIsZero(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) external {
+  function test_ConstructorWhenAnyAddressIsZero(address _entrypoint, address _verifier, address _asset) external {
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(address(0), _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    new PoolForTest(address(0), _verifier, _asset);
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(_entrypoint, address(0), _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    new PoolForTest(_entrypoint, address(0), _asset);
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(_entrypoint, _verifier, address(0), _poseidonT2, _poseidonT3, _poseidonT4);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(_entrypoint, _verifier, _asset, address(0), _poseidonT3, _poseidonT4);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, address(0), _poseidonT4);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new PoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, address(0));
+    new PoolForTest(_entrypoint, _verifier, address(0));
   }
 }
 
@@ -268,25 +213,16 @@ contract UnitDeposit is UnitPrivacyPool {
   function test_DepositWhenDepositingValidValueAndCommitment(
     address _depositor,
     uint256 _amount,
-    uint256 _precommitmentHash,
-    uint256 _commitment
+    uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
     vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
 
-    _commitment = bound(_commitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
-
-    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
-
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
-
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_amount, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
+    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
 
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
@@ -308,7 +244,6 @@ contract UnitDeposit is UnitPrivacyPool {
     address _depositor,
     uint256 _amount,
     uint256 _precommitmentHash,
-    uint256 _commitment,
     uint256 _existingCommitment
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
@@ -317,23 +252,14 @@ contract UnitDeposit is UnitPrivacyPool {
     vm.assume(_existingCommitment != 0);
 
     _existingCommitment = bound(_existingCommitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
-    _commitment = bound(_commitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
-
-    vm.assume(_existingCommitment != _commitment);
 
     _pool.insertLeafInShadowTree(_existingCommitment);
     _pool.insertLeaf(_existingCommitment);
 
-    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
-
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
-
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_amount, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
+    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
 
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
@@ -353,26 +279,17 @@ contract UnitDeposit is UnitPrivacyPool {
    */
   function test_DepositWhenDepositingZeroValue(
     address _depositor,
-    uint256 _precommitmentHash,
-    uint256 _commitment
+    uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
     vm.assume(_precommitmentHash != 0);
 
     uint256 _amount = 0;
 
-    _commitment = bound(_commitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
-
-    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
-
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
-
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_amount, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
+    uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
 
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
@@ -393,23 +310,15 @@ contract UnitDeposit is UnitPrivacyPool {
   function test_DepositWhenCommitmentExistsInTree(
     address _depositor,
     uint256 _amount,
-    uint256 _precommitmentHash,
-    uint256 _commitment
+    uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
     vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
 
-    _commitment = bound(_commitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
-
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
-
-    _mockAndExpect(
-      address(_pool.POSEIDON_T4()),
-      abi.encodeWithSignature('poseidon(uint256[3])', [_amount, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
 
     _pool.mockLeafAlreadyExists(_commitment);
 
@@ -584,52 +493,18 @@ contract UnitInitiateRagequit is UnitPrivacyPool {
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockAndExpect(
-      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
-    );
+    uint256 _precommitment
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    _pool.mockLeafAlreadyExists(_commitment);
 
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.RagequitInitiated(_depositor, _commitment, _label, _value);
 
-    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+    _pool.initiateRagequit(_value, _label, _precommitment, _nullifier);
     assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_PENDING));
-  }
-
-  /**
-   * @notice Test for the ragequit function when the nullifier is already spent
-   */
-  function test_InitiateRagequitWhenNullifierAlreadySpent(
-    address _depositor,
-    uint256 _value,
-    uint256 _label,
-    uint256 _nullifier,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockAndExpect(
-      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
-    );
-
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
-
-    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.SPENT);
-    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
-    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
   }
 
   /**
@@ -640,21 +515,13 @@ contract UnitInitiateRagequit is UnitPrivacyPool {
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
+    uint256 _precommitment
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
-    _mockAndExpect(
-      _POSEIDON_T2, abi.encodeWithSignature('poseidon(uint256[1])', [_nullifier]), abi.encode(_nullifierHash)
-    );
-    _mockAndExpect(
-      _POSEIDON_T4,
-      abi.encodeWithSignature('poseidon(uint256[3])', [_value, _label, _precommitmentHash]),
-      abi.encode(_commitment)
-    );
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
     vm.expectRevert(IPrivacyPool.InvalidCommitment.selector);
-    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+    _pool.initiateRagequit(_value, _label, _precommitment, _nullifier);
   }
 
   /**
@@ -666,13 +533,36 @@ contract UnitInitiateRagequit is UnitPrivacyPool {
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _precommitmentHash
+    uint256 _precommitment
   ) external {
     vm.assume(_caller != _depositor);
     _pool.mockDeposit(_depositor, _label);
     vm.expectRevert(IPrivacyPool.OnlyOriginalDepositor.selector);
     vm.prank(_caller);
-    _pool.initiateRagequit(_value, _label, _precommitmentHash, _nullifier);
+    _pool.initiateRagequit(_value, _label, _precommitment, _nullifier);
+  }
+
+  /**
+   * @notice Test for the ragequit function when the nullifier status is invalid
+   */
+  function test_InitiateRagequitInvalidNullifierStatusChange(
+    address _depositor,
+    uint256 _value,
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _precommitment,
+    uint8 _currentStatus
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    // We exclude 0 (NONE) as its the only valid status
+    _currentStatus = uint8(bound(_currentStatus, 1, 3));
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
+
+    _pool.mockLeafAlreadyExists(_commitment);
+
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus(_currentStatus));
+    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
+    _pool.initiateRagequit(_value, _label, _precommitment, _nullifier);
   }
 }
 
@@ -688,12 +578,13 @@ contract UnitFinalizeRagequit is UnitPrivacyPool {
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _secret,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
+    uint256 _secret
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    uint256 _precommitment = PoseidonT3.hash([_nullifier, _secret]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
+
+    _pool.mockLeafAlreadyExists(_commitment);
     _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.RAGEQUIT_PENDING);
 
     vm.expectEmit(address(_pool));
@@ -707,62 +598,49 @@ contract UnitFinalizeRagequit is UnitPrivacyPool {
     _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
     assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_FINALIZED));
   }
+
   /**
    * @notice Test for the ragequit function when the nullifier is already spent
    */
-
   function test_FinalizeRagequitWhenNotRagequitteableYet(
     address _depositor,
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _precommitmentHash,
-    uint256 _commitment,
+    uint256 _secret,
     uint256 _timestamp
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
     _timestamp = bound(_timestamp, block.timestamp, block.timestamp + 1 weeks - 1);
 
     vm.warp(_timestamp);
 
     vm.expectRevert(IState.NotYetRagequitteable.selector);
-    _pool.finalizeRagequit(_value, _label, _precommitmentHash, _nullifier);
+    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
   }
+
   /**
    * @notice Test for the ragequit function when the nullifier is not pending for ragequit
    */
-
   function test_FinalizeRagequitWhenNullifierNotRagequitPending(
     address _depositor,
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
     uint256 _secret,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
-    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.NONE);
-    vm.warp(block.timestamp + 1 weeks);
-    vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
-    _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
-  }
+    uint8 _currentStatus
+  ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    _currentStatus = uint8(bound(_currentStatus, 0, 3));
+    // avoid the valid case
+    if (_currentStatus == uint8(IState.NullifierStatus.RAGEQUIT_PENDING)) {
+      _currentStatus = _currentStatus + 1;
+    }
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    uint256 _precommitment = PoseidonT3.hash([_nullifier, _secret]);
+    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
-  /**
-   * @notice Test for the ragequit function when the nullifier is already spent
-   */
-  function test_FinalizeRagequitWhenNullifierAlreadySpent(
-    address _depositor,
-    uint256 _value,
-    uint256 _label,
-    uint256 _nullifier,
-    uint256 _secret,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
-  ) external givenCallerIsOriginalDepositor(_depositor, _label) givenCommitmentExistsInState(_commitment) {
-    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
-    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.SPENT);
+    _pool.mockLeafAlreadyExists(_commitment);
+    _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus(_currentStatus));
+
     vm.warp(block.timestamp + 1 weeks);
     vm.expectRevert(IState.InvalidNullifierStatusChange.selector);
     _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
@@ -776,12 +654,8 @@ contract UnitFinalizeRagequit is UnitPrivacyPool {
     uint256 _value,
     uint256 _label,
     uint256 _nullifier,
-    uint256 _secret,
-    uint256 _nullifierHash,
-    uint256 _precommitmentHash,
-    uint256 _commitment
+    uint256 _secret
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
-    _mockPoseidonHashes(_value, _label, _nullifier, _secret, _nullifierHash, _precommitmentHash, _commitment);
     vm.warp(block.timestamp + 1 weeks);
 
     vm.expectRevert(IPrivacyPool.InvalidCommitment.selector);

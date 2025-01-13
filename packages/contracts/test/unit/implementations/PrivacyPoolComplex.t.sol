@@ -14,11 +14,8 @@ contract ComplexPoolForTest is PrivacyPoolComplex {
   constructor(
     address _entrypoint,
     address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) PrivacyPoolComplex(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4) {}
+    address _asset
+  ) PrivacyPoolComplex(_entrypoint, _verifier, _asset) {}
 
   function pull(address _sender, uint256 _amount) external payable {
     _pull(_sender, _amount);
@@ -39,16 +36,13 @@ contract UnitPrivacyPoolComplex is Test {
   address internal immutable _ENTRYPOINT = makeAddr('entrypoint');
   address internal immutable _VERIFIER = makeAddr('verifier');
   address internal immutable _ASSET = makeAddr('asset');
-  address internal immutable _POSEIDON_T2 = makeAddr('poseidonT2');
-  address internal immutable _POSEIDON_T3 = makeAddr('poseidonT3');
-  address internal immutable _POSEIDON_T4 = makeAddr('poseidonT4');
 
   /*//////////////////////////////////////////////////////////////
                             SETUP
   //////////////////////////////////////////////////////////////*/
 
   function setUp() public {
-    _pool = new ComplexPoolForTest(_ENTRYPOINT, _VERIFIER, _ASSET, _POSEIDON_T2, _POSEIDON_T3, _POSEIDON_T4);
+    _pool = new ComplexPoolForTest(_ENTRYPOINT, _VERIFIER, _ASSET);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
   }
 
@@ -70,52 +64,28 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
    * @notice Test for the constructor given valid addresses
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorGivenValidAddresses(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) external {
-    vm.assume(
-      _entrypoint != address(0) && _verifier != address(0) && _asset != address(0) && _poseidonT2 != address(0)
-        && _poseidonT3 != address(0) && _poseidonT4 != address(0)
-    );
+  function test_ConstructorGivenValidAddresses(address _entrypoint, address _verifier, address _asset) external {
+    vm.assume(_entrypoint != address(0) && _verifier != address(0) && _asset != address(0));
 
-    _pool = new ComplexPoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    _pool = new ComplexPoolForTest(_entrypoint, _verifier, _asset);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint);
     assertEq(address(_pool.VERIFIER()), _verifier);
     assertEq(_pool.ASSET(), _asset);
     assertEq(_pool.SCOPE(), _scope);
-    assertEq(address(_pool.POSEIDON_T2()), _poseidonT2);
-    assertEq(address(_pool.POSEIDON_T3()), _poseidonT3);
-    assertEq(address(_pool.POSEIDON_T4()), _poseidonT4);
   }
 
   /**
    * @notice Test for the constructor when any address is zero
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorWhenAnyAddressIsZero(
-    address _entrypoint,
-    address _verifier,
-    address _asset,
-    address _poseidonT2,
-    address _poseidonT3,
-    address _poseidonT4
-  ) external {
+  function test_ConstructorWhenAnyAddressIsZero(address _entrypoint, address _verifier, address _asset) external {
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new ComplexPoolForTest(address(0), _verifier, _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    new ComplexPoolForTest(address(0), _verifier, _asset);
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new ComplexPoolForTest(_entrypoint, address(0), _asset, _poseidonT2, _poseidonT3, _poseidonT4);
+    new ComplexPoolForTest(_entrypoint, address(0), _asset);
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new ComplexPoolForTest(_entrypoint, _verifier, address(0), _asset, _poseidonT3, _poseidonT4);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new ComplexPoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, address(0), _poseidonT4);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new ComplexPoolForTest(_entrypoint, _verifier, _asset, _poseidonT2, _poseidonT3, address(0));
+    new ComplexPoolForTest(_entrypoint, _verifier, address(0));
   }
 }
 

@@ -33,6 +33,7 @@
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@openzeppelin/foundry-upgrades": "^0.3.6",
     "@zk-kit/lean-imt.sol": "^2.0.0",
+    "poseidon-solidity": "^0.0.5",
     "solc": "0.8.28"
   },
   "devDependencies": {
