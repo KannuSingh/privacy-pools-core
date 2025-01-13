@@ -6,21 +6,6 @@ import {ProofLib} from './lib/ProofLib.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
-// init rq
-// provide value, label, precommitment, nullifier
-// comm = hash(value, label, precom)
-// null hash = hash(nullifier)
-// store comm as rqtiable
-// spend nullifier hash
-
-// fin rq
-// provide value, label, nullifier, secret
-// comm = hash(value, label, precom)
-// null hash = hash(nullifier)
-// check null hash is spent
-// check hash(null, secret) matches precom
-// transfer value
-
 /**
  * @title PrivacyPool
  * @notice Allows publicly depositing and privately withdrawing funds.
