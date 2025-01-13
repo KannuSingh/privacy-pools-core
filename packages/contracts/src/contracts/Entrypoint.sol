@@ -121,6 +121,8 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
   /// @inheritdoc IEntrypoint
   function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
+    if (_proof.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
+
     // Fetch pool by scope
     IPrivacyPool _pool = scopeToPool[_withdrawal.scope];
     if (address(_pool) == address(0)) revert PoolNotFound();

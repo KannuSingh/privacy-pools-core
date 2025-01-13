@@ -130,6 +130,11 @@ interface IEntrypoint {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Thrown when trying to withdraw an invalid amount
+   */
+  error InvalidWithdrawalAmount();
+
+  /**
    * @notice Thrown when trying to access a non-existent pool
    */
   error PoolNotFound();

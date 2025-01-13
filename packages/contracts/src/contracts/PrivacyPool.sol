@@ -28,7 +28,6 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     }
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
     if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
-    if (_p.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
     _;
   }
 

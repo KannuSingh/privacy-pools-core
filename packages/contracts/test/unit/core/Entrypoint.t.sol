@@ -417,7 +417,7 @@ contract UnitRelay is UnitEntrypoint {
     vm.assume(_params.recipient != _params.feeRecipient);
     vm.assume(_params.recipient != address(_entrypoint));
     vm.assume(_params.feeRecipient != address(_entrypoint));
-
+    vm.assume(_params.amount != 0);
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
     _proof.pubSignals[0] = _params.amount;
@@ -466,6 +466,7 @@ contract UnitRelay is UnitEntrypoint {
     vm.assume(_params.recipient != _params.feeRecipient);
     vm.assume(_params.recipient != address(_entrypoint));
     vm.assume(_params.feeRecipient != address(_entrypoint));
+    vm.assume(_params.amount != 0);
     _params.asset = _ETH;
     _params.pool = address(new PrivacyPoolETHForTest());
 
@@ -513,6 +514,7 @@ contract UnitRelay is UnitEntrypoint {
   function test_RelayInvalidPoolState(RelayParams memory _params, ProofLib.Proof memory _proof) external {
     _validAddress(_params.recipient);
     _validAddress(_params.feeRecipient);
+    vm.assume(_params.amount != 0);
     _params.asset = _ETH;
     _params.pool = address(new FaultyPrivacyPool());
 
@@ -540,6 +542,20 @@ contract UnitRelay is UnitEntrypoint {
   }
 
   /**
+   * @notice Test that the Entrypoint reverts when the withdrawal amount is zero
+   */
+  function test_RelayWhenWithdrawalAmountIsZero(
+    IPrivacyPool.Withdrawal memory _withdrawal,
+    ProofLib.Proof memory _proof
+  ) external {
+    // set withdrawn value to 0
+    _proof.pubSignals[0] = 0;
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidWithdrawalAmount.selector));
+    vm.prank(_withdrawal.processooor);
+    _entrypoint.relay(_withdrawal, _proof);
+  }
+
+  /**
    * @notice Test that the Entrypoint reverts when the pool is not found
    */
   function test_RelayWhenPoolNotFound(
@@ -547,6 +563,7 @@ contract UnitRelay is UnitEntrypoint {
     IPrivacyPool.Withdrawal memory _withdrawal,
     ProofLib.Proof memory _proof
   ) external {
+    vm.assume(_proof.pubSignals[0] != 0);
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
     vm.prank(_caller);
     _entrypoint.relay(_withdrawal, _proof);
@@ -563,6 +580,7 @@ contract UnitRelay is UnitEntrypoint {
     _validAddress(_params.asset);
     _validAddress(_params.pool);
     vm.assume(_processooor != address(_entrypoint));
+    vm.assume(_params.amount != 0);
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
     _proof.pubSignals[0] = _params.amount;
@@ -673,6 +691,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _minDeposit,
     uint256 _vettingFeeBPS
   ) external {
+    vm.assume(_caller != _OWNER);
     vm.expectRevert(
       abi.encodeWithSelector(
         IAccessControl.AccessControlUnauthorizedAccount.selector, _caller, _entrypoint.OWNER_ROLE()

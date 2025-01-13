@@ -476,24 +476,6 @@ contract UnitWithdraw is UnitPrivacyPool {
   }
 
   /**
-   * @notice Test for the withdraw function when withdrawing zero amount
-   */
-  function test_WithdrawWhenWithdrawingZeroAmount(
-    IPrivacyPool.Withdrawal memory _w,
-    ProofLib.Proof memory _p
-  )
-    external
-    givenCallerIsProcessooor(_w.processooor)
-    givenValidProof(_w, _p)
-    givenKnownStateRoot(_p.stateRoot())
-    givenLatestASPRoot(_p.ASPRoot())
-  {
-    _p.pubSignals[0] = 0;
-    vm.expectRevert(IPrivacyPool.InvalidWithdrawalAmount.selector);
-    _pool.withdraw(_w, _p);
-  }
-
-  /**
    * @notice Test for the withdraw function when the ASPRoot is outdated
    */
   function test_WithdrawWhenASPRootIsOutdated(

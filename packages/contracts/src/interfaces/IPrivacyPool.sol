@@ -111,11 +111,6 @@ interface IPrivacyPool is IState {
   error OnlyOriginalDepositor();
 
   /**
-   * @notice Thrown when trying to withdraw an invalid amount
-   */
-  error InvalidWithdrawalAmount();
-
-  /**
    * @notice Thrown when trying to set a state variable as address zero
    */
   error ZeroAddress();
