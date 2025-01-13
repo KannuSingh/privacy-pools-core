@@ -124,8 +124,8 @@ contract UnitPrivacyPool is Test {
     _;
   }
 
-  modifier givenLatestASPRoot(uint256 _ASPRoot) {
-    vm.mockCall(_ENTRYPOINT, abi.encodeWithSignature('latestRoot()'), abi.encode(_ASPRoot));
+  modifier givenLatestASPRoot(uint256 _aspRoot) {
+    vm.mockCall(_ENTRYPOINT, abi.encodeWithSignature('latestRoot()'), abi.encode(_aspRoot));
     vm.expectCall(_ENTRYPOINT, abi.encodeWithSignature('latestRoot()'));
     _;
   }
@@ -585,6 +585,7 @@ contract UnitRagequit is UnitPrivacyPool {
    * @notice Test for the ragequit function when the nullifier is already spent
    */
   function test_RagequitWhenNullifierAlreadySpent(
+    // solhint-disable-next-line no-unused-vars
     address _depositor,
     uint256 _value,
     uint256 _label,
@@ -604,6 +605,7 @@ contract UnitRagequit is UnitPrivacyPool {
    * @notice Test for the ragequit function when the commitment is not in the state
    */
   function test_RagequitWhenCommitmentNotInState(
+    // solhint-disable-next-line no-unused-vars
     address _depositor,
     uint256 _value,
     uint256 _label,

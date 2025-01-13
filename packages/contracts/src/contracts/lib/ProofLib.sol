@@ -7,11 +7,6 @@ pragma solidity 0.8.28;
  */
 library ProofLib {
   /**
-   * @notice Semantic version of the library
-   */
-  string constant VERSION = '0.1.0';
-
-  /**
    * @notice Struct containing Groth16 proof elements and public signals for withdrawal verification
    * @dev The public signals array must match the order of public inputs/outputs in the circuit
    * @param pA First elliptic curve point (π_A) of the Groth16 proof, encoded as two field elements
@@ -33,6 +28,11 @@ library ProofLib {
     uint256[2] pC;
     uint256[8] pubSignals;
   }
+
+  /**
+   * @notice Semantic version of the library
+   */
+  string public constant VERSION = '0.1.0';
 
   /**
    * @notice Retrieves the withdrawn value from the proof's public signals

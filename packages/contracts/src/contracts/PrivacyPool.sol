@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {State} from './State.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
-import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
 /**

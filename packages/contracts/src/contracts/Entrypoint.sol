@@ -268,12 +268,18 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   function _authorizeUpgrade(address) internal override onlyRole(OWNER_ROLE) {}
 
   /**
-   * @notice Deduct fees from an amount
-   * @param _amount The amount before fees
-   * @param _feeBPS The fee in basis points
+   * @notice Transfer out an asset to a recipient
+   * @param _asset The asset to send
+   * @param _recipient The recipient address
+   * @param _amount The amount to send
    */
-  function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
-    _afterFees = _amount - (_amount * _feeBPS) / 10_000;
+  function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
+    if (_asset == IERC20(ETH)) {
+      (bool _success,) = _recipient.call{value: _amount}('');
+      if (!_success) revert ETHTransferFailed();
+    } else {
+      _asset.safeTransfer(_recipient, _amount);
+    }
   }
 
   /**
@@ -290,17 +296,11 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
   }
 
   /**
-   * @notice Transfer out an asset to a recipient
-   * @param _asset The asset to send
-   * @param _recipient The recipient address
-   * @param _amount The amount to send
+   * @notice Deduct fees from an amount
+   * @param _amount The amount before fees
+   * @param _feeBPS The fee in basis points
    */
-  function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
-    if (_asset == IERC20(ETH)) {
-      (bool _success,) = _recipient.call{value: _amount}('');
-      if (!_success) revert ETHTransferFailed();
-    } else {
-      _asset.safeTransfer(_recipient, _amount);
-    }
+  function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
+    _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
 }

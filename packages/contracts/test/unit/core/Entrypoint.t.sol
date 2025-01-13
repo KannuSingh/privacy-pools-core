@@ -33,27 +33,27 @@ struct RelayParams {
 }
 
 contract PrivacyPoolERC20ForTest {
-  address internal asset;
+  address internal _asset;
 
-  function withdraw(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata _proof) external {
     uint256 _amount = _proof.pubSignals[0];
-    IERC20(asset).transfer(msg.sender, _amount);
+    IERC20(_asset).transfer(msg.sender, _amount);
   }
 
-  function setAsset(address _asset) external {
-    asset = _asset;
+  function setAsset(address __asset) external {
+    _asset = __asset;
   }
 }
 
 contract PrivacyPoolETHForTest {
-  function withdraw(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata _proof) external {
     uint256 _amount = _proof.pubSignals[0];
     msg.sender.call{value: _amount}('');
   }
 }
 
 contract FaultyPrivacyPool is Test {
-  function withdraw(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata) external {
     // remove half of the eth balance from msg.sender
     deal(msg.sender, msg.sender.balance / 2);
   }
@@ -149,12 +149,13 @@ contract UnitEntrypoint is Test {
   }
 
   function _validAddress(address _address) internal {
-    // Avoid vm, console, and create2deployer, implementation addresses
+    // Avoid vm, console, and create2deployer, entrypoint proxy, implementation addresses, and precompile addresses
     vm.assume(
-      _address > address(10) && _address != address(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D)
+      _address != address(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D)
         && _address != address(0x4e59b44847b379578588920cA78FbF26c0B4956C)
         && _address != address(0x000000000000000000636F6e736F6c652e6c6f67)
-        && _address != address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f) && _address != address(this)
+        && _address != address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f) && _address != address(_entrypoint)
+        && _address != address(this) && _address > address(10)
     );
   }
 }
@@ -167,10 +168,10 @@ contract UnitConstructor is UnitEntrypoint {
    * @notice Test that the Entrypoint is initialized
    */
   function test_ConstructorWhenDeployed() external {
-    bytes32 INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
-    bytes32 data = vm.load(address(_entrypoint), INITIALIZABLE_STORAGE);
-    uint64 initialized = uint64(uint256(data)); // First 64 bits contain _initialized
-    assertEq(initialized, 1);
+    bytes32 _initializableStorageSlot = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
+    bytes32 _data = vm.load(address(_entrypoint), _initializableStorageSlot);
+    uint64 _initialized = uint64(uint256(_data)); // First 64 bits contain _initialized
+    assertEq(_initialized, 1);
   }
 
   /**
@@ -259,6 +260,7 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _amount,
     uint256 _precommitment,
     uint256 _commitment,
+    // solhint-disable-next-line no-unused-vars
     PoolParams memory _params
   )
     external
@@ -266,7 +268,7 @@ contract UnitDeposit is UnitEntrypoint {
       PoolParams({pool: _params.pool, asset: _ETH, minDeposit: _params.minDeposit, vettingFeeBPS: _params.vettingFeeBPS})
     )
   {
-    vm.assume(_depositor != address(0));
+    _validAddress(_depositor);
 
     (IPrivacyPool _pool, uint256 _minDeposit, uint256 _vettingFeeBPS) = _entrypoint.assetConfig(IERC20(_ETH));
     // Can't be too big, otherwise overflows
@@ -282,7 +284,6 @@ contract UnitDeposit is UnitEntrypoint {
     );
 
     uint256 _depositorBalanceBefore = _depositor.balance;
-    uint256 _entrypointBalanceBefore = address(_entrypoint).balance;
 
     vm.expectEmit(address(_entrypoint));
     emit IEntrypoint.Deposited(_depositor, _pool, _commitment, _amountAfterFees);
@@ -302,6 +303,7 @@ contract UnitDeposit is UnitEntrypoint {
     address _depositor,
     uint256 _amount,
     uint256 _precommitment,
+    // solhint-disable-next-line no-unused-vars
     PoolParams memory _params
   )
     external
@@ -530,8 +532,6 @@ contract UnitRelay is UnitEntrypoint {
     // give pool more than the amount to withdraw
     deal(address(_entrypoint), _params.amount * 2);
     _entrypoint.mockScopeToPool(_params.scope, _params.pool);
-    uint256 _amountAfterFees = _deductFee(_params.amount, _params.feeBPS);
-    uint256 _feeAmount = _params.amount - _amountAfterFees;
     _mockAndExpect(_params.pool, abi.encodeWithSelector(IPrivacyPool.ASSET.selector), abi.encode(_params.asset));
 
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidPoolState.selector));
