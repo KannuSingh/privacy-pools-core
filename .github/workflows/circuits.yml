@@ -1,13 +1,10 @@
 name: Circuits
 
 on:
-  push:
-    paths:
-      - "packages/circuits/**"
   pull_request:
-    branches: [main, dev]
     paths:
       - "packages/circuits/**"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
