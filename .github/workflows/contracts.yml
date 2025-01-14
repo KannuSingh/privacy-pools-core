@@ -5,6 +5,8 @@ on:
     paths:
       - "packages/contracts/**"
       - ".github/workflows/**"
+  push:
+    branches: [main, dev]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

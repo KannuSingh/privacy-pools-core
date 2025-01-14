@@ -5,6 +5,8 @@ on:
     paths:
       - "packages/circuits/**"
       - ".github/workflows/**"
+  push:
+    branches: [main, dev]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
