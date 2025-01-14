@@ -631,7 +631,11 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _asset)));
     _mockAndExpect(_pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
 
-    _mockAndExpect(_asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true));
+    if (_asset != _ETH) {
+      _mockAndExpect(
+        _asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true)
+      );
+    }
 
     vm.expectEmit(address(_entrypoint));
     emit IEntrypoint.PoolRegistered(IPrivacyPool(_pool), IERC20(_asset), _scope);
@@ -714,7 +718,10 @@ contract UnitRemovePool is UnitEntrypoint {
     uint256 _scope
   ) external givenCallerHasOwnerRole givenPoolExists(_params) {
     _mockAndExpect(_params.pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
-    _mockAndExpect(_params.asset, abi.encodeWithSelector(IERC20.approve.selector, _params.pool, 0), abi.encode(true));
+
+    if (_params.asset != _ETH) {
+      _mockAndExpect(_params.asset, abi.encodeWithSelector(IERC20.approve.selector, _params.pool, 0), abi.encode(true));
+    }
 
     vm.expectEmit(address(_entrypoint));
     emit IEntrypoint.PoolRemoved(IPrivacyPool(_params.pool), IERC20(_params.asset), _scope);

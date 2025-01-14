@@ -187,7 +187,9 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
     _config.minimumDepositAmount = _minimumDepositAmount;
     _config.vettingFeeBPS = _vettingFeeBPS;
 
-    _asset.approve(address(_pool), type(uint256).max);
+    if (address(_asset) != ETH) {
+      _asset.approve(address(_pool), type(uint256).max);
+    }
 
     emit PoolRegistered(_pool, _asset, _scope);
   }
@@ -199,7 +201,9 @@ contract Entrypoint is AccessControl, UUPSUpgradeable, Initializable, IEntrypoin
 
     uint256 _scope = _pool.SCOPE();
 
-    _asset.approve(address(_pool), 0);
+    if (address(_asset) != ETH) {
+      _asset.approve(address(_pool), 0);
+    }
 
     delete scopeToPool[_scope];
     delete assetConfig[_asset];

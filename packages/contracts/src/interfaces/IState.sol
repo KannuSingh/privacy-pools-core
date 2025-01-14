@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 
-import {IPoseidonT2, IPoseidonT3, IPoseidonT4} from 'interfaces/IPoseidon.sol';
 import {IVerifier} from 'interfaces/IVerifier.sol';
 
 /**
