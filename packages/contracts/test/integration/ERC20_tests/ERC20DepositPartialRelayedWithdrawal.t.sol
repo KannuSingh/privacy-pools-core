@@ -77,6 +77,7 @@ contract IntegrationERC20DepositPartialRelayedWithdrawal is IntegrationBase {
 
     // Push ASP root
     vm.prank(_POSTMAN);
+    // pubSignals[3] is the ASPRoot
     _entrypoint.updateRoot(_proof.pubSignals[3], bytes32('IPFS_HASH'));
 
     // TODO: remove once we have a verifier
@@ -84,6 +85,7 @@ contract IntegrationERC20DepositPartialRelayedWithdrawal is IntegrationBase {
 
     // Expect withdrawal event from privacy pool
     vm.expectEmit(address(_daiPool));
+    // pubSignals[6] is the existingNullifierHash
     emit IPrivacyPool.Withdrawn(address(_entrypoint), _withdrawnValue, _proof.pubSignals[6], _proof.pubSignals[7]);
 
     // Expect withdrawal event from entrypoint

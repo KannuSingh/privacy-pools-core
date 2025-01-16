@@ -151,10 +151,10 @@ contract IntegrationBase is Test {
       pubSignals: [
         _params.withdrawnValue,
         _params.stateRoot,
-        uint256(0),
+        uint256(0), // pubSignals[2] is the stateTreeDepth
         _ASPRoot,
-        uint256(0),
-        _context,
+        uint256(0), // pubSignals[4] is the ASPTreeDepth
+        _context, // calculation: uint256(keccak256(abi.encode(_withdrawal, _params.scope)));
         _nullifierHash,
         _newCommitmentHash
       ]

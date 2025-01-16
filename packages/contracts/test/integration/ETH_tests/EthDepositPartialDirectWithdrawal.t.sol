@@ -71,6 +71,7 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
 
     // Push ASP root
     vm.prank(_POSTMAN);
+    // pubSignals[3] is the ASPRoot
     _entrypoint.updateRoot(_proof.pubSignals[3], bytes32('IPFS_HASH'));
 
     // TODO: remove once we have a verifier
@@ -78,6 +79,8 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
 
     // Expect withdrawal event from privacy pool
     vm.expectEmit(address(_ethPool));
+    // pubSignals[6] is the existingNullifierHash
+    // pubSignals[7] is the newCommitmentHash
     emit IPrivacyPool.Withdrawn(_ALICE, _withdrawnValue, _proof.pubSignals[6], _proof.pubSignals[7]);
 
     // Withdraw ETH
