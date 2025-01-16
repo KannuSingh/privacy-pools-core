@@ -179,6 +179,26 @@ interface IEntrypoint {
    */
   error ETHTransferFailed();
 
+  /**
+   * @notice Thrown when an address parameter is zero
+   */
+  error ZeroAddress();
+
+  /**
+   * @notice Thrown when a fee in basis points is greater than 10000 (100%)
+   */
+  error InvalidFeeBPS();
+
+  /**
+   * @notice Thrown when trying to access an association set at an invalid index
+   */
+  error InvalidIndex();
+
+  /**
+   * @notice Thrown when trying to get the latest root when no roots exist
+   */
+  error NoRootsAvailable();
+
   /*//////////////////////////////////////////////////////////////
                                 LOGIC
   //////////////////////////////////////////////////////////////*/

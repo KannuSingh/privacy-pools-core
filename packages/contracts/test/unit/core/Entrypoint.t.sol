@@ -374,8 +374,14 @@ contract UnitDeposit is UnitEntrypoint {
   ) external givenPoolExists(_params) {
     vm.assume(_depositor != address(0));
 
-    (, uint256 _minDeposit, uint256 _vettingFeeBPS) = _entrypoint.assetConfig(IERC20(_params.asset));
+    (, uint256 _minDeposit,) = _entrypoint.assetConfig(IERC20(_params.asset));
     _amount = bound(_amount, 0, _minDeposit - 1);
+
+    _mockAndExpect(
+      _params.asset,
+      abi.encodeWithSignature('transferFrom(address,address,uint256)', _depositor, address(_entrypoint), _amount),
+      abi.encode(true)
+    );
 
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.MinimumDepositAmount.selector));
     vm.prank(_depositor);
@@ -391,6 +397,17 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _amount,
     uint256 _precommitment
   ) external {
+    assumeNotPrecompile(_asset);
+    vm.assume(_depositor != address(0));
+    vm.assume(_asset != address(0));
+    vm.assume(_asset != _ETH);
+
+    _mockAndExpect(
+      _asset,
+      abi.encodeWithSignature('transferFrom(address,address,uint256)', _depositor, address(_entrypoint), _amount),
+      abi.encode(true)
+    );
+
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
     vm.prank(_depositor);
     _entrypoint.deposit(IERC20(_asset), _amount, _precommitment);
@@ -701,7 +718,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     // Setup test with valid pool and asset addresses
     _validAddress(_pool);
     _validAddress(_asset);
-    vm.assume(_vettingFeeBPS <= 10_000);
+    _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000);
 
     // Calculate pool scope and mock interactions
     uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _asset)));
@@ -874,6 +891,8 @@ contract UnitUpdatePoolConfiguration is UnitEntrypoint {
     assertEq(_minDeposit, _params.minDeposit, 'Retrieved minimum deposit should match input');
     assertEq(_vettingFeeBPS, _params.vettingFeeBPS, 'Retrieved vetting fee should match input');
 
+    _newParams.vettingFeeBPS = bound(_newParams.vettingFeeBPS, 0, 10_000);
+
     // Expect configuration update event
     vm.expectEmit(address(_entrypoint));
     emit IEntrypoint.PoolConfigurationUpdated(
@@ -897,6 +916,7 @@ contract UnitUpdatePoolConfiguration is UnitEntrypoint {
     uint256 _minDeposit,
     uint256 _vettingFeeBPS
   ) external givenCallerHasOwnerRole {
+    _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000);
     // Expect revert when trying to update non-existent pool
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
     _entrypoint.updatePoolConfiguration(IERC20(_asset), _minDeposit, _vettingFeeBPS);
