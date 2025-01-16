@@ -82,7 +82,7 @@ contract IntegrationERC20DepositPartialDirectWithdrawal is IntegrationBase {
     vm.mockCall(address(_VERIFIER), abi.encodeWithSelector(IVerifier.verifyProof.selector, _proof), abi.encode(true));
 
     vm.expectEmit(address(_daiPool));
-    emit IPrivacyPool.Withdrawn(_ALICE, _withdrawnValue, _proof.pubSignals[6]);
+    emit IPrivacyPool.Withdrawn(_ALICE, _withdrawnValue, _proof.pubSignals[6], _proof.pubSignals[7]);
 
     // Withdraw DAI
     vm.prank(_ALICE);

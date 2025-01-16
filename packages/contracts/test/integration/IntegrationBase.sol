@@ -66,7 +66,7 @@ contract IntegrationBase is Test {
   uint256 internal constant _RELAY_FEE_BPS = 100; // 1%
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), _FORK_BLOCK);
+    vm.createSelectFork(vm.rpcUrl('mainnet'));
     _deployContracts();
     _registerPools();
   }

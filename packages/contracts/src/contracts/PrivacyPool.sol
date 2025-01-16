@@ -84,7 +84,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Transfer out funds to procesooor
     _push(_w.processooor, _p.withdrawnValue());
 
-    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash());
+    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash(), _p.newCommitmentHash());
   }
 
   /// @inheritdoc IPrivacyPool

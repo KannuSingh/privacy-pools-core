@@ -377,7 +377,7 @@ contract UnitWithdraw is UnitPrivacyPool {
     emit PoolForTest.Pushed(_w.processooor, _p.pubSignals[0]);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Withdrawn(_w.processooor, _p.pubSignals[0], _p.pubSignals[6]);
+    emit IPrivacyPool.Withdrawn(_w.processooor, _p.pubSignals[0], _p.pubSignals[6], _p.pubSignals[7]);
 
     _pool.withdraw(_w, _p);
 

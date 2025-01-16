@@ -75,7 +75,7 @@ contract IntegrationEthDepositPartialRelayedWithdrawal is IntegrationBase {
 
     // Expect withdrawal event from privacy pool
     vm.expectEmit(address(_ethPool));
-    emit IPrivacyPool.Withdrawn(address(_entrypoint), _withdrawnValue, _proof.pubSignals[6]);
+    emit IPrivacyPool.Withdrawn(address(_entrypoint), _withdrawnValue, _proof.pubSignals[6], _proof.pubSignals[7]);
 
     // Expect withdrawal event from entrypoint
     vm.expectEmit(address(_entrypoint));

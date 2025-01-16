@@ -85,7 +85,7 @@ contract IntegrationERC20DepositFullDirectWithdrawal is IntegrationBase {
 
     // Expect withdrawal event from privacy pool
     vm.expectEmit(address(_daiPool));
-    emit IPrivacyPool.Withdrawn(_ALICE, _params.amountAfterFee, _proof.pubSignals[6]);
+    emit IPrivacyPool.Withdrawn(_ALICE, _params.amountAfterFee, _proof.pubSignals[6], _proof.pubSignals[7]);
 
     // Withdraw DAI
     vm.prank(_ALICE);

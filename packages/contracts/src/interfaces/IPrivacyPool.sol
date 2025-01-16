@@ -45,8 +45,9 @@ interface IPrivacyPool is IState {
    * @param _processooor The address which processed the withdrawal
    * @param _value The withdrawn amount
    * @param _spentNullifier The spent nullifier
+   * @param _newCommitment The new commitment hash
    */
-  event Withdrawn(address indexed _processooor, uint256 _value, uint256 _spentNullifier);
+  event Withdrawn(address indexed _processooor, uint256 _value, uint256 _spentNullifier, uint256 _newCommitment);
 
   /**
    * @notice Emitted when initiating the ragequitting process of a commitment
