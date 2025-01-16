@@ -36,8 +36,7 @@ contract RegisterPool is Script {
   }
 
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     entrypoint.registerPool(_asset, _pool, _minimumDepositAmount, _vettingFeeBPS);
 

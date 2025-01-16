@@ -23,8 +23,7 @@ contract TestToken is ERC20 {
 
 contract DeployVerifier is Script {
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     Groth16Verifier verifier = new Groth16Verifier();
     console.log('Groth16 Verifier deployed at: %s', address(verifier));
@@ -44,8 +43,7 @@ contract DeployEntrypoint is Script {
   }
 
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     address _impl = address(new Entrypoint());
     entrypoint = Entrypoint(
@@ -71,8 +69,7 @@ contract DeployPoolSimple is Script {
   }
 
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     pool = new PrivacyPoolSimple(entrypoint, verifier);
     console.log('Pool deployed at: %s', address(pool));
@@ -96,8 +93,7 @@ contract DeployPoolComplex is Script {
   }
 
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     pool = new PrivacyPoolComplex(entrypoint, verifier, asset);
     console.log('Pool deployed at: %s', address(pool));
@@ -125,8 +121,7 @@ contract DeployProtocol is Script {
   }
 
   function run() public {
-    uint256 _deployer = vm.envUint('DEPLOYER_PK');
-    vm.startBroadcast(_deployer);
+    vm.startBroadcast();
 
     // Deploy Verifier
     verifier = new Groth16Verifier();
