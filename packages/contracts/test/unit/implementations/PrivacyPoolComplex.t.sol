@@ -69,10 +69,10 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
 
     _pool = new ComplexPoolForTest(_entrypoint, _verifier, _asset);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
-    assertEq(address(_pool.ENTRYPOINT()), _entrypoint);
-    assertEq(address(_pool.VERIFIER()), _verifier);
-    assertEq(_pool.ASSET(), _asset);
-    assertEq(_pool.SCOPE(), _scope);
+    assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
+    assertEq(address(_pool.VERIFIER()), _verifier, 'Verifier address should match constructor input');
+    assertEq(_pool.ASSET(), _asset, 'Asset address should match constructor input');
+    assertEq(_pool.SCOPE(), _scope, 'Scope should be computed correctly');
   }
 
   /**
@@ -90,26 +90,36 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
 }
 
 contract UnitPull is UnitPrivacyPoolComplex {
+  /**
+   * @notice Test that the pool correctly pulls ERC20 tokens from sender
+   */
   function test_Pull(address _sender, uint256 _amount) external {
+    // Setup test with valid sender and amount
     vm.assume(_sender != address(0));
     vm.assume(_amount > 0);
 
-    // Mock transfer
+    // Mock successful token transfer from sender to pool
     _mockAndExpect(
       _ASSET, abi.encodeWithSelector(IERC20.transferFrom.selector, _sender, address(_pool), _amount), abi.encode(true)
     );
 
-    // Execute
+    // Execute pull operation as sender
     vm.prank(_sender);
     _pool.pull(_sender, _amount);
   }
 
+  /**
+   * @notice Test that pull reverts when ETH is sent with the call
+   */
   function test_PullWhenMsgValueNotZero(address _sender, uint256 _amount) external {
+    // Setup test with valid sender and amount
     vm.assume(_sender != address(0));
     vm.assume(_amount > 0);
 
+    // Fund sender with ETH for the test
     deal(address(_sender), _amount);
 
+    // Expect revert when ETH is sent with call
     vm.expectRevert(IPrivacyPoolComplex.NativeAssetNotAccepted.selector);
     vm.prank(_sender);
     _pool.pull{value: _amount}(_sender, _amount);
@@ -117,14 +127,18 @@ contract UnitPull is UnitPrivacyPoolComplex {
 }
 
 contract UnitPush is UnitPrivacyPoolComplex {
+  /**
+   * @notice Test that the pool correctly pushes ERC20 tokens to recipient
+   */
   function test_Push(address _recipient, uint256 _amount) external {
+    // Setup test with valid amount and recipient
     vm.assume(_amount > 0);
     vm.assume(_recipient != address(0));
 
-    // Mock transfer
+    // Mock successful token transfer to recipient
     _mockAndExpect(_ASSET, abi.encodeWithSelector(IERC20.transfer.selector, _recipient, _amount), abi.encode(true));
 
-    // Execute
+    // Execute push operation as recipient
     vm.prank(_recipient);
     _pool.push(_recipient, _amount);
   }

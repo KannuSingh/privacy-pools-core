@@ -175,18 +175,21 @@ contract UnitPrivacyPool is Test {
  */
 contract UnitConstructor is UnitPrivacyPool {
   /**
-   * @notice Test for the constructor given valid addresses
-   * @dev Assumes all addresses are non-zero and valid
+   * @notice Test that the pool correctly initializes with valid constructor parameters
    */
   function test_ConstructorGivenValidAddresses(address _entrypoint, address _verifier, address _asset) external {
+    // Ensure all addresses are non-zero
     vm.assume(_entrypoint != address(0) && _verifier != address(0) && _asset != address(0));
 
+    // Deploy new pool and compute its scope
     _pool = new PoolForTest(_entrypoint, _verifier, _asset);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
-    assertEq(address(_pool.ENTRYPOINT()), _entrypoint);
-    assertEq(address(_pool.VERIFIER()), _verifier);
-    assertEq(_pool.ASSET(), _asset);
-    assertEq(_pool.SCOPE(), _scope);
+
+    // Verify all constructor parameters are set correctly
+    assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
+    assertEq(address(_pool.VERIFIER()), _verifier, 'Verifier address should match constructor input');
+    assertEq(_pool.ASSET(), _asset, 'Asset address should match constructor input');
+    assertEq(_pool.SCOPE(), _scope, 'Scope should be computed correctly');
   }
 
   /**
@@ -208,29 +211,34 @@ contract UnitConstructor is UnitPrivacyPool {
  */
 contract UnitDeposit is UnitPrivacyPool {
   /**
-   * @notice Test for the deposit function given valid values and commitment
+   * @notice Test that the pool correctly deposits funds and updates state
    */
   function test_DepositWhenDepositingValidValueAndCommitment(
     address _depositor,
     uint256 _amount,
     uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
+    // Setup test with valid parameters
     vm.assume(_depositor != address(0));
     vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
 
+    // Calculate expected values for deposit
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
     uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
     uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
 
+    // Expect pull and deposit events
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
-
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
+    // Execute deposit operation
     _pool.deposit(_depositor, _amount, _precommitmentHash);
+
+    // Verify deposit was recorded correctly
     (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
     assertEq(_retrievedDepositor, _depositor);
     assertEq(_retrievedAmount, _amount);
@@ -436,7 +444,10 @@ contract UnitWithdraw is UnitPrivacyPool {
     givenKnownStateRoot(_p.stateRoot())
     givenLatestASPRoot(_unknownASPRoot)
   {
+    // Ensure ASP root mismatch for test
     vm.assume(_unknownASPRoot != _p.ASPRoot());
+
+    // Expect revert due to outdated ASP root
     vm.expectRevert(IPrivacyPool.IncorrectASPRoot.selector);
     _pool.withdraw(_w, _p);
   }
@@ -448,6 +459,7 @@ contract UnitWithdraw is UnitPrivacyPool {
     IPrivacyPool.Withdrawal memory _w,
     ProofLib.Proof memory _p
   ) external givenCallerIsProcessooor(_w.processooor) givenValidProof(_w, _p) {
+    // Attempt withdrawal with unknown state root
     vm.expectRevert(IPrivacyPool.UnknownStateRoot.selector);
     _pool.withdraw(_w, _p);
   }
@@ -460,8 +472,11 @@ contract UnitWithdraw is UnitPrivacyPool {
     ProofLib.Proof memory _p,
     uint256 _unknownContext
   ) external givenCallerIsProcessooor(_w.processooor) givenValidProof(_w, _p) {
+    // Setup proof with mismatched context
     vm.assume(_unknownContext != uint256(keccak256(abi.encode(_w, _scope))));
     _p.pubSignals[5] = _unknownContext;
+
+    // Expect revert due to context mismatch
     vm.expectRevert(IPrivacyPool.ContextMismatch.selector);
     _pool.withdraw(_w, _p);
   }
@@ -474,7 +489,10 @@ contract UnitWithdraw is UnitPrivacyPool {
     IPrivacyPool.Withdrawal memory _w,
     ProofLib.Proof memory _p
   ) external {
+    // Setup caller different from processooor
     vm.assume(_caller != _w.processooor);
+
+    // Expect revert due to invalid processooor
     vm.expectRevert(IPrivacyPool.InvalidProcesooor.selector);
     vm.prank(_caller);
     _pool.withdraw(_w, _p);
@@ -486,7 +504,7 @@ contract UnitWithdraw is UnitPrivacyPool {
  */
 contract UnitInitiateRagequit is UnitPrivacyPool {
   /**
-   * @notice Test for the ragequit function when the nullifier is not spent
+   * @notice Test that the pool correctly initiates ragequit and updates nullifier status
    */
   function test_InitiateRagequitWhenNullifierNotSpentAndCooldownElapsed(
     address _depositor,
@@ -495,16 +513,26 @@ contract UnitInitiateRagequit is UnitPrivacyPool {
     uint256 _nullifier,
     uint256 _precommitment
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    // Calculate hashes for verification
     uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
     uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
+    // Mock that commitment exists in state
     _pool.mockLeafAlreadyExists(_commitment);
 
+    // Expect ragequit initiation event
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.RagequitInitiated(_depositor, _commitment, _label, _value);
 
+    // Execute ragequit initiation
     _pool.initiateRagequit(_value, _label, _precommitment, _nullifier);
-    assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_PENDING));
+
+    // Verify nullifier status is updated correctly
+    assertEq(
+      uint256(_pool.nullifierHashes(_nullifierHash)),
+      uint256(IState.NullifierStatus.RAGEQUIT_PENDING),
+      'Nullifier status should be RAGEQUIT_PENDING'
+    );
   }
 
   /**
@@ -571,7 +599,7 @@ contract UnitInitiateRagequit is UnitPrivacyPool {
  */
 contract UnitFinalizeRagequit is UnitPrivacyPool {
   /**
-   * @notice Test for the ragequit function when the nullifier is not spent
+   * @notice Test that the pool correctly finalizes ragequit and processes withdrawal
    */
   function test_FinalizeRagequitWhenNullifierNotSpent(
     address _depositor,
@@ -580,23 +608,33 @@ contract UnitFinalizeRagequit is UnitPrivacyPool {
     uint256 _nullifier,
     uint256 _secret
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    // Calculate hashes for verification
     uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
     uint256 _precommitment = PoseidonT3.hash([_nullifier, _secret]);
     uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
 
+    // Setup initial state for ragequit
     _pool.mockLeafAlreadyExists(_commitment);
     _pool.mockNullifierStatus(_nullifierHash, IState.NullifierStatus.RAGEQUIT_PENDING);
 
+    // Expect push and finalization events
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pushed(_depositor, _value);
-
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.RagequitFinalized(_depositor, _commitment, _label, _value);
 
+    // Advance time past cooldown period
     vm.warp(block.timestamp + 1 weeks);
 
+    // Execute ragequit finalization
     _pool.finalizeRagequit(_value, _label, _nullifier, _secret);
-    assertEq(uint256(_pool.nullifierHashes(_nullifierHash)), uint256(IState.NullifierStatus.RAGEQUIT_FINALIZED));
+
+    // Verify nullifier status is updated correctly
+    assertEq(
+      uint256(_pool.nullifierHashes(_nullifierHash)),
+      uint256(IState.NullifierStatus.RAGEQUIT_FINALIZED),
+      'Nullifier status should be RAGEQUIT_FINALIZED'
+    );
   }
 
   /**
@@ -689,11 +727,15 @@ contract UnitWindDown is UnitPrivacyPool {
    * @notice Test for the windDown function when the pool is active
    */
   function test_WindDownGivenPoolIsActive() external givenCallerIsEntrypoint {
+    // Expect pool died event
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.PoolDied();
 
+    // Execute wind down
     _pool.windDown();
-    assertEq(_pool.dead(), true);
+
+    // Verify pool is marked as dead
+    assertEq(_pool.dead(), true, 'Pool should be marked as dead');
   }
 
   /**

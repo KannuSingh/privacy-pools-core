@@ -1,9 +1,10 @@
 PrivacyPool::constructor
 ├── Given valid addresses
 │   ├── It sets asset address
-│   ├── It computes scope from chain id and asset
-│   ├── It initializes base state contract
-│   └── It enables deposits by default
+│   ├── It sets verifier address
+│   ├── It sets entrypoint address
+│   ├── It computes scope from contract, chain id and asset
+│   └── It initializes base state contract
 └── When any address is zero
     └── It reverts with ZeroAddress
 
@@ -14,6 +15,7 @@ PrivacyPool::deposit
 │   │   │   ├── It increments global nonce
 │   │   │   ├── It computes label as keccak of scope and nonce
 │   │   │   ├── It maps label to depositor address
+│   │   │   ├── It sets ragequit cooldown period
 │   │   │   ├── It computes commitment hash correctly
 │   │   │   ├── It inserts commitment in merkle tree
 │   │   │   ├── It handles asset transfer
@@ -21,7 +23,7 @@ PrivacyPool::deposit
 │   │   ├── When depositing zero value
 │   │   │   └── It processes deposit normally
 │   │   └── When commitment exists in tree
-│   │       └── It reverts with merkle insertion error
+│   │       └── It reverts with LeafAlreadyExists
 │   └── When pool is dead
 │       └── It reverts with PoolIsDead
 └── When caller is not entrypoint
@@ -38,29 +40,47 @@ PrivacyPool::withdraw
 │   │   │   │   │   ├── It inserts new commitment
 │   │   │   │   │   ├── It transfers value to processooor
 │   │   │   │   │   └── It emits Withdrawn event
-│   │   │   │   └── When withdrawing zero amount
-│   │   │   │       └── It reverts with InvalidWithdrawalAmount
+│   │   │   │   ├── When nullifier already spent
+│   │   │   │   │   └── It reverts with InvalidNullifierStatusChange
+│   │   │   │   └── When nullifier is pending ragequit
+│   │   │   │       └── It reverts with InvalidNullifierStatusChange
 │   │   │   └── When ASP root is outdated
-│   │   │       └── It reverts with OutdatedASPRoot
+│   │   │       └── It reverts with IncorrectASPRoot
 │   │   └── When state root unknown
 │   │       └── It reverts with UnknownStateRoot
-│   └── When proof scope mismatches
-│       └── It reverts with ScopeMismatch
+│   └── When proof context mismatches
+│       └── It reverts with ContextMismatch
 └── When caller is not processooor
     └── It reverts with InvalidProcesooor
 
-PrivacyPool::ragequit
+PrivacyPool::initiateRagequit
 ├── Given caller is original depositor
 │   ├── Given commitment exists in state
 │   │   ├── When nullifier not spent
 │   │   │   ├── It computes nullifier hash correctly
-│   │   │   ├── It computes precommitment hash correctly
-│   │   │   ├── It verifies commitment matches input
-│   │   │   ├── It spends nullifier
-│   │   │   ├── It transfers value to depositor
-│   │   │   └── It emits Ragequit event
-│   │   └── When nullifier already spent
-│   │       └── It reverts with NullifierAlreadySpent
+│   │   │   ├── It computes commitment hash correctly
+│   │   │   ├── It marks nullifier as ragequit pending
+│   │   │   └── It emits RagequitInitiated event
+│   │   └── When nullifier has invalid status
+│   │       └── It reverts with InvalidNullifierStatusChange
+│   └── When commitment not in state
+│       └── It reverts with InvalidCommitment
+└── When caller is not original depositor
+    └── It reverts with OnlyOriginalDepositor
+
+PrivacyPool::finalizeRagequit
+├── Given caller is original depositor
+│   ├── Given commitment exists in state
+│   │   ├── Given nullifier is pending ragequit
+│   │   │   ├── When cooldown period elapsed
+│   │   │   │   ├── It verifies commitment matches input
+│   │   │   │   ├── It marks nullifier as ragequit finalized
+│   │   │   │   ├── It transfers value to depositor
+│   │   │   │   └── It emits RagequitFinalized event
+│   │   │   └── When cooldown period not elapsed
+│   │   │       └── It reverts with NotYetRagequitteable
+│   │   └── When nullifier has invalid status
+│   │       └── It reverts with InvalidNullifierStatusChange
 │   └── When commitment not in state
 │       └── It reverts with InvalidCommitment
 └── When caller is not original depositor
