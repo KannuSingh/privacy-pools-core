@@ -110,8 +110,8 @@ contract UnitEntrypoint is Test {
   }
 
   modifier givenPoolExists(PoolParams memory _params) {
-    _validAddress(_params.pool);
-    _validAddress(_params.asset);
+    _assumeFuzzable(_params.pool);
+    _assumeFuzzable(_params.asset);
     _params.vettingFeeBPS = bound(_params.vettingFeeBPS, 0, 10_000);
     _params.minDeposit = bound(_params.minDeposit, 1, 100);
     _entrypoint.mockPool(_params);
@@ -148,15 +148,10 @@ contract UnitEntrypoint is Test {
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
 
-  function _validAddress(address _address) internal {
-    // Avoid vm, console, and create2deployer, entrypoint proxy, implementation addresses, and precompile addresses
-    vm.assume(
-      _address != address(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D)
-        && _address != address(0x4e59b44847b379578588920cA78FbF26c0B4956C)
-        && _address != address(0x000000000000000000636F6e736F6c652e6c6f67)
-        && _address != address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f) && _address != address(_entrypoint)
-        && _address != address(this) && _address > address(10)
-    );
+  function _assumeFuzzable(address _address) internal pure {
+    assumeNotForgeAddress(_address);
+    assumeNotZeroAddress(_address);
+    assumeNotPrecompile(_address);
   }
 }
 
@@ -268,7 +263,7 @@ contract UnitDeposit is UnitEntrypoint {
       PoolParams({pool: _params.pool, asset: _ETH, minDeposit: _params.minDeposit, vettingFeeBPS: _params.vettingFeeBPS})
     )
   {
-    _validAddress(_depositor);
+    _assumeFuzzable(_depositor);
 
     (IPrivacyPool _pool, uint256 _minDeposit, uint256 _vettingFeeBPS) = _entrypoint.assetConfig(IERC20(_ETH));
     // Can't be too big, otherwise overflows
@@ -397,7 +392,7 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _amount,
     uint256 _precommitment
   ) external {
-    assumeNotPrecompile(_asset);
+    _assumeFuzzable(_asset);
     vm.assume(_depositor != address(0));
     vm.assume(_asset != address(0));
     vm.assume(_asset != _ETH);
@@ -420,6 +415,8 @@ contract UnitDeposit is UnitEntrypoint {
 contract UnitRelay is UnitEntrypoint {
   using ProofLib for ProofLib.Proof;
 
+  receive() external payable {}
+
   /**
    * @notice Test that the Entrypoint correctly relays ERC20 withdrawal and distributes fees
    */
@@ -435,8 +432,9 @@ contract UnitRelay is UnitEntrypoint {
     _params.pool = address(new PrivacyPoolERC20ForTest());
 
     // Ensure recipient and fee recipient are valid and different addresses
-    _validAddress(_params.recipient);
-    _validAddress(_params.feeRecipient);
+    _assumeFuzzable(_params.recipient);
+    _assumeFuzzable(_params.feeRecipient);
+
     vm.assume(_params.recipient != _params.feeRecipient);
     vm.assume(_params.recipient != address(_entrypoint));
     vm.assume(_params.feeRecipient != address(_entrypoint));
@@ -512,8 +510,13 @@ contract UnitRelay is UnitEntrypoint {
    */
   function test_RelayETHGivenValidWithdrawalAndProof(RelayParams memory _params, ProofLib.Proof memory _proof) external {
     // Setup test with valid recipients and amounts
-    _validAddress(_params.recipient);
-    _validAddress(_params.feeRecipient);
+    _assumeFuzzable(_params.recipient);
+    _assumeFuzzable(_params.feeRecipient);
+
+    // NOTE: somehow, the PointEvaluation address is not filtered
+    vm.assume(_params.recipient != address(10));
+    vm.assume(_params.feeRecipient != address(10));
+
     vm.assume(_params.recipient != _params.feeRecipient);
     vm.assume(_params.recipient != address(_entrypoint));
     vm.assume(_params.feeRecipient != address(_entrypoint));
@@ -584,8 +587,13 @@ contract UnitRelay is UnitEntrypoint {
    */
   function test_RelayInvalidPoolState(RelayParams memory _params, ProofLib.Proof memory _proof) external {
     // Setup test with valid recipients and amount
-    _validAddress(_params.recipient);
-    _validAddress(_params.feeRecipient);
+    _assumeFuzzable(_params.recipient);
+    _assumeFuzzable(_params.feeRecipient);
+
+    // NOTE: somehow, the PointEvaluation address is not filtered
+    vm.assume(_params.recipient != address(10));
+    vm.assume(_params.feeRecipient != address(10));
+
     vm.assume(_params.amount != 0);
 
     // Configure ETH pool with faulty behavior
@@ -661,8 +669,8 @@ contract UnitRelay is UnitEntrypoint {
     ProofLib.Proof memory _proof
   ) external {
     // Setup test with valid parameters but invalid processooor
-    _validAddress(_params.asset);
-    _validAddress(_params.pool);
+    _assumeFuzzable(_params.asset);
+    _assumeFuzzable(_params.pool);
     vm.assume(_processooor != address(_entrypoint));
     vm.assume(_params.amount != 0);
 
@@ -716,8 +724,8 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _vettingFeeBPS
   ) external givenCallerHasOwnerRole {
     // Setup test with valid pool and asset addresses
-    _validAddress(_pool);
-    _validAddress(_asset);
+    _assumeFuzzable(_pool);
+    _assumeFuzzable(_asset);
     _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000);
 
     // Calculate pool scope and mock interactions
@@ -774,8 +782,8 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _vettingFeeBPS
   ) external givenCallerHasOwnerRole {
     // Setup test with valid addresses and parameters
-    _validAddress(_pool);
-    _validAddress(_asset);
+    _assumeFuzzable(_pool);
+    _assumeFuzzable(_asset);
     vm.assume(_vettingFeeBPS <= 10_000);
 
     // Mock existing pool with same scope
@@ -993,10 +1001,13 @@ contract UnitWithdrawFees is UnitEntrypoint {
   /**
    * @notice Test that the Entrypoint withdraws fees for ETH
    */
+  receive() external payable {}
+
   function test_WithdrawFeesWhenETHBalanceExists(uint256 _balance, address _recipient) external givenCallerHasOwnerRole {
     // Setup test with valid recipient and non-zero balance
+    _assumeFuzzable(_recipient);
+    vm.assume(_recipient != address(10));
     vm.assume(_recipient != address(_entrypoint));
-    _validAddress(_recipient);
     vm.assume(_balance != 0);
     vm.deal(address(_entrypoint), _balance);
 
@@ -1027,8 +1038,8 @@ contract UnitWithdrawFees is UnitEntrypoint {
    */
   function test_WithdrawFeesWhenETHTransferFails(uint256 _balance, address _recipient) external givenCallerHasOwnerRole {
     // Setup test with valid recipient and non-zero balance
+    _assumeFuzzable(_recipient);
     vm.assume(_recipient != address(_entrypoint));
-    _validAddress(_recipient);
     vm.assume(_balance != 0);
     vm.deal(address(_entrypoint), _balance);
 
@@ -1050,11 +1061,11 @@ contract UnitWithdrawFees is UnitEntrypoint {
     address _recipient
   ) external givenCallerHasOwnerRole {
     // Setup test with valid parameters
+    _assumeFuzzable(_recipient);
+    _assumeFuzzable(_asset);
     vm.assume(_recipient != address(_entrypoint));
     vm.assume(_balance != 0);
     vm.assume(_asset != _ETH);
-    _validAddress(_recipient);
-    _validAddress(_asset);
     vm.deal(address(_entrypoint), _balance);
 
     // Mock token balance and transfer

@@ -164,6 +164,12 @@ contract UnitPrivacyPool is Test {
                             HELPERS
   //////////////////////////////////////////////////////////////*/
 
+  function _assumeFuzzable(address _address) internal pure {
+    assumeNotForgeAddress(_address);
+    assumeNotZeroAddress(_address);
+    assumeNotPrecompile(_address);
+  }
+
   function _mockAndExpect(address _contract, bytes memory _call, bytes memory _return) internal {
     vm.mockCall(_contract, _call, _return);
     vm.expectCall(_contract, _call);
@@ -179,6 +185,9 @@ contract UnitConstructor is UnitPrivacyPool {
    */
   function test_ConstructorGivenValidAddresses(address _entrypoint, address _verifier, address _asset) external {
     // Ensure all addresses are non-zero
+    _assumeFuzzable(_entrypoint);
+    _assumeFuzzable(_verifier);
+    _assumeFuzzable(_asset);
     vm.assume(_entrypoint != address(0) && _verifier != address(0) && _asset != address(0));
 
     // Deploy new pool and compute its scope
@@ -219,6 +228,7 @@ contract UnitDeposit is UnitPrivacyPool {
     uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     // Setup test with valid parameters
+    _assumeFuzzable(_depositor);
     vm.assume(_depositor != address(0));
     vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
@@ -608,6 +618,9 @@ contract UnitFinalizeRagequit is UnitPrivacyPool {
     uint256 _nullifier,
     uint256 _secret
   ) external givenCallerIsOriginalDepositor(_depositor, _label) {
+    // Setup test with valid parameters
+    _assumeFuzzable(_depositor);
+
     // Calculate hashes for verification
     uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
     uint256 _precommitment = PoseidonT3.hash([_nullifier, _secret]);
