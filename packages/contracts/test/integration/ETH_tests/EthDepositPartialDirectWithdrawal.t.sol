@@ -15,7 +15,7 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
     //////////////////////////////////////////////////////////////*/
 
     // Generate deposit params
-    DepositParams memory _params = _generateDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
+    DepositParams memory _params = _generateDefaultDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
 
     // Deal ETH to Alice
     deal(_ALICE, _params.amount);
@@ -32,6 +32,9 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
     uint256 _aliceInitialBalance = _ALICE.balance;
     uint256 _entrypointInitialBalance = address(_entrypoint).balance;
     uint256 _ethPoolInitialBalance = address(_ethPool).balance;
+
+    // Add the commitment to the shadow merkle tree
+    _insertIntoShadowMerkleTree(_params.commitment);
 
     // Deposit ETH
     vm.prank(_ALICE);
@@ -55,6 +58,9 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
     // Withdraw half of the deposit
     uint256 _withdrawnValue = _params.amountAfterFee / 2;
 
+    // Insert leaf into shadow asp merkle tree
+    _insertIntoShadowASPMerkleTree(_DEFAULT_ASP_ROOT);
+
     // Data is left empty given that the withdrawal is direct
     (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.Proof memory _proof) = _generateWithdrawalParams(
       WithdrawalParams({
@@ -64,7 +70,6 @@ contract IntegrationEthDepositPartialDirectWithdrawal is IntegrationBase {
         feeBps: 0,
         scope: _params.scope,
         withdrawnValue: _withdrawnValue,
-        stateRoot: _params.commitment,
         nullifier: _params.nullifier
       })
     );

@@ -17,7 +17,7 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
     //////////////////////////////////////////////////////////////*/
 
     // Generate deposit params
-    DepositParams memory _params = _generateDepositParams(100 ether, _VETTING_FEE_BPS, _daiPool);
+    DepositParams memory _params = _generateDefaultDepositParams(100 ether, _VETTING_FEE_BPS, _daiPool);
 
     // Deal DAI to Alice
     deal(address(_DAI), _ALICE, _params.amount);
@@ -40,6 +40,9 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
     uint256 _daiPoolInitialBalance = _DAI.balanceOf(address(_daiPool));
     uint256 _relayerInitialBalance = _DAI.balanceOf(_RELAYER);
 
+    // Add the commitment to the shadow merkle tree
+    _insertIntoShadowMerkleTree(_params.commitment);
+
     // Deposit DAI
     _entrypoint.deposit(_DAI, _params.amount, _params.precommitment);
     vm.stopPrank();
@@ -57,6 +60,9 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
                                  WITHDRAW
     //////////////////////////////////////////////////////////////*/
 
+    // Insert leaf into shadow asp merkle tree
+    _insertIntoShadowASPMerkleTree(_DEFAULT_ASP_ROOT);
+
     // Generate withdrawal params
     (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.Proof memory _proof) = _generateWithdrawalParams(
       WithdrawalParams({
@@ -66,7 +72,6 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
         feeBps: _RELAY_FEE_BPS,
         scope: _params.scope,
         withdrawnValue: _params.amountAfterFee,
-        stateRoot: _params.commitment,
         nullifier: _params.nullifier
       })
     );

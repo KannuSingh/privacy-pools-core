@@ -14,7 +14,7 @@ contract IntegrationEthDepositRagequit is IntegrationBase {
     //////////////////////////////////////////////////////////////*/
 
     // Generate deposit params
-    DepositParams memory _params = _generateDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
+    DepositParams memory _params = _generateDefaultDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
     deal(_ALICE, _params.amount);
 
     // Expect deposit event from privacy pool
@@ -28,6 +28,9 @@ contract IntegrationEthDepositRagequit is IntegrationBase {
     uint256 _aliceInitialBalance = _ALICE.balance;
     uint256 _entrypointInitialBalance = address(_entrypoint).balance;
     uint256 _ethPoolInitialBalance = address(_ethPool).balance;
+
+    // Add the commitment to the shadow merkle tree
+    _insertIntoShadowMerkleTree(_params.commitment);
 
     // Deposit ETH
     vm.prank(_ALICE);

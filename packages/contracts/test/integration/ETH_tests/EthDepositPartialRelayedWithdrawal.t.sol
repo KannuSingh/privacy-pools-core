@@ -15,7 +15,7 @@ contract IntegrationEthDepositPartialRelayedWithdrawal is IntegrationBase {
     //////////////////////////////////////////////////////////////*/
 
     // Generate deposit params
-    DepositParams memory _params = _generateDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
+    DepositParams memory _params = _generateDefaultDepositParams(100 ether, _VETTING_FEE_BPS, _ethPool);
 
     // Deal ETH to Alice
     deal(_ALICE, _params.amount);
@@ -33,6 +33,9 @@ contract IntegrationEthDepositPartialRelayedWithdrawal is IntegrationBase {
     uint256 _ethPoolInitialBalance = address(_ethPool).balance;
     uint256 _relayerInitialBalance = _RELAYER.balance;
 
+    // Add the commitment to the shadow merkle tree
+    _insertIntoShadowMerkleTree(_params.commitment);
+
     // Deposit ETH
     vm.prank(_ALICE);
     _entrypoint.deposit{value: _params.amount}(_params.precommitment);
@@ -48,6 +51,9 @@ contract IntegrationEthDepositPartialRelayedWithdrawal is IntegrationBase {
     // Withdraw partial amount
     uint256 _withdrawnValue = _params.amountAfterFee / 2;
 
+    // Insert leaf into shadow asp merkle tree
+    _insertIntoShadowASPMerkleTree(_DEFAULT_ASP_ROOT);
+
     // Generate withdrawal params
     (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.Proof memory _proof) = _generateWithdrawalParams(
       WithdrawalParams({
@@ -58,18 +64,17 @@ contract IntegrationEthDepositPartialRelayedWithdrawal is IntegrationBase {
         scope: _params.scope,
         // Notice we withdraw half of the deposit
         withdrawnValue: _withdrawnValue,
-        stateRoot: _params.commitment,
         nullifier: _params.nullifier
       })
     );
-
-    // Calculate received amount
-    uint256 _receivedAmount = _deductFee(_withdrawnValue, _RELAY_FEE_BPS);
 
     // Push ASP root
     vm.prank(_POSTMAN);
     // pubSignals[3] is the ASPRoot
     _entrypoint.updateRoot(_proof.pubSignals[3], bytes32('IPFS_HASH'));
+
+    // Calculate received amount
+    uint256 _receivedAmount = _deductFee(_withdrawnValue, _RELAY_FEE_BPS);
 
     // TODO: remove once we have a verifier
     vm.mockCall(address(_VERIFIER), abi.encodeWithSelector(IVerifier.verifyProof.selector, _proof), abi.encode(true));
