@@ -88,6 +88,7 @@ contract EntrypointForTest is Entrypoint {
  */
 contract UnitEntrypoint is Test {
   EntrypointForTest internal _entrypoint;
+  address internal _impl;
 
   address internal immutable _OWNER = makeAddr('owner');
   address internal immutable _POSTMAN = makeAddr('postman');
@@ -123,7 +124,7 @@ contract UnitEntrypoint is Test {
   //////////////////////////////////////////////////////////////*/
 
   function setUp() public {
-    address _impl = address(new EntrypointForTest());
+    _impl = address(new EntrypointForTest());
 
     _entrypoint = EntrypointForTest(
       payable(UnsafeUpgrades.deployUUPSProxy(_impl, abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN))))
@@ -636,6 +637,7 @@ contract UnitRelay is UnitEntrypoint {
   ) external {
     // Set withdrawal amount to zero
     _proof.pubSignals[0] = 0;
+    _withdrawal.processooor = address(_entrypoint);
 
     // Expect revert due to invalid withdrawal amount
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidWithdrawalAmount.selector));
@@ -653,6 +655,7 @@ contract UnitRelay is UnitEntrypoint {
   ) external {
     // Ensure non-zero withdrawal amount
     vm.assume(_proof.pubSignals[0] != 0);
+    _withdrawal.processooor = address(_entrypoint);
 
     // Expect revert due to pool not found
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
@@ -689,19 +692,6 @@ contract UnitRelay is UnitEntrypoint {
     );
     IPrivacyPool.Withdrawal memory _withdrawal =
       IPrivacyPool.Withdrawal({processooor: _processooor, scope: _params.scope, data: _data});
-
-    // Setup pool and mock interactions
-    _entrypoint.mockScopeToPool(_params.scope, _params.pool);
-    _mockAndExpect(_params.pool, abi.encodeWithSelector(IPrivacyPool.ASSET.selector), abi.encode(_params.asset));
-
-    // Mock balance check for ERC20 tokens
-    if (_params.asset != _ETH) {
-      _mockAndExpect(
-        _params.asset,
-        abi.encodeWithSelector(IERC20.balanceOf.selector, address(_entrypoint)),
-        abi.encode(_params.amount)
-      );
-    }
 
     // Expect revert due to invalid processooor
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidProcessooor.selector));
@@ -1039,7 +1029,9 @@ contract UnitWithdrawFees is UnitEntrypoint {
   function test_WithdrawFeesWhenETHTransferFails(uint256 _balance, address _recipient) external givenCallerHasOwnerRole {
     // Setup test with valid recipient and non-zero balance
     _assumeFuzzable(_recipient);
+    vm.assume(_recipient != (address(10)));
     vm.assume(_recipient != address(_entrypoint));
+    vm.assume(_recipient != _impl);
     vm.assume(_balance != 0);
     vm.deal(address(_entrypoint), _balance);
 

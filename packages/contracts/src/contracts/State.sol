@@ -35,6 +35,7 @@ abstract contract State is IState {
   /// @inheritdoc IState
   uint32 public currentRootIndex;
 
+  // @notice The state merkle tree containing all commitments
   LeanIMTData internal _merkleTree;
 
   /// @inheritdoc IState
@@ -42,6 +43,9 @@ abstract contract State is IState {
   /// @inheritdoc IState
   mapping(uint256 _label => Deposit _deposit) public deposits;
 
+  /**
+   * @notice Check the caller is the Entrypoint
+   */
   modifier onlyEntrypoint() {
     if (msg.sender != address(ENTRYPOINT)) revert OnlyEntrypoint();
     _;
@@ -87,10 +91,16 @@ abstract contract State is IState {
    * @param _leaf The leaf to insert
    */
   function _insert(uint256 _leaf) internal returns (uint256 _updatedRoot) {
+    // Insert leaf in the tree
     _updatedRoot = _merkleTree._insert(_leaf);
 
+    // Calculate the new root index (circular buffer)
     uint32 newRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+
+    // Update the current root index
     currentRootIndex = newRootIndex;
+
+    // Store the new root at the new index
     roots[newRootIndex] = _updatedRoot;
 
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
@@ -103,6 +113,7 @@ abstract contract State is IState {
   function _isKnownRoot(uint256 _root) internal view returns (bool _known) {
     if (_root == 0) return false;
 
+    // Iterate the root circular buffer to find the root
     for (uint32 _i = 1; _i <= ROOT_HISTORY_SIZE; ++_i) {
       if (roots[_i] == _root) return true;
     }

@@ -26,19 +26,29 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   address public immutable ASSET;
 
   modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
+    // Check caller is the allowed processooor
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
+
+    // Check the context matches the proof's public signal to ensure its integrity
     if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) revert ContextMismatch();
+
+    // Check the state root is known
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
+
+    // Check the ASP root is the latest
     if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
     _;
   }
 
   constructor(address _entrypoint, address _verifier, address _asset) State(_entrypoint, _verifier) {
+    // Sanitize initial addresses
     if (_asset == address(0)) revert ZeroAddress();
     if (_verifier == address(0)) revert ZeroAddress();
     if (_entrypoint == address(0)) revert ZeroAddress();
 
+    // Store asset address
     ASSET = _asset;
+    // Compute SCOPE
     SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
   }
 
@@ -57,8 +67,10 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
+    // Store depositor and ragequit cooldown
     deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
 
+    // Compute commitment hash
     _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
     // Insert commitment in state (revert if already present)
@@ -143,6 +155,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   function windDown() external onlyEntrypoint {
     // Check pool is still alive
     if (dead) revert PoolIsDead();
+
     // Die
     dead = true;
 

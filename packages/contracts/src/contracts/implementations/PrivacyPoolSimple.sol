@@ -19,6 +19,7 @@ contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
    * @param _amount The amount of asset receiving
    */
   function _pull(address, uint256 _amount) internal override(PrivacyPool) {
+    // Check the amount matches the value sent
     if (msg.value != _amount) revert InsufficientValue();
   }
 
@@ -28,6 +29,7 @@ contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
    * @param _amount The amount of native asset being sent
    */
   function _push(address _recipient, uint256 _amount) internal override(PrivacyPool) {
+    /// Try to send native asset to recipient
     (bool _success,) = _recipient.call{value: _amount}('');
     if (!_success) revert FailedToSendETH();
   }
