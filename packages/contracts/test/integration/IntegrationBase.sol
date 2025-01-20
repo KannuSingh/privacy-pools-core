@@ -61,7 +61,8 @@ contract IntegrationBase is Test {
 
   address internal immutable _OWNER = makeAddr('OWNER');
   address internal immutable _POSTMAN = makeAddr('POSTMAN');
-  address internal immutable _VERIFIER = makeAddr('VERIFIER');
+  address internal immutable _WITHDRAWAL_VERIFIER = makeAddr('WITHDRAWAL_VERIFIER');
+  address internal immutable _RAGEQUIT_VERIFIER = makeAddr('RAGEQUIT_VERIFIER');
   address internal immutable _RELAYER = makeAddr('RELAYER');
   address internal immutable _ALICE = makeAddr('ALICE');
   address internal immutable _BOB = makeAddr('BOB');
@@ -89,10 +90,12 @@ contract IntegrationBase is Test {
     );
 
     // Deploy ETH Pool
-    _ethPool = new PrivacyPoolSimple(address(_entrypoint), address(_VERIFIER));
+    _ethPool = new PrivacyPoolSimple(address(_entrypoint), address(_WITHDRAWAL_VERIFIER), address(_RAGEQUIT_VERIFIER));
 
     // Deploy DAI Pool
-    _daiPool = new PrivacyPoolComplex(address(_entrypoint), address(_VERIFIER), address(_DAI));
+    _daiPool = new PrivacyPoolComplex(
+      address(_entrypoint), address(_WITHDRAWAL_VERIFIER), address(_RAGEQUIT_VERIFIER), address(_DAI)
+    );
   }
 
   function _registerPools() internal {
@@ -147,7 +150,7 @@ contract IntegrationBase is Test {
 
   function _generateWithdrawalParams(WithdrawalParams memory _params)
     internal
-    returns (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.Proof memory _proof)
+    returns (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof)
   {
     bytes memory _feeData = abi.encode(
       IEntrypoint.FeeData({
@@ -164,7 +167,7 @@ contract IntegrationBase is Test {
     uint256 _newCommitmentHash = uint256(keccak256('NEW_COMMITMENT_HASH')) % Constants.SNARK_SCALAR_FIELD;
     uint256 _nullifierHash = PoseidonT2.hash([_params.nullifier]);
 
-    _proof = ProofLib.Proof({
+    _proof = ProofLib.WithdrawProof({
       pA: [uint256(0), uint256(0)],
       pB: [[uint256(0), uint256(0)], [uint256(0), uint256(0)]],
       pC: [uint256(0), uint256(0)],
@@ -177,6 +180,28 @@ contract IntegrationBase is Test {
         _context, // calculation: uint256(keccak256(abi.encode(_withdrawal, _params.scope)));
         _nullifierHash,
         _newCommitmentHash
+      ]
+    });
+  }
+
+  function _generateRagequitProof(
+    uint256 _commitmentHash,
+    uint256 _precommitmentHash,
+    uint256 _nullifier,
+    uint256 _value,
+    uint256 _label
+  ) internal pure returns (ProofLib.RagequitProof memory _proof) {
+    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
+    return ProofLib.RagequitProof({
+      pA: [uint256(0), uint256(0)],
+      pB: [[uint256(0), uint256(0)], [uint256(0), uint256(0)]],
+      pC: [uint256(0), uint256(0)],
+      pubSignals: [
+        _commitmentHash, // pubSignals[0] is the commitmentHash
+        _precommitmentHash, // pubSignals[1] is the precommitmentHash
+        _nullifierHash, // pubSignals[2] is the nullifierHash
+        _value, // pubSignals[3] is the value
+        _label // pubSignals[4] is the label
       ]
     });
   }

@@ -35,7 +35,7 @@ struct RelayParams {
 contract PrivacyPoolERC20ForTest {
   address internal _asset;
 
-  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata _proof) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata _proof) external {
     uint256 _amount = _proof.pubSignals[0];
     IERC20(_asset).transfer(msg.sender, _amount);
   }
@@ -46,14 +46,14 @@ contract PrivacyPoolERC20ForTest {
 }
 
 contract PrivacyPoolETHForTest {
-  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata _proof) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata _proof) external {
     uint256 _amount = _proof.pubSignals[0];
     msg.sender.call{value: _amount}('');
   }
 }
 
 contract FaultyPrivacyPool is Test {
-  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.Proof calldata) external {
+  function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata) external {
     // remove half of the eth balance from msg.sender
     deal(msg.sender, msg.sender.balance / 2);
   }
@@ -414,7 +414,7 @@ contract UnitDeposit is UnitEntrypoint {
  * @notice Unit tests for Entrypoint relay functionality
  */
 contract UnitRelay is UnitEntrypoint {
-  using ProofLib for ProofLib.Proof;
+  using ProofLib for ProofLib.WithdrawProof;
 
   receive() external payable {}
 
@@ -423,7 +423,7 @@ contract UnitRelay is UnitEntrypoint {
    */
   function test_RelayERC20GivenValidWithdrawalAndProof(
     RelayParams memory _params,
-    ProofLib.Proof memory _proof
+    ProofLib.WithdrawProof memory _proof
   ) external {
     // Test only for ERC20 tokens, not ETH
     vm.assume(_params.asset != _ETH);
@@ -509,7 +509,10 @@ contract UnitRelay is UnitEntrypoint {
   /**
    * @notice Test that the Entrypoint correctly relays ETH withdrawal and distributes fees
    */
-  function test_RelayETHGivenValidWithdrawalAndProof(RelayParams memory _params, ProofLib.Proof memory _proof) external {
+  function test_RelayETHGivenValidWithdrawalAndProof(
+    RelayParams memory _params,
+    ProofLib.WithdrawProof memory _proof
+  ) external {
     // Setup test with valid recipients and amounts
     _assumeFuzzable(_params.recipient);
     _assumeFuzzable(_params.feeRecipient);
@@ -586,7 +589,7 @@ contract UnitRelay is UnitEntrypoint {
   /**
    * @notice Test that the Entrypoint reverts when the pool state is invalid
    */
-  function test_RelayInvalidPoolState(RelayParams memory _params, ProofLib.Proof memory _proof) external {
+  function test_RelayInvalidPoolState(RelayParams memory _params, ProofLib.WithdrawProof memory _proof) external {
     // Setup test with valid recipients and amount
     _assumeFuzzable(_params.recipient);
     _assumeFuzzable(_params.feeRecipient);
@@ -633,7 +636,7 @@ contract UnitRelay is UnitEntrypoint {
    */
   function test_RelayWhenWithdrawalAmountIsZero(
     IPrivacyPool.Withdrawal memory _withdrawal,
-    ProofLib.Proof memory _proof
+    ProofLib.WithdrawProof memory _proof
   ) external {
     // Set withdrawal amount to zero
     _proof.pubSignals[0] = 0;
@@ -651,7 +654,7 @@ contract UnitRelay is UnitEntrypoint {
   function test_RelayWhenPoolNotFound(
     address _caller,
     IPrivacyPool.Withdrawal memory _withdrawal,
-    ProofLib.Proof memory _proof
+    ProofLib.WithdrawProof memory _proof
   ) external {
     // Ensure non-zero withdrawal amount
     vm.assume(_proof.pubSignals[0] != 0);
@@ -669,7 +672,7 @@ contract UnitRelay is UnitEntrypoint {
   function test_RelayWhenInvalidProcessooor(
     address _processooor,
     RelayParams memory _params,
-    ProofLib.Proof memory _proof
+    ProofLib.WithdrawProof memory _proof
   ) external {
     // Setup test with valid parameters but invalid processooor
     _assumeFuzzable(_params.asset);

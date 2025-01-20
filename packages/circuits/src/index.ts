@@ -12,7 +12,7 @@ async function main() {
   await circomkit.compile("commitment", {
     file: "commitment",
     template: "CommitmentHasher",
-    pubs: ["value", "label", "nullifier", "secret"],
+    pubs: ["value", "label"],
   });
 
   // artifacts output at `build/withdraw` directory

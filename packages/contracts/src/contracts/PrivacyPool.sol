@@ -4,8 +4,6 @@ pragma solidity 0.8.28;
 import {State} from './State.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
-import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
-import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
 import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
@@ -17,7 +15,8 @@ import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
  * @dev Deposits can be irreversibly suspended by the Entrypoint, while withdrawals can't.
  */
 abstract contract PrivacyPool is State, IPrivacyPool {
-  using ProofLib for ProofLib.Proof;
+  using ProofLib for ProofLib.WithdrawProof;
+  using ProofLib for ProofLib.RagequitProof;
 
   /// @inheritdoc IPrivacyPool
   uint256 public immutable SCOPE;
@@ -25,7 +24,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   address public immutable ASSET;
 
-  modifier validWithdrawal(Withdrawal memory _w, ProofLib.Proof memory _p) {
+  modifier validWithdrawal(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) {
     // Check caller is the allowed processooor
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
 
@@ -40,11 +39,17 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _;
   }
 
-  constructor(address _entrypoint, address _verifier, address _asset) State(_entrypoint, _verifier) {
+  constructor(
+    address _entrypoint,
+    address _withdrawalVerifier,
+    address _ragequitVerifier,
+    address _asset
+  ) State(_entrypoint, _withdrawalVerifier, _ragequitVerifier) {
     // Sanitize initial addresses
     if (_asset == address(0)) revert ZeroAddress();
-    if (_verifier == address(0)) revert ZeroAddress();
     if (_entrypoint == address(0)) revert ZeroAddress();
+    if (_ragequitVerifier == address(0)) revert ZeroAddress();
+    if (_withdrawalVerifier == address(0)) revert ZeroAddress();
 
     // Store asset address
     ASSET = _asset;
@@ -83,12 +88,12 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   }
 
   /// @inheritdoc IPrivacyPool
-  function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external validWithdrawal(_w, _p) {
+  function withdraw(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) external validWithdrawal(_w, _p) {
     // Verify proof with Groth16 verifier
-    if (!VERIFIER.verifyProof(_p)) revert InvalidProof();
+    if (!WITHDRAWAL_VERIFIER.verifyProof(_p)) revert InvalidProof();
 
     // Mark commitment nullifier as spent
-    _process(_p.existingNullifierHash(), NullifierStatus.SPENT);
+    _spend(_p.existingNullifierHash());
 
     // Insert new commitment in state
     _insert(_p.newCommitmentHash());
@@ -100,51 +105,24 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   }
 
   /// @inheritdoc IPrivacyPool
-  function initiateRagequit(uint256 _value, uint256 _label, uint256 _precommitment, uint256 _nullifier) external {
+  function ragequit(ProofLib.RagequitProof memory _p) external {
     // Check if caller is original depositor
+    uint256 _label = _p.label();
     if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
 
-    // Compute nullifier hash
-    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
-
-    // Compute commitment hash
-    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitment]);
+    // Verify proof with Groth16 verifier
+    if (!RAGEQUIT_VERIFIER.verifyProof(_p)) revert InvalidProof();
 
     // Check commitment exists in state
-    if (!_isInState(_commitment)) revert InvalidCommitment();
+    if (!_isInState(_p.commitmentHash())) revert InvalidCommitment();
 
     // Mark nullifier hash as pending for ragequit
-    _process(_nullifierHash, NullifierStatus.RAGEQUIT_PENDING);
+    _spend(_p.nullifierHash());
 
-    emit RagequitInitiated(msg.sender, _commitment, _label, _value);
-  }
+    // Transfer out funds to ragequitter
+    _push(msg.sender, _p.value());
 
-  /// @inheritdoc IPrivacyPool
-  function finalizeRagequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external {
-    // Check if caller is original depositor
-    if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
-    // Check if ragequit cooldown has elapsed
-    if (deposits[_label].whenRagequitteable > block.timestamp) revert NotYetRagequitteable();
-
-    // Compute nullifier hash
-    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
-
-    // Compute precommitment hash
-    uint256 _precommitmentHash = PoseidonT3.hash([_nullifier, _secret]);
-
-    // Compute commitment hash
-    uint256 _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
-
-    // Check commitment exists in state
-    if (!_isInState(_commitment)) revert InvalidCommitment();
-
-    // Spend ragequitteable nullifier hash
-    _process(_nullifierHash, NullifierStatus.RAGEQUIT_FINALIZED);
-
-    // Transfer funds to ragequitter
-    _push(msg.sender, _value);
-
-    emit RagequitFinalized(msg.sender, _commitment, _label, _value);
+    emit Ragequit(msg.sender, _p.commitmentHash(), _p.label(), _p.value());
   }
 
   /*///////////////////////////////////////////////////////////////

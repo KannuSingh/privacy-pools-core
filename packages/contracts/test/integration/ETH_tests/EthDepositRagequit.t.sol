@@ -5,6 +5,7 @@ import {IntegrationBase} from '../IntegrationBase.sol';
 import {IEntrypoint} from 'contracts/Entrypoint.sol';
 import {IPrivacyPool} from 'contracts/PrivacyPool.sol';
 
+import {ProofLib} from 'contracts/lib/ProofLib.sol';
 import {IState} from 'interfaces/IState.sol';
 
 contract IntegrationEthDepositRagequit is IntegrationBase {
@@ -51,37 +52,27 @@ contract IntegrationEthDepositRagequit is IntegrationBase {
                                  RAGEQUIT
     //////////////////////////////////////////////////////////////*/
 
-    // Wait for cooldown to expire
-    vm.warp(block.timestamp + 1 weeks);
+    // Generate ragequit proof
+    ProofLib.RagequitProof memory _ragequitProof = _generateRagequitProof(
+      _params.commitment, _params.precommitment, _params.nullifier, _params.amountAfterFee, _params.label
+    );
+
+    // TODO: remove when we have a verifier
+    vm.mockCall(
+      address(_RAGEQUIT_VERIFIER),
+      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[5]))', _ragequitProof),
+      abi.encode(true)
+    );
 
     // Expect Ragequit initiated event from privacy pool
     vm.expectEmit(address(_ethPool));
-    emit IPrivacyPool.RagequitInitiated(_ALICE, _params.commitment, _params.label, _params.amountAfterFee);
+    emit IPrivacyPool.Ragequit(_ALICE, _params.commitment, _params.label, _params.amountAfterFee);
 
     // Initiate Ragequit
     vm.prank(_ALICE);
-    _ethPool.initiateRagequit(_params.amountAfterFee, _params.label, _params.precommitment, _params.nullifier);
+    _ethPool.ragequit(_ragequitProof);
 
-    assertEq(
-      uint8(_ethPool.nullifierHashes(_hash(_params.nullifier))),
-      uint8(IState.NullifierStatus.RAGEQUIT_PENDING),
-      'Incorrect nullifier status'
-    );
-
-    // Expect Ragequit finalized event from privacy pool
-    vm.expectEmit(address(_ethPool));
-    emit IPrivacyPool.RagequitFinalized(_ALICE, _params.commitment, _params.label, _params.amountAfterFee);
-
-    // Finalize Ragequit
-    vm.prank(_ALICE);
-    _ethPool.finalizeRagequit(_params.amountAfterFee, _params.label, _params.nullifier, _params.secret);
-
-    // Assert nullifier status
-    assertEq(
-      uint8(_ethPool.nullifierHashes(_hash(_params.nullifier))),
-      uint8(IState.NullifierStatus.RAGEQUIT_FINALIZED),
-      'Incorrect nullifier status'
-    );
+    assertTrue(_ethPool.nullifierHashes(_hash(_params.nullifier)), 'Nullifier not spent');
 
     // Assert balances
     assertEq(_ALICE.balance, _aliceInitialBalance - _params.fee, 'Alice balance mismatch');

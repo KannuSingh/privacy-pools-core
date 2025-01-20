@@ -229,9 +229,9 @@ interface IEntrypoint {
   /**
    * @notice Process a withdrawal
    * @param _withdrawal The `Withdrawal` struct
-   * @param _proof The `Proof` struct containing the proof signals
+   * @param _proof The `WithdrawProof` struct containing the withdarawal proof signals
    */
-  function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external;
+  function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.WithdrawProof calldata _proof) external;
 
   /**
    * @notice Register a Privacy Pool in the registry

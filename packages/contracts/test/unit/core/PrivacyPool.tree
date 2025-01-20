@@ -53,34 +53,16 @@ PrivacyPool::withdraw
 └── When caller is not processooor
     └── It reverts with InvalidProcesooor
 
-PrivacyPool::initiateRagequit
+PrivacyPool::ragequit
 ├── Given caller is original depositor
 │   ├── Given commitment exists in state
 │   │   ├── When nullifier not spent
-│   │   │   ├── It computes nullifier hash correctly
-│   │   │   ├── It computes commitment hash correctly
-│   │   │   ├── It marks nullifier as ragequit pending
-│   │   │   └── It emits RagequitInitiated event
-│   │   └── When nullifier has invalid status
-│   │       └── It reverts with InvalidNullifierStatusChange
-│   └── When commitment not in state
-│       └── It reverts with InvalidCommitment
-└── When caller is not original depositor
-    └── It reverts with OnlyOriginalDepositor
-
-PrivacyPool::finalizeRagequit
-├── Given caller is original depositor
-│   ├── Given commitment exists in state
-│   │   ├── Given nullifier is pending ragequit
-│   │   │   ├── When cooldown period elapsed
-│   │   │   │   ├── It verifies commitment matches input
-│   │   │   │   ├── It marks nullifier as ragequit finalized
-│   │   │   │   ├── It transfers value to depositor
-│   │   │   │   └── It emits RagequitFinalized event
-│   │   │   └── When cooldown period not elapsed
-│   │   │       └── It reverts with NotYetRagequitteable
-│   │   └── When nullifier has invalid status
-│   │       └── It reverts with InvalidNullifierStatusChange
+│   │   │   ├── It verifies the proof
+│   │   │   ├── It marks nullifier as spent
+│   │   │   ├── It transfers value to depositor
+│   │   │   └── It emits Withdrawn event
+│   │   └── When nullifier already spent
+│   │       └── It reverts with NullifierAlreadySpent
 │   └── When commitment not in state
 │       └── It reverts with InvalidCommitment
 └── When caller is not original depositor

@@ -23,7 +23,9 @@ abstract contract State is IState {
   /// @inheritdoc IState
   IEntrypoint public immutable ENTRYPOINT;
   /// @inheritdoc IState
-  IVerifier public immutable VERIFIER; // groth16 verifier contract output of snarkjs
+  IVerifier public immutable WITHDRAWAL_VERIFIER; // groth16 verifier contract output of snarkjs
+
+  IVerifier public immutable RAGEQUIT_VERIFIER; // groth16 verifier contract output of snarkjs
 
   /// @inheritdoc IState
   uint256 public nonce;
@@ -39,7 +41,7 @@ abstract contract State is IState {
   LeanIMTData internal _merkleTree;
 
   /// @inheritdoc IState
-  mapping(uint256 _nullifierHash => NullifierStatus _spent) public nullifierHashes;
+  mapping(uint256 _nullifierHash => bool _spent) public nullifierHashes;
   /// @inheritdoc IState
   mapping(uint256 _label => Deposit _deposit) public deposits;
 
@@ -51,9 +53,10 @@ abstract contract State is IState {
     _;
   }
 
-  constructor(address _entrypoint, address _verifier) {
+  constructor(address _entrypoint, address _withdrawalVerifier, address _ragequitVerifier) {
     ENTRYPOINT = IEntrypoint(_entrypoint);
-    VERIFIER = IVerifier(_verifier);
+    WITHDRAWAL_VERIFIER = IVerifier(_withdrawalVerifier);
+    RAGEQUIT_VERIFIER = IVerifier(_ragequitVerifier);
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -61,28 +64,15 @@ abstract contract State is IState {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Updates a nullifier hash status
-   * @param _nullifierHash The nullifier hash to update
+   * @notice Spends a nullifier hash
+   * @param _nullifierHash The nullifier hash to spend
    */
-  function _process(uint256 _nullifierHash, NullifierStatus _new) internal {
-    // Fetch current nullifier hash status
-    NullifierStatus _current = nullifierHashes[_nullifierHash];
+  function _spend(uint256 _nullifierHash) internal {
+    // Check if the nullifier is already spent
+    if (nullifierHashes[_nullifierHash]) revert NullifierAlreadySpent();
 
-    // Withdrawal = none -> spent
-    bool _withdrawPath = _current == NullifierStatus.NONE && _new == NullifierStatus.SPENT;
-
-    // Initialize ragequit = none -> pending ragequit
-    bool _initRagequitPath = _current == NullifierStatus.NONE && _new == NullifierStatus.RAGEQUIT_PENDING;
-
-    // Finalize ragequit = pending ragequit -> finalized ragequit
-    bool _finalizeRagequitPath =
-      _current == NullifierStatus.RAGEQUIT_PENDING && _new == NullifierStatus.RAGEQUIT_FINALIZED;
-
-    // Check status change is a known valid one
-    if (!(_withdrawPath || _initRagequitPath || _finalizeRagequitPath)) revert InvalidNullifierStatusChange();
-
-    // Store new status
-    nullifierHashes[_nullifierHash] = _new;
+    // Mark as spent
+    nullifierHashes[_nullifierHash] = true;
   }
 
   /**

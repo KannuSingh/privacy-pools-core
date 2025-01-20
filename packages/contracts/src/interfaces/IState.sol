@@ -70,7 +70,7 @@ interface IState {
   /**
    * @notice Thrown when trying to spend a nullifier that has already been spent
    */
-  error InvalidNullifierStatusChange();
+  error NullifierAlreadySpent();
 
   /**
    * @notice Thrown when trying to initiate the ragequitting process of a commitment before the waiting period
@@ -100,10 +100,16 @@ interface IState {
   function ENTRYPOINT() external view returns (IEntrypoint _entrypoint);
 
   /**
-   * @notice Returns the configured Verifier contract
+   * @notice Returns the configured Verifier contract for withdrawals
    * @return _verifier The Verifier contract
    */
-  function VERIFIER() external view returns (IVerifier _verifier);
+  function WITHDRAWAL_VERIFIER() external view returns (IVerifier _verifier);
+
+  /**
+   * @notice Returns the configured Verifier contract for ragequits
+   * @return _verifier The Verifier contract
+   */
+  function RAGEQUIT_VERIFIER() external view returns (IVerifier _verifier);
 
   /**
    * @notice Returns the current root index
@@ -131,11 +137,11 @@ interface IState {
   function roots(uint256 _index) external view returns (uint256 _root);
 
   /**
-   * @notice Returns the status of a nullifier hash
+   * @notice Returns the spending status of a nullifier hash
    * @param _nullifierHash The nullifier hash
-   * @return _status The nullifier hash status
+   * @return _spent The boolean indicating if it is spent
    */
-  function nullifierHashes(uint256 _nullifierHash) external view returns (NullifierStatus _status);
+  function nullifierHashes(uint256 _nullifierHash) external view returns (bool _spent);
 
   /**
    * @notice Returns the original depositor that generated a label

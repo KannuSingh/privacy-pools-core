@@ -17,7 +17,7 @@ describe("CommitmentHasher Circuit", () => {
     circuit = await circomkit.WitnessTester(`commitment`, {
       file: "commitment",
       template: "CommitmentHasher",
-      pubs: ["value", "label", "nullifier", "secret"],
+      pubs: ["value", "label"],
     });
   });
 
@@ -38,7 +38,7 @@ describe("CommitmentHasher Circuit", () => {
         nullifier: input.nullifier,
         secret: input.secret,
       },
-      { commitment: commitmentHash, precommitmentHash, nullifierHash }
+      { commitment: commitmentHash, precommitmentHash, nullifierHash },
     );
   });
 
@@ -68,7 +68,7 @@ describe("CommitmentHasher Circuit", () => {
         nullifier: childInput.nullifier,
         secret: childInput.secret,
       },
-      { commitment: commitmentHash, precommitmentHash, nullifierHash }
+      { commitment: commitmentHash, precommitmentHash, nullifierHash },
     );
   });
 
@@ -90,7 +90,7 @@ describe("CommitmentHasher Circuit", () => {
           nullifier: input.nullifier,
           secret: input.secret,
         },
-        { commitment: commitmentHash, precommitmentHash, nullifierHash }
+        { commitment: commitmentHash, precommitmentHash, nullifierHash },
       );
     });
 
@@ -114,7 +114,7 @@ describe("CommitmentHasher Circuit", () => {
           nullifier: input.nullifier,
           secret: input.secret,
         },
-        { commitment: commitmentHash, precommitmentHash, nullifierHash }
+        { commitment: commitmentHash, precommitmentHash, nullifierHash },
       );
     });
 

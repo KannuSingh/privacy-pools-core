@@ -18,7 +18,7 @@ import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
  */
 contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, IEntrypoint {
   using SafeERC20 for IERC20;
-  using ProofLib for ProofLib.Proof;
+  using ProofLib for ProofLib.WithdrawProof;
 
   // `keccak256('OWNER_ROLE')`
   bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
@@ -103,7 +103,10 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
-  function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.Proof calldata _proof) external nonReentrant {
+  function relay(
+    IPrivacyPool.Withdrawal calldata _withdrawal,
+    ProofLib.WithdrawProof calldata _proof
+  ) external nonReentrant {
     // Check withdrawal amount is non-zero
     if (_proof.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
     // Check allowed processooor is this Entrypoint

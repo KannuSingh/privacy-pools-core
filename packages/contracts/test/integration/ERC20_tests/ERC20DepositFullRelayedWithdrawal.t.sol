@@ -64,7 +64,7 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
     _insertIntoShadowASPMerkleTree(_DEFAULT_ASP_ROOT);
 
     // Generate withdrawal params
-    (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.Proof memory _proof) = _generateWithdrawalParams(
+    (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof) = _generateWithdrawalParams(
       WithdrawalParams({
         processor: address(_entrypoint),
         recipient: _ALICE,
@@ -84,7 +84,11 @@ contract IntegrationERC20DepositFullRelayedWithdrawal is IntegrationBase {
     _entrypoint.updateRoot(_proof.pubSignals[3], bytes32('IPFS_HASH'));
 
     // TODO: remove once we have a verifier
-    vm.mockCall(address(_VERIFIER), abi.encodeWithSelector(IVerifier.verifyProof.selector, _proof), abi.encode(true));
+    vm.mockCall(
+      address(_WITHDRAWAL_VERIFIER),
+      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[8]))', _proof),
+      abi.encode(true)
+    );
 
     // Expect withdrawal event from privacy pool
     vm.expectEmit(address(_daiPool));

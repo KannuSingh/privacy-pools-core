@@ -10,7 +10,11 @@ import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
  * @notice Test contract for the PrivacyPoolSimple
  */
 contract SimplePoolForTest is PrivacyPoolSimple {
-  constructor(address _entrypoint, address _verifier) PrivacyPoolSimple(_entrypoint, _verifier) {}
+  constructor(
+    address _entrypoint,
+    address _withdrawalVerifier,
+    address _ragequitVerifier
+  ) PrivacyPoolSimple(_entrypoint, _withdrawalVerifier, _ragequitVerifier) {}
 
   function pull(address _sender, uint256 _amount) external payable {
     _pull(_sender, _amount);
@@ -29,7 +33,8 @@ contract UnitPrivacyPoolSimple is Test {
   uint256 internal _scope;
 
   address internal immutable _ENTRYPOINT = makeAddr('entrypoint');
-  address internal immutable _VERIFIER = makeAddr('verifier');
+  address internal immutable _WITHDRAWAL_VERIFIER = makeAddr('withdrawalVerifier');
+  address internal immutable _RAGEQUIT_VERIFIER = makeAddr('ragequitVerifier');
   address internal immutable _ASSET = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /*//////////////////////////////////////////////////////////////
@@ -37,7 +42,7 @@ contract UnitPrivacyPoolSimple is Test {
   //////////////////////////////////////////////////////////////*/
 
   function setUp() public {
-    _pool = new SimplePoolForTest(_ENTRYPOINT, _VERIFIER);
+    _pool = new SimplePoolForTest(_ENTRYPOINT, _WITHDRAWAL_VERIFIER, _RAGEQUIT_VERIFIER);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
   }
 
@@ -59,13 +64,24 @@ contract UnitConstructor is UnitPrivacyPoolSimple {
    * @notice Test for the constructor given valid addresses
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorGivenValidAddresses(address _entrypoint, address _verifier) external {
-    vm.assume(_entrypoint != address(0) && _verifier != address(0));
+  function test_ConstructorGivenValidAddresses(
+    address _entrypoint,
+    address _withdrawalVerifier,
+    address _ragequitVerifier
+  ) external {
+    vm.assume(_entrypoint != address(0) && _withdrawalVerifier != address(0) && _ragequitVerifier != address(0));
 
-    _pool = new SimplePoolForTest(_entrypoint, _verifier);
+    _pool = new SimplePoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier);
     _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
-    assertEq(address(_pool.VERIFIER()), _verifier, 'Verifier address should match constructor input');
+    assertEq(
+      address(_pool.WITHDRAWAL_VERIFIER()),
+      _withdrawalVerifier,
+      'Withdrawal verifier address should match constructor input'
+    );
+    assertEq(
+      address(_pool.RAGEQUIT_VERIFIER()), _ragequitVerifier, 'Ragequit verifier address should match constructor input'
+    );
     assertEq(_pool.ASSET(), _ASSET, 'Asset address should match constructor input');
     assertEq(_pool.SCOPE(), _scope, 'Scope should be computed correctly');
   }
@@ -74,11 +90,19 @@ contract UnitConstructor is UnitPrivacyPoolSimple {
    * @notice Test for the constructor when any address is zero
    * @dev Assumes all addresses are non-zero and valid
    */
-  function test_ConstructorWhenAnyAddressIsZero(address _entrypoint, address _verifier) external {
+  function test_ConstructorWhenAnyAddressIsZero(
+    address _entrypoint,
+    address _withdrawalVerifier,
+    address _ragequitVerifier
+  ) external {
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new SimplePoolForTest(address(0), _verifier);
+    new SimplePoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier);
     vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
-    new SimplePoolForTest(_entrypoint, address(0));
+    new SimplePoolForTest(_entrypoint, address(0), _ragequitVerifier);
+    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    new SimplePoolForTest(_entrypoint, _withdrawalVerifier, address(0));
+    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    new SimplePoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier);
   }
 }
 

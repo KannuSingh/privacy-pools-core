@@ -10,12 +10,18 @@
     "test": "npx mocha",
     "test:merkle": "npx mocha --ignore tests/commitment.test.ts --ignore tests/withdrawal.test.ts",
     "test:withdraw": "npx mocha --ignore tests/commitment.test.ts --ignore tests/lean-imt.test.ts",
+    "test:commitment": "npx mocha --ignore tests/withdrawal.test.ts --ignore tests/lean-imt.test.ts",
     "circomspect": "circomspect -L ../../node_modules/circomlib/circuits/comparators.circom -L ../../node_modules/circomlib/circuits/mux1.circom -L ../../node_modules/circomlib/circuits/poseidon.circom ./circuits/*",
     "info:withdraw": "npx circomkit info withdraw",
+    "info:commitment": "npx circomkit info commitment",
     "setup:withdraw": "npx circomkit setup withdraw",
+    "setup:commitment": "npx circomkit setup commitment",
     "prove:withdraw": "npx circomkit prove withdraw default",
+    "prove:commitment": "npx circomkit prove commitment default",
     "verify:withdraw": "npx circomkit verify withdraw default",
-    "gencontract:withdraw": "snarkjs zkey export solidityverifier build/withdraw/groth16_pkey.zkey Verifier.sol"
+    "verify:commitment": "npx circomkit verify commitment default",
+    "gencontract:withdraw": "snarkjs zkey export solidityverifier build/withdraw/groth16_pkey.zkey WithdrawalVerifier.sol",
+    "gencontract:commitment": "snarkjs zkey export solidityverifier build/commitment/groth16_pkey.zkey CommitmentVerifier.sol"
   },
   "dependencies": {
     "@zk-kit/lean-imt": "^2.2.2",

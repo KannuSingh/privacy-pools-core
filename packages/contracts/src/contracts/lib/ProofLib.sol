@@ -6,6 +6,10 @@ pragma solidity 0.8.28;
  * @notice Facilitates accessing the public signals of a Groth16 proof.
  */
 library ProofLib {
+  /*///////////////////////////////////////////////////////////////
+                         WITHDRAWAL PROOF 
+  //////////////////////////////////////////////////////////////*/
+
   /**
    * @notice Struct containing Groth16 proof elements and public signals for withdrawal verification
    * @dev The public signals array must match the order of public inputs/outputs in the circuit
@@ -22,7 +26,7 @@ library ProofLib {
    *        - [6] existingNullifierHash: Hash of the nullifier being spent
    *        - [7] newCommitmentHash: Hash of the new commitment being created
    */
-  struct Proof {
+  struct WithdrawProof {
     uint256[2] pA;
     uint256[2][2] pB;
     uint256[2] pC;
@@ -39,7 +43,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The amount being withdrawn from Privacy Pool
    */
-  function withdrawnValue(Proof memory _p) public pure returns (uint256) {
+  function withdrawnValue(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[0];
   }
 
@@ -48,7 +52,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The root of the state tree at time of proof generation
    */
-  function stateRoot(Proof memory _p) public pure returns (uint256) {
+  function stateRoot(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[1];
   }
 
@@ -57,7 +61,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The depth of the state tree at time of proof generation
    */
-  function stateTreeDepth(Proof memory _p) public pure returns (uint256) {
+  function stateTreeDepth(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[2];
   }
 
@@ -66,7 +70,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The latest root of the ASP tree at time of proof generation
    */
-  function ASPRoot(Proof memory _p) public pure returns (uint256) {
+  function ASPRoot(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[3];
   }
 
@@ -75,7 +79,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The depth of the ASP tree at time of proof generation
    */
-  function ASPTreeDepth(Proof memory _p) public pure returns (uint256) {
+  function ASPTreeDepth(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[4];
   }
 
@@ -84,7 +88,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The context value binding the proof to specific withdrawal data
    */
-  function context(Proof memory _p) public pure returns (uint256) {
+  function context(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[5];
   }
 
@@ -93,7 +97,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The hash of the nullifier being spent in this withdrawal
    */
-  function existingNullifierHash(Proof memory _p) public pure returns (uint256) {
+  function existingNullifierHash(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[6];
   }
 
@@ -102,7 +106,38 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The hash of the new commitment being created
    */
-  function newCommitmentHash(Proof memory _p) public pure returns (uint256) {
+  function newCommitmentHash(WithdrawProof memory _p) public pure returns (uint256) {
     return _p.pubSignals[7];
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                          RAGEQUIT PROOF 
+  //////////////////////////////////////////////////////////////*/
+
+  struct RagequitProof {
+    uint256[2] pA;
+    uint256[2][2] pB;
+    uint256[2] pC;
+    uint256[5] pubSignals;
+  }
+
+  function commitmentHash(RagequitProof memory _p) public pure returns (uint256) {
+    return _p.pubSignals[0];
+  }
+
+  function precommitmentHash(RagequitProof memory _p) public pure returns (uint256) {
+    return _p.pubSignals[1];
+  }
+
+  function nullifierHash(RagequitProof memory _p) public pure returns (uint256) {
+    return _p.pubSignals[2];
+  }
+
+  function value(RagequitProof memory _p) public pure returns (uint256) {
+    return _p.pubSignals[3];
+  }
+
+  function label(RagequitProof memory _p) public pure returns (uint256) {
+    return _p.pubSignals[4];
   }
 }

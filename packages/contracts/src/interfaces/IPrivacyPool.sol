@@ -50,22 +50,13 @@ interface IPrivacyPool is IState {
   event Withdrawn(address indexed _processooor, uint256 _value, uint256 _spentNullifier, uint256 _newCommitment);
 
   /**
-   * @notice Emitted when initiating the ragequitting process of a commitment
+   * @notice Emitted when ragequitting a commitment
    * @param _ragequitter The address who ragequit
    * @param _commitment The ragequit commitment
    * @param _label The commitment label
    * @param _value The ragequit amount
    */
-  event RagequitInitiated(address indexed _ragequitter, uint256 _commitment, uint256 _label, uint256 _value);
-
-  /**
-   * @notice Emitted when finalizing the ragequit process of a commitment
-   * @param _ragequitter The address who ragequit
-   * @param _commitment The ragequit commitment
-   * @param _label The commitment label
-   * @param _value The ragequit amount
-   */
-  event RagequitFinalized(address indexed _ragequitter, uint256 _commitment, uint256 _label, uint256 _value);
+  event Ragequit(address indexed _ragequitter, uint256 _commitment, uint256 _label, uint256 _value);
 
   /**
    * @notice Emitted irreversibly suspending deposits
@@ -85,11 +76,6 @@ interface IPrivacyPool is IState {
    * @notice Thrown when trying to spend a commitment that does not exist in the state
    */
   error InvalidCommitment();
-
-  /**
-   * @notice Thrown when trying to spend an already spent nullifier
-   */
-  error InvalidNullifier();
 
   /**
    * @notice Thrown when calling `withdraw` while not being the allowed processooor
@@ -147,31 +133,16 @@ interface IPrivacyPool is IState {
   /**
    * @notice Privately withdraw funds by spending an existing commitment
    * @param _w The `Withdrawal` struct
-   * @param _p The `Proof` struct
+   * @param _p The `WithdrawProof` struct
    */
-  function withdraw(Withdrawal memory _w, ProofLib.Proof memory _p) external;
+  function withdraw(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) external;
 
   /**
-   * @notice Initiate the ragequitting process of a commitment
+   * @notice Publicly withdraw funds to original depositor without exposing secrets
    * @dev Only callable by the original depositor
-   * @dev The ragequitting process is implemented as a two-step process to avoid frontrunning
-   * @param _value Value of the existing commitment
-   * @param _label Label for a series of related commitments
-   * @param _precommitment Existing commitment's precommitment
-   * @param _nullifier Existing commitment nullifier
+   * @param _p the `RagequitProof` struct
    */
-  function initiateRagequit(uint256 _value, uint256 _label, uint256 _precommitment, uint256 _nullifier) external;
-
-  /**
-   * @notice Finalize the ragequitting process of a commitment
-   * @dev Only callable by the original depositor
-   * @dev The ragequitting process is implemented as a two-step process to avoid frontrunning
-   * @param _label Label for a series of related commitments
-   * @param _value Value of the existing commitment
-   * @param _nullifier Existing commitment nullifier
-   * @param _secret Existing commitment secret
-   */
-  function finalizeRagequit(uint256 _value, uint256 _label, uint256 _nullifier, uint256 _secret) external;
+  function ragequit(ProofLib.RagequitProof memory _p) external;
 
   /**
    * @notice Irreversibly suspends deposits
