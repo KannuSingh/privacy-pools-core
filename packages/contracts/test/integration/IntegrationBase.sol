@@ -109,15 +109,15 @@ contract IntegrationBase is Test {
     return _amount - (_amount * _feeBps) / 10_000;
   }
 
-  function _hash(uint256 _nullifier) internal pure returns (uint256 _hash) {
+  function _hashNullifier(uint256 _nullifier) internal pure returns (uint256) {
     return PoseidonT2.hash([_nullifier]);
   }
 
-  function _hash(uint256 _nullifier, uint256 _secret) internal pure returns (uint256 _hash) {
+  function _hashPrecommitment(uint256 _nullifier, uint256 _secret) internal pure returns (uint256) {
     return PoseidonT3.hash([_nullifier, _secret]);
   }
 
-  function _hash(uint256 _amount, uint256 _label, uint256 _precommitment) internal pure returns (uint256 _hash) {
+  function _hashCommitment(uint256 _amount, uint256 _label, uint256 _precommitment) internal pure returns (uint256) {
     return PoseidonT4.hash([_amount, _label, _precommitment]);
   }
 
@@ -141,15 +141,16 @@ contract IntegrationBase is Test {
     _params.fee = _amount - _params.amountAfterFee;
     _params.secret = _secret;
     _params.nullifier = _nullifier;
-    _params.precommitment = _hash(_params.nullifier, _params.secret);
+    _params.precommitment = _hashPrecommitment(_params.nullifier, _params.secret);
     _params.nonce = _pool.nonce();
     _params.scope = _pool.SCOPE();
     _params.label = uint256(keccak256(abi.encodePacked(_params.scope, ++_params.nonce)));
-    _params.commitment = _hash(_params.amountAfterFee, _params.label, _params.precommitment);
+    _params.commitment = _hashCommitment(_params.amountAfterFee, _params.label, _params.precommitment);
   }
 
   function _generateWithdrawalParams(WithdrawalParams memory _params)
     internal
+    view
     returns (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof)
   {
     bytes memory _feeData = abi.encode(
@@ -162,10 +163,9 @@ contract IntegrationBase is Test {
     _withdrawal = IPrivacyPool.Withdrawal(_params.processor, _params.scope, _feeData);
     uint256 _context = uint256(keccak256(abi.encode(_withdrawal, _params.scope)));
     uint256 _stateRoot = _shadowMerkleTree._root();
-    // uint256 _aspRoot = uint256(keccak256('ASP_ROOT')) % Constants.SNARK_SCALAR_FIELD;
     uint256 _aspRoot = _shadowASPMerkleTree._root();
     uint256 _newCommitmentHash = uint256(keccak256('NEW_COMMITMENT_HASH')) % Constants.SNARK_SCALAR_FIELD;
-    uint256 _nullifierHash = PoseidonT2.hash([_params.nullifier]);
+    uint256 _nullifierHash = _hashNullifier(_params.nullifier);
 
     _proof = ProofLib.WithdrawProof({
       pA: [uint256(0), uint256(0)],

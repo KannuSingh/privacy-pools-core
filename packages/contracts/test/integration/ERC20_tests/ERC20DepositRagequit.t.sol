@@ -84,7 +84,7 @@ contract IntegrationERC20DepositRagequit is IntegrationBase {
     vm.prank(_ALICE);
     _daiPool.ragequit(_ragequitProof);
 
-    assertTrue(_daiPool.nullifierHashes(_hash(_params.nullifier)), 'Nullifier not spent');
+    assertTrue(_daiPool.nullifierHashes(_hashNullifier(_params.nullifier)), 'Nullifier not spent');
 
     // Assert balances
     assertEq(_DAI.balanceOf(_ALICE), _aliceInitialBalance - _params.fee, 'Alice balance mismatch');

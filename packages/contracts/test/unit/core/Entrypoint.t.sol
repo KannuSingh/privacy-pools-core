@@ -46,9 +46,12 @@ contract PrivacyPoolERC20ForTest {
 }
 
 contract PrivacyPoolETHForTest {
+  error ETHTransferFailed();
+
   function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata _proof) external {
     uint256 _amount = _proof.pubSignals[0];
-    msg.sender.call{value: _amount}('');
+    (bool success,) = msg.sender.call{value: _amount}('');
+    if (!success) revert ETHTransferFailed();
   }
 }
 
@@ -163,7 +166,7 @@ contract UnitConstructor is UnitEntrypoint {
   /**
    * @notice Test that the Entrypoint is initialized with version 1
    */
-  function test_ConstructorWhenDeployed() external {
+  function test_ConstructorWhenDeployed() external view {
     bytes32 _initializableStorageSlot = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
     bytes32 _data = vm.load(address(_entrypoint), _initializableStorageSlot);
     uint64 _initialized = uint64(uint256(_data)); // First 64 bits contain _initialized
@@ -173,7 +176,7 @@ contract UnitConstructor is UnitEntrypoint {
   /**
    * @notice Test that the Entrypoint correctly assigns OWNER_ROLE and ASP_POSTMAN roles
    */
-  function test_InitializeGivenValidOwnerAndAdmin() external {
+  function test_InitializeGivenValidOwnerAndAdmin() external view {
     assertEq(_entrypoint.hasRole(_entrypoint.OWNER_ROLE(), _OWNER), true, 'Owner should have OWNER_ROLE');
     assertEq(_entrypoint.hasRole(_entrypoint.ASP_POSTMAN(), _POSTMAN), true, 'Postman should have ASP_POSTMAN role');
   }
@@ -256,7 +259,6 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _amount,
     uint256 _precommitment,
     uint256 _commitment,
-    // solhint-disable-next-line no-unused-vars
     PoolParams memory _params
   )
     external
@@ -301,7 +303,6 @@ contract UnitDeposit is UnitEntrypoint {
     address _depositor,
     uint256 _amount,
     uint256 _precommitment,
-    // solhint-disable-next-line no-unused-vars
     PoolParams memory _params
   )
     external
@@ -311,7 +312,7 @@ contract UnitDeposit is UnitEntrypoint {
   {
     vm.assume(_depositor != address(0));
 
-    (, uint256 _minDeposit, uint256 _vettingFeeBPS) = _entrypoint.assetConfig(IERC20(_ETH));
+    (, uint256 _minDeposit,) = _entrypoint.assetConfig(IERC20(_ETH));
     _amount = bound(_amount, 0, _minDeposit - 1);
     vm.deal(_depositor, _amount);
 
@@ -425,9 +426,6 @@ contract UnitRelay is UnitEntrypoint {
     RelayParams memory _params,
     ProofLib.WithdrawProof memory _proof
   ) external {
-    // Test only for ERC20 tokens, not ETH
-    vm.assume(_params.asset != _ETH);
-
     // Set up test environment with mock ERC20 token and privacy pool
     _params.asset = address(new ERC20forTest('Test', 'TEST'));
     _params.pool = address(new PrivacyPoolERC20ForTest());
@@ -441,7 +439,6 @@ contract UnitRelay is UnitEntrypoint {
     vm.assume(_params.feeRecipient != address(_entrypoint));
 
     // Configure withdrawal parameters within valid bounds
-    vm.assume(_params.amount != 0);
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
     _proof.pubSignals[0] = _params.amount;
@@ -708,15 +705,47 @@ contract UnitRelay is UnitEntrypoint {
  */
 contract UnitRegisterPool is UnitEntrypoint {
   /**
-   * @notice Test that the Entrypoint registers a new pool
+   * @notice Test that the Entrypoint registers a new ETH pool
    */
-  function test_RegisterPoolGivenPoolNotRegistered(
+  function test_RegisterETHPoolGivenPoolNotRegistered(
+    address _pool,
+    uint256 _minDeposit,
+    uint256 _vettingFeeBPS
+  ) external givenCallerHasOwnerRole {
+    // Setup test with valid pool and asset addresses
+    _assumeFuzzable(_pool);
+    _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000);
+
+    // Calculate pool scope and mock interactions
+    uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _ETH)));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
+
+    // Expect pool registration event
+    vm.expectEmit(address(_entrypoint));
+    emit IEntrypoint.PoolRegistered(IPrivacyPool(_pool), IERC20(_ETH), _scope);
+
+    // Execute pool registration
+    _entrypoint.registerPool(IERC20(_ETH), IPrivacyPool(_pool), _minDeposit, _vettingFeeBPS);
+
+    // Verify pool configuration is set correctly
+    (IPrivacyPool _retrievedPool, uint256 _retrievedMinDeposit, uint256 _retrievedFeeBPS) =
+      _entrypoint.assetConfig(IERC20(_ETH));
+    assertEq(address(_retrievedPool), _pool, 'Retrieved pool should match input pool');
+    assertEq(_retrievedMinDeposit, _minDeposit, 'Retrieved minimum deposit should match input');
+    assertEq(_retrievedFeeBPS, _vettingFeeBPS, 'Retrieved vetting fee should match input');
+  }
+
+  /**
+   * @notice Test that the Entrypoint registers a new ERC20 pool
+   */
+  function test_RegisterERC20PoolGivenPoolNotRegistered(
     address _pool,
     address _asset,
     uint256 _minDeposit,
     uint256 _vettingFeeBPS
   ) external givenCallerHasOwnerRole {
     // Setup test with valid pool and asset addresses
+    vm.assume(_asset != _ETH);
     _assumeFuzzable(_pool);
     _assumeFuzzable(_asset);
     _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000);
@@ -726,11 +755,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     _mockAndExpect(_pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
 
     // Mock ERC20 approval for non-ETH assets
-    if (_asset != _ETH) {
-      _mockAndExpect(
-        _asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true)
-      );
-    }
+    _mockAndExpect(_asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true));
 
     // Expect pool registration event
     vm.expectEmit(address(_entrypoint));
@@ -818,19 +843,49 @@ contract UnitRegisterPool is UnitEntrypoint {
  */
 contract UnitRemovePool is UnitEntrypoint {
   /**
-   * @notice Test that the Entrypoint removes a pool
+   * @notice Test that the Entrypoint removes an ETH pool
    */
-  function test_RemovePoolGivenPoolExists(
+  function test_RemovePoolGivenETHPoolExists(
+    PoolParams memory _params,
+    uint256 _scope
+  )
+    external
+    givenCallerHasOwnerRole
+    givenPoolExists(PoolParams(_params.pool, _ETH, _params.minDeposit, _params.vettingFeeBPS))
+  {
+    _params.asset = _ETH;
+    // Mock pool scope and interactions
+    _mockAndExpect(_params.pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
+
+    // Expect pool removal event
+    vm.expectEmit(address(_entrypoint));
+    emit IEntrypoint.PoolRemoved(IPrivacyPool(_params.pool), IERC20(_params.asset), _scope);
+
+    // Execute pool removal
+    _entrypoint.removePool(IERC20(_params.asset));
+
+    // Verify pool configuration is reset
+    (IPrivacyPool _retrievedPool, uint256 _retrievedMinDeposit, uint256 _retrievedFeeBPS) =
+      _entrypoint.assetConfig(IERC20(_params.asset));
+    assertEq(address(_retrievedPool), address(0), 'Pool should be removed');
+    assertEq(_retrievedMinDeposit, 0, 'Minimum deposit should be reset to 0');
+    assertEq(_retrievedFeeBPS, 0, 'Vetting fee should be reset to 0');
+    assertEq(address(_entrypoint.scopeToPool(_scope)), address(0), 'Scope to pool mapping should be cleared');
+  }
+
+  /**
+   * @notice Test that the Entrypoint removes an ERC20 pool
+   */
+  function test_RemovePoolGivenERC20PoolExists(
     PoolParams memory _params,
     uint256 _scope
   ) external givenCallerHasOwnerRole givenPoolExists(_params) {
+    vm.assume(_params.asset != _ETH);
     // Mock pool scope and interactions
     _mockAndExpect(_params.pool, abi.encodeWithSelector(IPrivacyPool.SCOPE.selector), abi.encode(_scope));
 
     // Mock ERC20 approval reset for non-ETH assets
-    if (_params.asset != _ETH) {
-      _mockAndExpect(_params.asset, abi.encodeWithSelector(IERC20.approve.selector, _params.pool, 0), abi.encode(true));
-    }
+    _mockAndExpect(_params.asset, abi.encodeWithSelector(IERC20.approve.selector, _params.pool, 0), abi.encode(true));
 
     // Expect pool removal event
     vm.expectEmit(address(_entrypoint));

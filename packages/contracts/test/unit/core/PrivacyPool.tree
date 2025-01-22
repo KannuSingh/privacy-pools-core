@@ -40,10 +40,8 @@ PrivacyPool::withdraw
 │   │   │   │   │   ├── It inserts new commitment
 │   │   │   │   │   ├── It transfers value to processooor
 │   │   │   │   │   └── It emits Withdrawn event
-│   │   │   │   ├── When nullifier already spent
-│   │   │   │   │   └── It reverts with InvalidNullifierStatusChange
-│   │   │   │   └── When nullifier is pending ragequit
-│   │   │   │       └── It reverts with InvalidNullifierStatusChange
+│   │   │   │   └── When nullifier already spent
+│   │   │   │       └── It reverts with NullifierAlreadySpent
 │   │   │   └── When ASP root is outdated
 │   │   │       └── It reverts with IncorrectASPRoot
 │   │   └── When state root unknown
@@ -60,7 +58,7 @@ PrivacyPool::ragequit
 │   │   │   ├── It verifies the proof
 │   │   │   ├── It marks nullifier as spent
 │   │   │   ├── It transfers value to depositor
-│   │   │   └── It emits Withdrawn event
+│   │   │   └── It emits Ragequit event
 │   │   └── When nullifier already spent
 │   │       └── It reverts with NullifierAlreadySpent
 │   └── When commitment not in state
@@ -77,16 +75,3 @@ PrivacyPool::windDown
 │       └── It reverts with PoolIsDead
 └── When caller is not entrypoint
     └── It reverts with OnlyEntrypoint
-
-PrivacyPool::handleValueInput
-├── Given asset is ETH
-│   ├── Given caller sent ETH
-│   │   ├── It verifies value matches msg value
-│   │   └── It processes ETH deposit
-│   └── When ETH amount mismatches
-│       └── It reverts
-└── Given asset is ERC20
-    ├── Given sufficient approval
-    │   └── It transfers tokens from sender
-    └── When insufficient approval
-        └── It reverts

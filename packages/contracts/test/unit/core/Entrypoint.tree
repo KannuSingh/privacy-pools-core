@@ -55,8 +55,10 @@ Entrypoint::relay
 │   │   │   ├── It transfers correct amounts
 │   │   │   ├── It maintains pool balance
 │   │   │   └── It emits WithdrawalRelayed event
-│   │   └── When withdrawal amount is zero
-│   │       └── It reverts with InvalidWithdrawalAmount
+│   │   ├── When withdrawal amount is zero
+│   │   │   └── It reverts with InvalidWithdrawalAmount
+│   │   └── When pool state is invalid
+│   │       └── It reverts with InvalidPoolState
 │   └── When invalid processooor
 │       └── It reverts with InvalidProcessooor
 └── When pool not found
@@ -129,11 +131,11 @@ Entrypoint::withdrawFees
 Entrypoint::latestRoot
 ├── Given association sets exist
 │   └── It returns most recent root
-└── Given no association sets
-    └── It returns zero
+└── When no association sets exist
+    └── It reverts with NoRootsAvailable
 
 Entrypoint::rootByIndex
 ├── Given valid index
 │   └── It returns correct root
 └── When index invalid
-    └── It reverts with panic
+    └── It reverts with InvalidIndex

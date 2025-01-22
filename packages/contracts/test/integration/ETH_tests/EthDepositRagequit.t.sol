@@ -72,7 +72,7 @@ contract IntegrationEthDepositRagequit is IntegrationBase {
     vm.prank(_ALICE);
     _ethPool.ragequit(_ragequitProof);
 
-    assertTrue(_ethPool.nullifierHashes(_hash(_params.nullifier)), 'Nullifier not spent');
+    assertTrue(_ethPool.nullifierHashes(_hashNullifier(_params.nullifier)), 'Nullifier not spent');
 
     // Assert balances
     assertEq(_ALICE.balance, _aliceInitialBalance - _params.fee, 'Alice balance mismatch');
