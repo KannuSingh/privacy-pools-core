@@ -12,6 +12,9 @@ export default defineConfig({
             reporter: ["text", "json", "html"], // Coverage reporters
             exclude: ["node_modules", "dist", "src/index.ts", ...configDefaults.exclude], // Files to exclude from coverage
         },
+        globalSetup: [
+          './test/unit/serve-artifacts.ts',
+        ],
     },
     resolve: {
         alias: {
