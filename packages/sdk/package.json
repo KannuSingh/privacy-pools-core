@@ -46,11 +46,15 @@
     "format": "prettier --check \"{src,test}/**/*.{js,ts,json}\"",
     "format:fix": "prettier --write \"{src,test}/**/*.{js,ts,json}\"",
     "lint": "eslint \"{src,test}/**/*.{js,ts,json}\"",
-    "lint:fix": "eslint --fix",
+    "lint:fix": "eslint \"{src,test}/**/*.{js,ts,json}\" --fix",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "test:cov": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
+    "@zk-kit/lean-imt": "2.2.2",
+    "maci-crypto": "2.5.0",
+    "snarkjs": "0.7.5",
+    "@types/snarkjs": "0.7.9",
     "viem": "2.21.4"
   },
   "devDependencies": {

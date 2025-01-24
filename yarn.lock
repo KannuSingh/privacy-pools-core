@@ -1333,7 +1333,7 @@
   dependencies:
     poseidon-solidity "0.0.5"
 
-"@zk-kit/lean-imt@^2.2.2":
+"@zk-kit/lean-imt@2.2.2", "@zk-kit/lean-imt@^2.2.2":
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/@zk-kit/lean-imt/-/lean-imt-2.2.2.tgz#79c8bd70fc0d444638328cb4781479b14c69a9dd"
   integrity sha512-rscIPEgBBcu9vP/DJ3J+3187G/ObKETl343G5enPawNT81oeQSdHx3e2ZapTC+GfrZ/AS2AHHUOpRS1FfdSwjg==
@@ -3415,7 +3415,7 @@ maci-core@^2.5.0:
     maci-crypto "^2.5.0"
     maci-domainobjs "^2.5.0"
 
-maci-crypto@^2.5.0:
+maci-crypto@2.5.0, maci-crypto@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/maci-crypto/-/maci-crypto-2.5.0.tgz#89a99921517b79564af8a356863c446b49e4cb0f"
   integrity sha512-ozrLDH6kaK62TomNr5tnVgrUs6szXHCwcRyPzsQy07Wg2ZX61nyY0EFgWKAuU8kXqvYRdTtQdgflw6qpVz/4+w==

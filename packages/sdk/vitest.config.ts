@@ -10,10 +10,10 @@ export default defineConfig({
         coverage: {
             provider: "v8",
             reporter: ["text", "json", "html"], // Coverage reporters
-            exclude: ["node_modules", "dist", "src/index.ts", ...configDefaults.exclude], // Files to exclude from coverage
+            exclude: [".rollup.cache", "node_modules", "dist", "src/index.ts", ...configDefaults.exclude], // Files to exclude from coverage
         },
         globalSetup: [
-          './test/unit/serve-artifacts.ts',
+            './test/unit/serve-artifacts.ts',
         ],
     },
     resolve: {
