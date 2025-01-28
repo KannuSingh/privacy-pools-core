@@ -36,7 +36,7 @@ contract PrivacyPoolERC20ForTest {
   address internal _asset;
 
   function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata _proof) external {
-    uint256 _amount = _proof.pubSignals[0];
+    uint256 _amount = _proof.pubSignals[2];
     IERC20(_asset).transfer(msg.sender, _amount);
   }
 
@@ -49,7 +49,7 @@ contract PrivacyPoolETHForTest {
   error ETHTransferFailed();
 
   function withdraw(IPrivacyPool.Withdrawal calldata, ProofLib.WithdrawProof calldata _proof) external {
-    uint256 _amount = _proof.pubSignals[0];
+    uint256 _amount = _proof.pubSignals[2];
     (bool success,) = msg.sender.call{value: _amount}('');
     if (!success) revert ETHTransferFailed();
   }
@@ -441,7 +441,7 @@ contract UnitRelay is UnitEntrypoint {
     // Configure withdrawal parameters within valid bounds
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
-    _proof.pubSignals[0] = _params.amount;
+    _proof.pubSignals[2] = _params.amount;
 
     // Construct withdrawal data with fee distribution details
     bytes memory _data = abi.encode(
@@ -530,7 +530,7 @@ contract UnitRelay is UnitEntrypoint {
     // Set up withdrawal parameters within valid bounds
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
-    _proof.pubSignals[0] = _params.amount;
+    _proof.pubSignals[2] = _params.amount;
 
     // Construct withdrawal data with fee distribution
     bytes memory _data = abi.encode(
@@ -604,7 +604,7 @@ contract UnitRelay is UnitEntrypoint {
     // Set up withdrawal parameters within valid bounds
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
-    _proof.pubSignals[0] = _params.amount;
+    _proof.pubSignals[2] = _params.amount;
 
     // Construct withdrawal data with fee distribution
     bytes memory _data = abi.encode(
@@ -636,7 +636,7 @@ contract UnitRelay is UnitEntrypoint {
     ProofLib.WithdrawProof memory _proof
   ) external {
     // Set withdrawal amount to zero
-    _proof.pubSignals[0] = 0;
+    _proof.pubSignals[2] = 0;
     _withdrawal.processooor = address(_entrypoint);
 
     // Expect revert due to invalid withdrawal amount
@@ -654,7 +654,7 @@ contract UnitRelay is UnitEntrypoint {
     ProofLib.WithdrawProof memory _proof
   ) external {
     // Ensure non-zero withdrawal amount
-    vm.assume(_proof.pubSignals[0] != 0);
+    vm.assume(_proof.pubSignals[2] != 0);
     _withdrawal.processooor = address(_entrypoint);
 
     // Expect revert due to pool not found
@@ -680,7 +680,7 @@ contract UnitRelay is UnitEntrypoint {
     // Configure withdrawal parameters
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
     _params.amount = bound(_params.amount, 1, 1e30);
-    _proof.pubSignals[0] = _params.amount;
+    _proof.pubSignals[2] = _params.amount;
 
     // Construct withdrawal data with invalid processooor
     bytes memory _data = abi.encode(

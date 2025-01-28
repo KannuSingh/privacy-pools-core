@@ -7,6 +7,9 @@ import {IPrivacyPool} from 'contracts/PrivacyPool.sol';
 import {IPrivacyPoolComplex, PrivacyPoolComplex} from 'contracts/implementations/PrivacyPoolComplex.sol';
 import {IPrivacyPoolSimple, PrivacyPoolSimple} from 'contracts/implementations/PrivacyPoolSimple.sol';
 
+import {CommitmentVerifier} from 'contracts/verifiers/CommitmentVerifier.sol';
+import {WithdrawalVerifier} from 'contracts/verifiers/WithdrawalVerifier.sol';
+
 import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
 
 import {IERC20} from '@oz/interfaces/IERC20.sol';
@@ -24,193 +27,448 @@ import {Constants} from 'test/helper/Constants.sol';
 contract IntegrationBase is Test {
   using InternalLeanIMT for LeanIMTData;
 
-  struct DepositParams {
-    uint256 amount;
-    uint256 amountAfterFee;
-    uint256 fee;
-    uint256 secret;
-    uint256 nullifier;
-    uint256 precommitment;
-    uint256 nonce;
-    uint256 scope;
+  /*///////////////////////////////////////////////////////////////
+                             STRUCTS 
+  //////////////////////////////////////////////////////////////*/
+
+  struct Commitment {
+    uint256 hash;
     uint256 label;
-    uint256 commitment;
+    uint256 value;
+    uint256 precommitment;
+    uint256 nullifier;
+    uint256 secret;
+    IERC20 asset;
+  }
+
+  struct DepositParams {
+    address depositor;
+    IERC20 asset;
+    uint256 amount;
+    string nullifier;
+    string secret;
   }
 
   struct WithdrawalParams {
-    address processor;
+    uint256 withdrawnAmount;
+    string newNullifier;
+    string newSecret;
     address recipient;
-    address feeRecipient;
-    uint256 feeBps;
-    uint256 scope;
-    uint256 withdrawnValue;
-    uint256 nullifier;
+    Commitment commitment;
+    bytes4 revertReason;
   }
+
+  struct WithdrawalProofParams {
+    uint256 existingCommitment;
+    uint256 withdrawnValue;
+    uint256 context;
+    uint256 label;
+    uint256 existingValue;
+    uint256 existingNullifier;
+    uint256 existingSecret;
+    uint256 newNullifier;
+    uint256 newSecret;
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                      STATE VARIABLES 
+  //////////////////////////////////////////////////////////////*/
 
   uint256 internal constant _FORK_BLOCK = 18_920_905;
 
+  // Core protocol contracts
   IEntrypoint internal _entrypoint;
-  IPrivacyPoolSimple internal _ethPool;
-  IPrivacyPoolComplex internal _daiPool;
+  IPrivacyPool internal _ethPool;
+  IPrivacyPool internal _daiPool;
 
+  // Groth16 Verifiers
+  CommitmentVerifier internal _commitmentVerifier;
+  WithdrawalVerifier internal _withdrawalVerifier;
+
+  // Assets
   IERC20 internal constant _ETH = IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
   IERC20 internal constant _DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
+  // Mirrored Merkle Trees
   LeanIMTData internal _shadowMerkleTree;
+  uint256[] internal _merkleLeaves;
   LeanIMTData internal _shadowASPMerkleTree;
+  uint256[] internal _aspLeaves;
 
+  // Snark Scalar Field
+  uint256 internal constant SNARK_SCALAR_FIELD =
+    21_888_242_871_839_275_222_246_405_745_257_275_088_548_364_400_416_034_343_698_204_186_575_808_495_617;
+
+  // Pranked addresses
   address internal immutable _OWNER = makeAddr('OWNER');
   address internal immutable _POSTMAN = makeAddr('POSTMAN');
-  address internal immutable _WITHDRAWAL_VERIFIER = makeAddr('WITHDRAWAL_VERIFIER');
-  address internal immutable _RAGEQUIT_VERIFIER = makeAddr('RAGEQUIT_VERIFIER');
   address internal immutable _RELAYER = makeAddr('RELAYER');
   address internal immutable _ALICE = makeAddr('ALICE');
   address internal immutable _BOB = makeAddr('BOB');
 
+  // Asset parameters
   uint256 internal constant _MIN_DEPOSIT = 1;
   uint256 internal constant _VETTING_FEE_BPS = 100; // 1%
   uint256 internal constant _RELAY_FEE_BPS = 100; // 1%
 
-  uint256 internal constant _DEFAULT_NULLIFIER = uint256(keccak256('NULLIFIER'));
-  uint256 internal constant _DEFAULT_SECRET = uint256(keccak256('SECRET'));
+  uint256 internal constant _DEFAULT_NULLIFIER = uint256(keccak256('NULLIFIER')) % Constants.SNARK_SCALAR_FIELD;
+  uint256 internal constant _DEFAULT_SECRET = uint256(keccak256('SECRET')) % Constants.SNARK_SCALAR_FIELD;
   uint256 internal constant _DEFAULT_ASP_ROOT = uint256(keccak256('ASP_ROOT')) % Constants.SNARK_SCALAR_FIELD;
+  uint256 internal constant _DEFAULT_NEW_COMMITMENT_HASH =
+    uint256(keccak256('NEW_COMMITMENT_HASH')) % Constants.SNARK_SCALAR_FIELD;
+  bytes4 internal constant NONE = 0xb4dc0dee;
 
-  function setUp() public {
+  /*///////////////////////////////////////////////////////////////
+                              SETUP
+  //////////////////////////////////////////////////////////////*/
+
+  function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'));
-    _deployContracts();
-    _registerPools();
-  }
 
-  function _deployContracts() internal {
+    vm.startPrank(_OWNER);
+    // Deploy Groth16 ragequit verifier
+    _commitmentVerifier = new CommitmentVerifier();
+
+    // Deploy Groth16 withdrawal verifier
+    _withdrawalVerifier = new WithdrawalVerifier();
+
     // Deploy Entrypoint
     address _impl = address(new Entrypoint());
-
     _entrypoint = Entrypoint(
       payable(UnsafeUpgrades.deployUUPSProxy(_impl, abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN))))
     );
 
     // Deploy ETH Pool
-    _ethPool = new PrivacyPoolSimple(address(_entrypoint), address(_WITHDRAWAL_VERIFIER), address(_RAGEQUIT_VERIFIER));
+    _ethPool = IPrivacyPool(
+      address(new PrivacyPoolSimple(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier)))
+    );
 
     // Deploy DAI Pool
-    _daiPool = new PrivacyPoolComplex(
-      address(_entrypoint), address(_WITHDRAWAL_VERIFIER), address(_RAGEQUIT_VERIFIER), address(_DAI)
+    _daiPool = IPrivacyPool(
+      address(
+        new PrivacyPoolComplex(
+          address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_DAI)
+        )
+      )
     );
-  }
 
-  function _registerPools() internal {
-    vm.startPrank(_OWNER);
+    // Register ETH pool
     _entrypoint.registerPool(_ETH, IPrivacyPool(_ethPool), _MIN_DEPOSIT, _VETTING_FEE_BPS);
+
+    // Register DAI pool
     _entrypoint.registerPool(_DAI, IPrivacyPool(_daiPool), _MIN_DEPOSIT, _VETTING_FEE_BPS);
+
     vm.stopPrank();
   }
 
-  function _deductFee(uint256 _amount, uint256 _feeBps) internal pure returns (uint256 _amountAfterFee) {
-    return _amount - (_amount * _feeBps) / 10_000;
+  /*///////////////////////////////////////////////////////////////
+                           DEPOSIT 
+  //////////////////////////////////////////////////////////////*/
+
+  function _deposit(DepositParams memory _params) internal returns (Commitment memory _commitment) {
+    // Deal the asset to the depositor
+    _deal(_params.depositor, _params.asset, _params.amount);
+
+    if (_params.asset != _ETH) {
+      vm.prank(_params.depositor);
+      _params.asset.approve(address(_entrypoint), _params.amount);
+    }
+
+    // Define pool to deposit to
+    IPrivacyPool _pool = _params.asset == _ETH ? _ethPool : _daiPool;
+
+    uint256 _currentNonce = _pool.nonce();
+
+    // Compute deposit parameters
+    _commitment.asset = _params.asset;
+    _commitment.nullifier = _genSecretBySeed(_params.nullifier);
+    _commitment.secret = _genSecretBySeed(_params.secret);
+    _commitment.label =
+      uint256(keccak256(abi.encodePacked(_pool.SCOPE(), ++_currentNonce))) % Constants.SNARK_SCALAR_FIELD;
+    _commitment.value = _deductFee(_params.amount, _VETTING_FEE_BPS);
+    _commitment.precommitment = _hashPrecommitment(_commitment.nullifier, _commitment.secret);
+    _commitment.hash = _hashCommitment(_commitment.value, _commitment.label, _commitment.precommitment);
+
+    // Calculate Entrypoint fee
+    uint256 _fee = _params.amount - _commitment.value;
+
+    // Update mirrored trees
+    _insertIntoShadowMerkleTree(_commitment.hash);
+    _insertIntoShadowASPMerkleTree(_commitment.label);
+
+    // Fetch balances before deposit
+    uint256 _depositorInitialBalance = _balance(_params.depositor, _params.asset);
+    uint256 _entrypointInitialBalance = _balance(address(_entrypoint), _params.asset);
+    uint256 _poolInitialBalance = _balance(address(_pool), _params.asset);
+
+    // Expect Pool event emission
+    vm.expectEmit(address(_pool));
+    emit IPrivacyPool.Deposited(
+      _params.depositor, _commitment.hash, _commitment.label, _commitment.value, _shadowMerkleTree._root()
+    );
+
+    // Expect Entrypoint event emission
+    vm.expectEmit(address(_entrypoint));
+    emit IEntrypoint.Deposited(_params.depositor, _pool, _commitment.hash, _commitment.value);
+
+    // Deposit
+    vm.prank(_params.depositor);
+    if (_params.asset == _ETH) {
+      _entrypoint.deposit{value: _params.amount}(_commitment.precommitment);
+    } else {
+      _entrypoint.deposit(_params.asset, _params.amount, _commitment.precommitment);
+    }
+
+    // Check balance changes
+    assertEq(
+      _balance(_params.depositor, _params.asset), _depositorInitialBalance - _params.amount, 'User balance mismatch'
+    );
+    assertEq(
+      _balance(address(_entrypoint), _params.asset), _entrypointInitialBalance + _fee, 'Entrypoint balance mismatch'
+    );
+    assertEq(_balance(address(_pool), _params.asset), _poolInitialBalance + _commitment.value, 'Pool balance mismatch');
+
+    // Check deposit stored values
+    (address _depositor, uint256 _value, uint256 _cooldownExpiry) = _pool.deposits(_commitment.label);
+    assertEq(_depositor, _params.depositor, 'Incorrect depositor');
+    assertEq(_value, _commitment.value, 'Incorrect deposit value');
+    assertEq(_cooldownExpiry, block.timestamp + 1 weeks, 'Incorrect deposit cooldown expiry');
   }
 
-  function _hashNullifier(uint256 _nullifier) internal pure returns (uint256) {
-    return PoseidonT2.hash([_nullifier]);
+  /*///////////////////////////////////////////////////////////////
+                      WITHDRAWAL METHODS
+  //////////////////////////////////////////////////////////////*/
+
+  function _selfWithdraw(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
+    IPrivacyPool _pool = _params.commitment.asset == _ETH ? _ethPool : _daiPool;
+
+    IPrivacyPool.Withdrawal memory _withdrawal =
+      IPrivacyPool.Withdrawal({processooor: _params.recipient, scope: _pool.SCOPE(), data: ''});
+
+    _commitment = _withdraw(_params.recipient, _pool, _withdrawal, _params, true);
   }
 
-  function _hashPrecommitment(uint256 _nullifier, uint256 _secret) internal pure returns (uint256) {
-    return PoseidonT3.hash([_nullifier, _secret]);
+  function _withdrawThroughRelayer(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
+    IPrivacyPool _pool = _params.commitment.asset == _ETH ? _ethPool : _daiPool;
+
+    IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({
+      processooor: address(_entrypoint),
+      scope: _pool.SCOPE(),
+      data: abi.encode(_params.recipient, _RELAYER, _VETTING_FEE_BPS)
+    });
+
+    _commitment = _withdraw(_RELAYER, _pool, _withdrawal, _params, false);
   }
 
-  function _hashCommitment(uint256 _amount, uint256 _label, uint256 _precommitment) internal pure returns (uint256) {
-    return PoseidonT4.hash([_amount, _label, _precommitment]);
-  }
+  function _withdraw(
+    address _caller,
+    IPrivacyPool _pool,
+    IPrivacyPool.Withdrawal memory _withdrawal,
+    WithdrawalParams memory _params,
+    bool _direct
+  ) private returns (Commitment memory _commitment) {
+    // Compute context hash
+    uint256 _context = uint256(keccak256(abi.encode(_withdrawal, _pool.SCOPE()))) % SNARK_SCALAR_FIELD;
 
-  function _generateDefaultDepositParams(
-    uint256 _amount,
-    uint256 _feeBps,
-    IPrivacyPool _pool
-  ) internal view returns (DepositParams memory _params) {
-    return _generateDepositParams(_amount, _feeBps, _DEFAULT_NULLIFIER, _DEFAULT_SECRET, _pool);
-  }
+    _commitment.value = _params.commitment.value - _params.withdrawnAmount;
+    _commitment.label = _params.commitment.label;
+    _commitment.nullifier = _genSecretBySeed(_params.newNullifier);
+    _commitment.secret = _genSecretBySeed(_params.newSecret);
+    _commitment.precommitment = _hashPrecommitment(_commitment.nullifier, _commitment.secret);
+    _commitment.hash = _hashCommitment(_commitment.value, _commitment.label, _commitment.precommitment);
+    _commitment.asset = _params.commitment.asset;
 
-  function _generateDepositParams(
-    uint256 _amount,
-    uint256 _feeBps,
-    uint256 _nullifier,
-    uint256 _secret,
-    IPrivacyPool _pool
-  ) internal view returns (DepositParams memory _params) {
-    _params.amount = _amount;
-    _params.amountAfterFee = _deductFee(_amount, _feeBps);
-    _params.fee = _amount - _params.amountAfterFee;
-    _params.secret = _secret;
-    _params.nullifier = _nullifier;
-    _params.precommitment = _hashPrecommitment(_params.nullifier, _params.secret);
-    _params.nonce = _pool.nonce();
-    _params.scope = _pool.SCOPE();
-    _params.label = uint256(keccak256(abi.encodePacked(_params.scope, ++_params.nonce)));
-    _params.commitment = _hashCommitment(_params.amountAfterFee, _params.label, _params.precommitment);
-  }
-
-  function _generateWithdrawalParams(WithdrawalParams memory _params)
-    internal
-    view
-    returns (IPrivacyPool.Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof)
-  {
-    bytes memory _feeData = abi.encode(
-      IEntrypoint.FeeData({
-        recipient: _params.recipient,
-        feeRecipient: _params.feeRecipient,
-        relayFeeBPS: _params.feeBps
+    // Generate withdrawal proof
+    ProofLib.WithdrawProof memory _proof = _generateWithdrawalProof(
+      WithdrawalProofParams({
+        existingCommitment: _params.commitment.hash,
+        withdrawnValue: _params.withdrawnAmount,
+        context: _context,
+        label: _params.commitment.label,
+        existingValue: _params.commitment.value,
+        existingNullifier: _params.commitment.nullifier,
+        existingSecret: _params.commitment.secret,
+        newNullifier: _commitment.nullifier,
+        newSecret: _commitment.secret
       })
     );
-    _withdrawal = IPrivacyPool.Withdrawal(_params.processor, _params.scope, _feeData);
-    uint256 _context = uint256(keccak256(abi.encode(_withdrawal, _params.scope)));
-    uint256 _stateRoot = _shadowMerkleTree._root();
-    uint256 _aspRoot = _shadowASPMerkleTree._root();
-    uint256 _newCommitmentHash = uint256(keccak256('NEW_COMMITMENT_HASH')) % Constants.SNARK_SCALAR_FIELD;
-    uint256 _nullifierHash = _hashNullifier(_params.nullifier);
 
-    _proof = ProofLib.WithdrawProof({
-      pA: [uint256(0), uint256(0)],
-      pB: [[uint256(0), uint256(0)], [uint256(0), uint256(0)]],
-      pC: [uint256(0), uint256(0)],
-      pubSignals: [
-        _params.withdrawnValue,
-        _stateRoot,
-        uint256(0), // pubSignals[2] is the stateTreeDepth
-        _aspRoot,
-        uint256(0), // pubSignals[4] is the ASPTreeDepth
-        _context, // calculation: uint256(keccak256(abi.encode(_withdrawal, _params.scope)));
-        _nullifierHash,
-        _newCommitmentHash
-      ]
-    });
+    // Process withdrawal
+    vm.prank(_caller);
+    if (_params.revertReason != NONE) vm.expectRevert(_params.revertReason);
+    if (_direct) {
+      _pool.withdraw(_withdrawal, _proof);
+    } else {
+      _entrypoint.relay(_withdrawal, _proof);
+    }
+
+    _insertIntoShadowMerkleTree(_commitment.hash);
   }
+
+  /*///////////////////////////////////////////////////////////////
+                           RAGEQUIT
+  //////////////////////////////////////////////////////////////*/
+
+  function _ragequit(address _depositor, Commitment memory _commitment) internal {
+    IPrivacyPool _pool = _commitment.asset == _ETH ? _ethPool : _daiPool;
+
+    // Generate ragequit proof
+    ProofLib.RagequitProof memory _ragequitProof =
+      _generateRagequitProof(_commitment.value, _commitment.label, _commitment.nullifier, _commitment.secret);
+
+    // Initiate Ragequit
+    vm.prank(_depositor);
+    _pool.ragequit(_ragequitProof);
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                   MERKLE TREE OPERATIONS 
+  //////////////////////////////////////////////////////////////*/
+
+  function _insertIntoShadowMerkleTree(uint256 _leaf) private {
+    _shadowMerkleTree._insert(_leaf);
+    _merkleLeaves.push(_leaf);
+  }
+
+  function _insertIntoShadowASPMerkleTree(uint256 _leaf) private {
+    _shadowASPMerkleTree._insert(_leaf);
+    _aspLeaves.push(_leaf);
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                       PROOF GENERATION 
+  //////////////////////////////////////////////////////////////*/
 
   function _generateRagequitProof(
-    uint256 _commitmentHash,
-    uint256 _precommitmentHash,
-    uint256 _nullifier,
     uint256 _value,
-    uint256 _label
-  ) internal pure returns (ProofLib.RagequitProof memory _proof) {
-    uint256 _nullifierHash = PoseidonT2.hash([_nullifier]);
-    return ProofLib.RagequitProof({
-      pA: [uint256(0), uint256(0)],
-      pB: [[uint256(0), uint256(0)], [uint256(0), uint256(0)]],
-      pC: [uint256(0), uint256(0)],
-      pubSignals: [
-        _commitmentHash, // pubSignals[0] is the commitmentHash
-        _precommitmentHash, // pubSignals[1] is the precommitmentHash
-        _nullifierHash, // pubSignals[2] is the nullifierHash
-        _value, // pubSignals[3] is the value
-        _label // pubSignals[4] is the label
-      ]
-    });
+    uint256 _label,
+    uint256 _nullifier,
+    uint256 _secret
+  ) private returns (ProofLib.RagequitProof memory _proof) {
+    // Generate real proof using the helper script
+    string[] memory _inputs = new string[](5);
+    _inputs[0] = vm.toString(_value);
+    _inputs[1] = vm.toString(_label);
+    _inputs[2] = vm.toString(_nullifier);
+    _inputs[3] = vm.toString(_secret);
+
+    // Call the ProofGenerator script using ts-node
+    string[] memory _scriptArgs = new string[](2);
+    _scriptArgs[0] = 'node';
+    _scriptArgs[1] = 'test/helper/RagequitProofGenerator.mjs';
+    bytes memory _proofData = vm.ffi(_concat(_scriptArgs, _inputs));
+
+    // Decode the ABI-encoded proof directly
+    _proof = abi.decode(_proofData, (ProofLib.RagequitProof));
   }
 
-  function _insertIntoShadowMerkleTree(uint256 _leaf) internal {
-    _shadowMerkleTree._insert(_leaf);
+  function _generateWithdrawalProof(WithdrawalProofParams memory _params)
+    private
+    returns (ProofLib.WithdrawProof memory _proof)
+  {
+    bytes memory _stateMerkleProof = _generateMerkleProof(_merkleLeaves, _params.existingCommitment);
+    bytes memory _aspMerkleProof = _generateMerkleProof(_aspLeaves, _params.label);
+
+    string[] memory _inputs = new string[](12);
+    _inputs[0] = vm.toString(_params.existingValue);
+    _inputs[1] = vm.toString(_params.label);
+    _inputs[2] = vm.toString(_params.existingNullifier);
+    _inputs[3] = vm.toString(_params.existingSecret);
+    _inputs[4] = vm.toString(_params.newNullifier);
+    _inputs[5] = vm.toString(_params.newSecret);
+    _inputs[6] = vm.toString(_params.withdrawnValue);
+    _inputs[7] = vm.toString(_params.context);
+    _inputs[8] = vm.toString(_stateMerkleProof);
+    _inputs[9] = vm.toString(_shadowMerkleTree.depth);
+    _inputs[10] = vm.toString(_aspMerkleProof);
+    _inputs[11] = vm.toString(_shadowASPMerkleTree.depth);
+
+    // Call the ProofGenerator script using node
+    string[] memory _scriptArgs = new string[](2);
+    _scriptArgs[0] = 'node';
+    _scriptArgs[1] = 'test/helper/WithdrawalProofGenerator.mjs';
+    bytes memory _proofData = vm.ffi(_concat(_scriptArgs, _inputs));
+
+    // Decode the ABI-encoded proof directly
+    _proof = abi.decode(_proofData, (ProofLib.WithdrawProof));
   }
 
-  function _insertIntoShadowASPMerkleTree(uint256 _leaf) internal {
-    _shadowASPMerkleTree._insert(_leaf);
+  function _generateMerkleProof(uint256[] storage _leaves, uint256 _leaf) private returns (bytes memory _proof) {
+    uint256 _leavesAmt = _leaves.length;
+    string[] memory inputs = new string[](_leavesAmt + 1);
+    inputs[0] = vm.toString(_leaf);
+
+    for (uint256 i = 0; i < _leavesAmt; i++) {
+      inputs[i + 1] = vm.toString(_leaves[i]);
+    }
+
+    // Call the ProofGenerator script using node
+    string[] memory scriptArgs = new string[](2);
+    scriptArgs[0] = 'node';
+    scriptArgs[1] = 'test/helper/MerkleProofGenerator.mjs';
+    _proof = vm.ffi(_concat(scriptArgs, inputs));
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                             UTILS 
+  //////////////////////////////////////////////////////////////*/
+
+  function _concat(string[] memory _arr1, string[] memory _arr2) internal pure returns (string[] memory) {
+    string[] memory returnArr = new string[](_arr1.length + _arr2.length);
+    uint256 i;
+    for (; i < _arr1.length;) {
+      returnArr[i] = _arr1[i];
+      unchecked {
+        ++i;
+      }
+    }
+    uint256 j;
+    for (; j < _arr2.length;) {
+      returnArr[i + j] = _arr2[j];
+      unchecked {
+        ++j;
+      }
+    }
+    return returnArr;
+  }
+
+  function _deal(address _account, IERC20 _asset, uint256 _amount) private {
+    if (_asset == _ETH) {
+      deal(_account, _amount);
+    } else {
+      deal(address(_asset), _account, _amount);
+    }
+  }
+
+  function _balance(address _account, IERC20 _asset) private view returns (uint256 _bal) {
+    if (_asset == _ETH) {
+      _bal = _account.balance;
+    } else {
+      _bal = _asset.balanceOf(_account);
+    }
+  }
+
+  function _deductFee(uint256 _amount, uint256 _feeBps) private pure returns (uint256 _amountAfterFee) {
+    _amountAfterFee = _amount - (_amount * _feeBps) / 10_000;
+  }
+
+  function _hashNullifier(uint256 _nullifier) private pure returns (uint256 _nullifierHash) {
+    _nullifierHash = PoseidonT2.hash([_nullifier]);
+  }
+
+  function _hashPrecommitment(uint256 _nullifier, uint256 _secret) private pure returns (uint256 _precommitment) {
+    _precommitment = PoseidonT3.hash([_nullifier, _secret]);
+  }
+
+  function _hashCommitment(
+    uint256 _amount,
+    uint256 _label,
+    uint256 _precommitment
+  ) private pure returns (uint256 _commitmentHash) {
+    _commitmentHash = PoseidonT4.hash([_amount, _label, _precommitment]);
+  }
+
+  function _genSecretBySeed(string memory _seed) private pure returns (uint256 _secret) {
+    _secret = uint256(keccak256(bytes(_seed))) % Constants.SNARK_SCALAR_FIELD;
   }
 }

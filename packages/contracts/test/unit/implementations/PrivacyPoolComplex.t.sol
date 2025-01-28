@@ -7,6 +7,8 @@ import {Test} from 'forge-std/Test.sol';
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
+import {Constants} from 'test/helper/Constants.sol';
+
 /**
  * @notice Test contract for the PrivacyPoolComplex
  */
@@ -45,7 +47,7 @@ contract UnitPrivacyPoolComplex is Test {
 
   function setUp() public {
     _pool = new ComplexPoolForTest(_ENTRYPOINT, _WITHDRAWAL_VERIFIER, _RAGEQUIT_VERIFIER, _ASSET);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET))) % Constants.SNARK_SCALAR_FIELD;
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -78,7 +80,7 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
     );
 
     _pool = new ComplexPoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, _asset);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset))) % Constants.SNARK_SCALAR_FIELD;
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
     assertEq(
       address(_pool.WITHDRAWAL_VERIFIER()),

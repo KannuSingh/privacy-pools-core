@@ -109,18 +109,19 @@ contract UnitPrivacyPool is Test {
   }
 
   modifier givenValidProof(IPrivacyPool.Withdrawal memory _w, ProofLib.WithdrawProof memory _p) {
-    _p.pubSignals[0] = bound(_p.pubSignals[0], 1, type(uint256).max);
-    _p.pubSignals[1] = bound(_p.pubSignals[1], 1, type(uint256).max);
-    _p.pubSignals[3] = bound(_p.pubSignals[2], 1, type(uint256).max);
-    _p.pubSignals[6] = bound(_p.pubSignals[6], 1, type(uint256).max);
-    _p.pubSignals[7] = bound(_p.pubSignals[7], 1, Constants.SNARK_SCALAR_FIELD - 1);
+    _p.pubSignals[2] = bound(_p.pubSignals[2], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+    _p.pubSignals[3] = bound(_p.pubSignals[3], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+    _p.pubSignals[5] = bound(_p.pubSignals[5], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+    _p.pubSignals[1] = bound(_p.pubSignals[6], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+    _p.pubSignals[0] = bound(_p.pubSignals[7], 1, Constants.SNARK_SCALAR_FIELD - 1);
 
-    _p.pubSignals[5] = uint256(keccak256(abi.encode(_w, _scope)));
+    _p.pubSignals[7] = uint256(keccak256(abi.encode(_w, _scope))) % Constants.SNARK_SCALAR_FIELD;
 
     _;
   }
 
   modifier givenKnownStateRoot(uint256 _stateRoot) {
+    vm.assume(_stateRoot != 0);
     _pool.mockKnownStateRoot(_stateRoot);
     _;
   }
@@ -162,7 +163,7 @@ contract UnitPrivacyPool is Test {
 
   function setUp() public {
     _pool = new PoolForTest(_ENTRYPOINT, _WITHDRAWAL_VERIFIER, _RAGEQUIT_VERIFIER, _ASSET);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET))) % Constants.SNARK_SCALAR_FIELD;
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -206,7 +207,7 @@ contract UnitConstructor is UnitPrivacyPool {
 
     // Deploy new pool and compute its scope
     _pool = new PoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, _asset);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _asset))) % Constants.SNARK_SCALAR_FIELD;
 
     // Verify all constructor parameters are set correctly
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
@@ -263,7 +264,7 @@ contract UnitDeposit is UnitPrivacyPool {
 
     // Calculate expected values for deposit
     uint256 _nonce = _pool.nonce();
-    uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
+    uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1))) % Constants.SNARK_SCALAR_FIELD;
     uint256 _commitment = PoseidonT4.hash([_amount, _label, _precommitmentHash]);
     uint256 _newRoot = _pool.insertLeafInShadowTree(_commitment);
 
@@ -418,15 +419,17 @@ contract UnitWithdraw is UnitPrivacyPool {
   {
     _mockAndExpect(
       _WITHDRAWAL_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[8]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[8])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(true)
     );
 
     vm.expectEmit(address(_pool));
-    emit PoolForTest.Pushed(_w.processooor, _p.pubSignals[0]);
+    emit PoolForTest.Pushed(_w.processooor, _p.pubSignals[2]);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Withdrawn(_w.processooor, _p.pubSignals[0], _p.pubSignals[6], _p.pubSignals[7]);
+    emit IPrivacyPool.Withdrawn(_w.processooor, _p.pubSignals[2], _p.pubSignals[1], _p.pubSignals[0]);
 
     _pool.withdraw(_w, _p);
 
@@ -445,7 +448,9 @@ contract UnitWithdraw is UnitPrivacyPool {
   {
     _mockAndExpect(
       _WITHDRAWAL_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[8]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[8])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(true)
     );
     _pool.mockNullifierStatus(_p.existingNullifierHash(), true);
@@ -498,7 +503,7 @@ contract UnitWithdraw is UnitPrivacyPool {
   ) external givenCallerIsProcessooor(_w.processooor) givenValidProof(_w, _p) {
     // Setup proof with mismatched context
     vm.assume(_unknownContext != uint256(keccak256(abi.encode(_w, _scope))));
-    _p.pubSignals[5] = _unknownContext;
+    _p.pubSignals[7] = _unknownContext;
 
     // Expect revert due to context mismatch
     vm.expectRevert(IPrivacyPool.ContextMismatch.selector);
@@ -538,7 +543,9 @@ contract UnitRagequit is UnitPrivacyPool {
   ) external givenCallerIsOriginalDepositor(_depositor, _p.label()) givenCommitmentExistsInState(_p.commitmentHash()) {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[5]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(true)
     );
 
@@ -576,7 +583,9 @@ contract UnitRagequit is UnitPrivacyPool {
   ) external givenCallerIsOriginalDepositor(_depositor, _p.label()) givenCommitmentExistsInState(_p.commitmentHash()) {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[5]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(false)
     );
     vm.expectRevert(IPrivacyPool.InvalidProof.selector);
@@ -592,7 +601,9 @@ contract UnitRagequit is UnitPrivacyPool {
   ) external givenCallerIsOriginalDepositor(_depositor, _p.label()) {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[5]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(true)
     );
 
@@ -609,7 +620,9 @@ contract UnitRagequit is UnitPrivacyPool {
   ) external givenCallerIsOriginalDepositor(_depositor, _p.label()) givenCommitmentExistsInState(_p.commitmentHash()) {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
-      abi.encodeWithSignature('verifyProof((uint256[2],uint256[2][2],uint256[2],uint256[5]))', _p),
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
       abi.encode(true)
     );
     _pool.mockNullifierStatus(_p.nullifierHash(), true);

@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {IPrivacyPoolSimple, PrivacyPoolSimple} from 'contracts/implementations/PrivacyPoolSimple.sol';
 import {Test} from 'forge-std/Test.sol';
+import {Constants} from 'test/helper/Constants.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
@@ -43,7 +44,7 @@ contract UnitPrivacyPoolSimple is Test {
 
   function setUp() public {
     _pool = new SimplePoolForTest(_ENTRYPOINT, _WITHDRAWAL_VERIFIER, _RAGEQUIT_VERIFIER);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET))) % Constants.SNARK_SCALAR_FIELD;
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -72,7 +73,7 @@ contract UnitConstructor is UnitPrivacyPoolSimple {
     vm.assume(_entrypoint != address(0) && _withdrawalVerifier != address(0) && _ragequitVerifier != address(0));
 
     _pool = new SimplePoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier);
-    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET)));
+    _scope = uint256(keccak256(abi.encodePacked(address(_pool), block.chainid, _ASSET))) % Constants.SNARK_SCALAR_FIELD;
     assertEq(address(_pool.ENTRYPOINT()), _entrypoint, 'Entrypoint address should match constructor input');
     assertEq(
       address(_pool.WITHDRAWAL_VERIFIER()),

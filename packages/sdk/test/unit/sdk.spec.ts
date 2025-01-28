@@ -146,6 +146,9 @@ describe("PrivacyPoolSDK", () => {
         aspRoot: BigInt(8) as Hash,
         newNullifier: BigInt(12) as Secret,
         newSecret: BigInt(13) as Secret,
+        context: BigInt(1),
+        stateTreeDepth: BigInt(32),
+        aspTreeDepth: BigInt(32)
       };
 
       const downloadArtifactsSpy = vi
@@ -154,13 +157,11 @@ describe("PrivacyPoolSDK", () => {
 
       const result = await sdk.proveWithdrawal(
         mockCommitment,
-        withdrawalInput,
-        withdrawal,
+        withdrawalInput
       );
 
       expect(result).toHaveProperty("proof", "mockProof");
       expect(result).toHaveProperty("publicSignals", "mockPublicSignals");
-      expect(result).toHaveProperty("withdrawal", withdrawal);
       expect(downloadArtifactsSpy).toHaveBeenCalledOnce();
     });
 
@@ -197,13 +198,15 @@ describe("PrivacyPoolSDK", () => {
         aspRoot: BigInt(10) as Hash,
         newNullifier: BigInt(14) as Secret,
         newSecret: BigInt(15) as Secret,
+        context: BigInt(1),
+        stateTreeDepth: BigInt(32),
+        aspTreeDepth: BigInt(32)
       };
 
       await expect(
         sdk.proveWithdrawal(
           mockCommitment,
-          withdrawalInput,
-          mockWithdrawal,
+          withdrawalInput
         ),
       ).rejects.toThrow(ProofError);
     });
@@ -226,7 +229,6 @@ describe("PrivacyPoolSDK", () => {
         sdk.verifyWithdrawal({
           proof: {} as snarkjs.Groth16Proof,
           publicSignals: [],
-          withdrawal: mockWithdrawal,
         }),
       ).rejects.toThrow(ProofError);
     });
@@ -240,7 +242,6 @@ describe("PrivacyPoolSDK", () => {
       const isValid = await sdk.verifyWithdrawal({
         proof: {} as snarkjs.Groth16Proof,
         publicSignals: [],
-        withdrawal: mockWithdrawal,
       });
       expect(isValid).toBe(true);
     });

@@ -1,7 +1,6 @@
 {
   "name": "@privacy-pool-core/sdk",
   "version": "0.1.0",
-  "private": true,
   "description": "Typescript SDK for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
   "license": "MIT",

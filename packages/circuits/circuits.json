@@ -1,7 +1,8 @@
 {
   "commitment": {
     "file": "commitment",
-    "template": "CommitmentHasher"
+    "template": "CommitmentHasher",
+    "pubs": ["value", "label"]
   },
   "merkleTree": {
     "file": "merkleTree",

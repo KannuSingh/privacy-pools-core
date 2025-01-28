@@ -44,7 +44,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
 
     // Check the context matches the proof's public signal to ensure its integrity
-    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE)))) revert ContextMismatch();
+    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE))) % SNARK_SCALAR_FIELD) revert ContextMismatch();
 
     // Check the state root is known
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
@@ -69,7 +69,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Store asset address
     ASSET = _asset;
     // Compute SCOPE
-    SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset)));
+    SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset))) % SNARK_SCALAR_FIELD;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -86,7 +86,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (dead) revert PoolIsDead();
 
     // Compute label
-    uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce)));
+    uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce))) % SNARK_SCALAR_FIELD;
     // Store depositor and ragequit cooldown
     deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
 
@@ -105,7 +105,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   function withdraw(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) external validWithdrawal(_w, _p) {
     // Verify proof with Groth16 verifier
-    if (!WITHDRAWAL_VERIFIER.verifyProof(_p)) revert InvalidProof();
+    if (!WITHDRAWAL_VERIFIER.verifyProof(_p.pA, _p.pB, _p.pC, _p.pubSignals)) revert InvalidProof();
 
     // Mark commitment nullifier as spent
     _spend(_p.existingNullifierHash());
@@ -126,7 +126,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
 
     // Verify proof with Groth16 verifier
-    if (!RAGEQUIT_VERIFIER.verifyProof(_p)) revert InvalidProof();
+    if (!RAGEQUIT_VERIFIER.verifyProof(_p.pA, _p.pB, _p.pC, _p.pubSignals)) revert InvalidProof();
 
     // Check commitment exists in state
     if (!_isInState(_p.commitmentHash())) revert InvalidCommitment();

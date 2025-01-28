@@ -23,8 +23,8 @@
     "prove:commitment": "npx circomkit prove commitment default",
     "verify:withdraw": "npx circomkit verify withdraw default",
     "verify:commitment": "npx circomkit verify commitment default",
-    "gencontract:withdraw": "snarkjs zkey export solidityverifier build/withdraw/groth16_pkey.zkey WithdrawalVerifier.sol",
-    "gencontract:commitment": "snarkjs zkey export solidityverifier build/commitment/groth16_pkey.zkey CommitmentVerifier.sol"
+    "gencontract:withdraw": "npx snarkjs zkey export solidityverifier build/withdraw/groth16_pkey.zkey WithdrawalVerifier.sol",
+    "gencontract:commitment": "npx snarkjs zkey export solidityverifier build/commitment/groth16_pkey.zkey CommitmentVerifier.sol"
   },
   "dependencies": {
     "@zk-kit/lean-imt": "^2.2.2",
@@ -33,6 +33,7 @@
     "circomlib": "^2.0.5",
     "maci-circuits": "^2.5.0",
     "maci-crypto": "^2.5.0",
+    "snarkjs": "^0.7.5",
     "viem": "^2.21.57"
   },
   "devDependencies": {

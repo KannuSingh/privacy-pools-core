@@ -1,0 +1,315 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import {IntegrationBase} from './IntegrationBase.sol';
+import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
+
+import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+
+contract IntegrationETH is IntegrationBase {
+  using InternalLeanIMT for LeanIMTData;
+
+  Commitment internal _commitment;
+
+  function test_fullDirectWithdrawal() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Bob withdraws the total amount of Alice's commitment
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_fullRelayedWithdrawal() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Bob receives the total amount of Alice's commitment
+    _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_partialDirectWithdrawal() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Bob withdraws the total amount of Alice's commitment
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_multiplePartialDirectWithdrawals() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_3',
+        newSecret: 'secret_3',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_4',
+        newSecret: 'secret_4',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_5',
+        newSecret: 'secret_5',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw remaining balance to Bob
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_6',
+        newSecret: 'secret_6',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_partialRelayedWithdrawal() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Bob receives the total amount of Alice's commitment
+    _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 40 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_multiplePartialRelayedWithdrawals() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_3',
+        newSecret: 'secret_3',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_4',
+        newSecret: 'secret_4',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw 20 ETH to Bob
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 20 ether,
+        newNullifier: 'nullifier_5',
+        newSecret: 'secret_5',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Withdraw remaining balance to Bob
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_6',
+        newSecret: 'secret_6',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+  }
+
+  function test_ragequit() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root without label
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+
+    // Fail to withdraw
+    _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 40 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: IPrivacyPool.IncorrectASPRoot.selector
+      })
+    );
+
+    // Ragequit full amount
+    _ragequit(_ALICE, _commitment);
+  }
+
+  function test_aspRemoval() public {
+    // Alice deposits 100 ETH
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Withdraw 40 ETH through relayer
+    _commitment = _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 40 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Remove label from ASP
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+
+    // Fail to withdraw
+    _withdrawThroughRelayer(
+      WithdrawalParams({
+        withdrawnAmount: 40 ether,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: IPrivacyPool.IncorrectASPRoot.selector
+      })
+    );
+
+    // Ragequit
+    _ragequit(_ALICE, _commitment);
+  }
+}

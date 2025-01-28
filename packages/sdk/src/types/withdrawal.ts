@@ -18,18 +18,20 @@ export interface Withdrawal {
 export interface WithdrawalPayload {
   readonly proof: Groth16Proof;
   readonly publicSignals: PublicSignals;
-  readonly withdrawal: Withdrawal;
 }
 
 /**
  * Input parameters required for withdrawal proof generation.
  */
 export interface WithdrawalProofInput {
+  readonly context: bigint;
   readonly withdrawalAmount: bigint;
   readonly stateMerkleProof: LeanIMTMerkleProof<bigint>;
   readonly aspMerkleProof: LeanIMTMerkleProof<bigint>;
   readonly stateRoot: Hash;
+  readonly stateTreeDepth: bigint;
   readonly aspRoot: Hash;
+  readonly aspTreeDepth: bigint;
   readonly newSecret: Secret;
   readonly newNullifier: Secret;
 }

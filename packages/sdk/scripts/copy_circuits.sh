@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 CIRCUITS=("merkleTree" "commitment" "withdraw")
 BUILD_DIR="../circuits/build"

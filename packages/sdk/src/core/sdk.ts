@@ -1,10 +1,7 @@
 import { CommitmentService } from "./commitment.service.js";
 import { WithdrawalService } from "./withdrawal.service.js";
 import { CircuitsInterface } from "../interfaces/circuits.interface.js";
-import { 
-  Commitment,
-  CommitmentProof,
-} from "../types/commitment.js";
+import { Commitment, CommitmentProof } from "../types/commitment.js";
 import {
   Withdrawal,
   WithdrawalPayload,
@@ -26,7 +23,7 @@ export class PrivacyPoolSDK {
 
   /**
    * Generates a commitment proof.
-   * 
+   *
    * @param value - Value to commit
    * @param label - Label for the commitment
    * @param nullifier - Nullifier for the commitment
@@ -36,25 +33,28 @@ export class PrivacyPoolSDK {
     value: bigint,
     label: bigint,
     nullifier: bigint,
-    secret: bigint
+    secret: bigint,
   ): Promise<CommitmentProof> {
-    return this.commitmentService.proveCommitment(value, label, nullifier, secret);
+    return this.commitmentService.proveCommitment(
+      value,
+      label,
+      nullifier,
+      secret,
+    );
   }
 
   /**
    * Verifies a commitment proof.
-   * 
+   *
    * @param proof - The proof to verify
    */
-  public async verifyCommitment(
-    proof: CommitmentProof
-  ): Promise<boolean> {
+  public async verifyCommitment(proof: CommitmentProof): Promise<boolean> {
     return this.commitmentService.verifyCommitment(proof);
   }
 
   /**
    * Generates a withdrawal proof.
-   * 
+   *
    * @param commitment - Commitment to withdraw
    * @param input - Input parameters for the withdrawal
    * @param withdrawal - Withdrawal details
@@ -62,23 +62,18 @@ export class PrivacyPoolSDK {
   public async proveWithdrawal(
     commitment: Commitment,
     input: WithdrawalProofInput,
-    withdrawal: Withdrawal,
   ): Promise<WithdrawalPayload> {
-    return this.withdrawalService.proveWithdrawal(
-      commitment,
-      input,
-      withdrawal,
-    );
+    return this.withdrawalService.proveWithdrawal(commitment, input);
   }
 
   /**
    * Verifies a withdrawal proof.
-   * 
+   *
    * @param withdrawalPayload - The withdrawal payload to verify
    */
   public async verifyWithdrawal(
-    withdrawalPayload: WithdrawalPayload
+    withdrawalPayload: WithdrawalPayload,
   ): Promise<boolean> {
     return this.withdrawalService.verifyWithdrawal(withdrawalPayload);
   }
-} 
+}
