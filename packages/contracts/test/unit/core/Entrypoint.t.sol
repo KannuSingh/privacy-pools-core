@@ -7,6 +7,9 @@ import {Initializable} from '@oz/proxy/utils/Initializable.sol';
 import {ERC20, IERC20} from '@oz/token/ERC20/ERC20.sol';
 import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
 
+import {UUPSUpgradeable} from '@oz-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {IERC1967} from '@oz/interfaces/IERC1967.sol';
+
 import {IPrivacyPool} from 'contracts/PrivacyPool.sol';
 import {ProofLib} from 'contracts/lib/ProofLib.sol';
 
@@ -1176,5 +1179,41 @@ contract UnitViewMethods is UnitEntrypoint {
     // Verify roots are returned correctly by index
     assertEq(_entrypoint.rootByIndex(0), 1, 'First root should be 1');
     assertEq(_entrypoint.rootByIndex(1), 2, 'Second root should be 2');
+  }
+}
+
+/**
+ * @notice Dummy contract for upgrades testing
+ */
+contract Implementation is UUPSUpgradeable {
+  bytes32 private immutable salt;
+
+  constructor(bytes32 _salt) {
+    salt = _salt;
+  }
+
+  fallback() external {}
+
+  function _authorizeUpgrade(address newImplementation) internal override {}
+}
+
+/**
+ * @notice Unit tests for upgrading the Entrypoint contract
+ */
+contract UnitUpgrades is UnitEntrypoint {
+  function test_upgradeEntrypoint(bytes32 _salt, bytes calldata _data) public {
+    address _newImplementation = address(new Implementation(_salt));
+
+    vm.expectCall(_newImplementation, abi.encodeWithSignature('proxiableUUID()'));
+
+    if (keccak256(_data) != keccak256('')) {
+      _mockAndExpect(_newImplementation, _data, abi.encode());
+    }
+
+    vm.expectEmit(address(_entrypoint));
+    emit IERC1967.Upgraded(_newImplementation);
+
+    vm.prank(_OWNER);
+    _entrypoint.upgradeToAndCall(_newImplementation, _data);
   }
 }
