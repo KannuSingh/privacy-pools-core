@@ -4,8 +4,6 @@ pragma solidity 0.8.28;
 import {Test} from 'forge-std/Test.sol';
 import {InternalLeanIMT, LeafAlreadyExists, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
-import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
-import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
 import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 
 import {IPrivacyPool, PrivacyPool} from 'contracts/PrivacyPool.sol';
@@ -14,7 +12,6 @@ import {ProofLib} from 'contracts/lib/ProofLib.sol';
 import {Constants} from 'test/helper/Constants.sol';
 
 import {IState} from 'interfaces/IState.sol';
-import {IVerifier} from 'interfaces/IVerifier.sol';
 
 /**
  * @notice Test contract for the PrivacyPool

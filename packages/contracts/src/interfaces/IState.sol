@@ -11,6 +11,21 @@ import {IVerifier} from 'interfaces/IVerifier.sol';
  */
 interface IState {
   /*///////////////////////////////////////////////////////////////
+                               ENUMS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Enum representing statuses of a nullifier
+   */
+  enum NullifierStatus {
+    NONE,
+    SPENT, // Nullifier is spent
+    RAGEQUIT_PENDING, // Nullifier is being ragequitted
+    RAGEQUIT_FINALIZED // Nullifier has been ragequitted
+
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
@@ -24,21 +39,6 @@ interface IState {
     address depositor;
     uint256 amount;
     uint256 whenRagequitteable;
-  }
-
-  /*///////////////////////////////////////////////////////////////
-                               ENUMS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Enum representing statuses of a nullifier
-   */
-  enum NullifierStatus {
-    NONE,
-    SPENT, // Nullifier is spent
-    RAGEQUIT_PENDING, // Nullifier is being ragequitted
-    RAGEQUIT_FINALIZED // Nullifier has been ragequitted
-
   }
 
   /*///////////////////////////////////////////////////////////////

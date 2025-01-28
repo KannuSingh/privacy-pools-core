@@ -57,6 +57,7 @@ async function main() {
   const paddedStateSiblings = padSiblings(stateMerkleProof[2], 32);
   const paddedAspSiblings = padSiblings(aspMerkleProof[2], 32);
 
+  // Generate withdrawal proof
   const { proof, publicSignals } = await sdk.proveWithdrawal(commitment, {
     context,
     withdrawalAmount: withdrawnValue,
@@ -80,6 +81,7 @@ async function main() {
     newNullifier,
   });
 
+  // Format the proof to match the Solidity struct
   const withdrawalProof = {
     _pA: [BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1])],
     _pB: [
@@ -99,6 +101,7 @@ async function main() {
     ].map((x) => BigInt(x)),
   };
 
+  // ABI encode the proof
   const encodedProof = encodeAbiParameters(
     [
       {
