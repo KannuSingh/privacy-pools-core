@@ -1,17 +1,17 @@
 import * as snarkjs from "snarkjs";
-import { keccak256, encodeAbiParameters } from "viem";
+import { bytesToHex, encodeAbiParameters, hexToBigInt, keccak256, numberToHex } from "viem";
+import { SNARK_SCALAR_FIELD } from "../constants.js";
+import { ProofError } from "../errors/base.error.js";
 import {
-  CircuitName,
-  CircuitsInterface,
-  CircuitSignals,
+    CircuitName,
+    CircuitsInterface
 } from "../interfaces/circuits.interface.js";
 import { Commitment } from "../types/commitment.js";
 import {
-  Withdrawal,
-  WithdrawalPayload,
-  WithdrawalProofInput,
+    Withdrawal,
+    WithdrawalPayload,
+    WithdrawalProofInput,
 } from "../types/withdrawal.js";
-import { ErrorCode, ProofError } from "../errors/base.error.js";
 
 /**
  * Service responsible for handling withdrawal-related operations.
@@ -86,8 +86,8 @@ export class WithdrawalService {
   /**
    * Calculates the context hash for a withdrawal.
    */
-  private calculateContext(withdrawal: Withdrawal): string {
-    return keccak256(
+  protected calculateContext(withdrawal: Withdrawal): string {
+    const hashString = keccak256(
       encodeAbiParameters(
         [
           {
@@ -105,12 +105,14 @@ export class WithdrawalService {
           {
             processooor: withdrawal.procesooor,
             scope: withdrawal.scope,
-            data: `0x${Buffer.from(withdrawal.data).toString("hex")}`,
+            data: bytesToHex(withdrawal.data),
           },
           withdrawal.scope,
         ],
       ),
     );
+    const hashBigint = hexToBigInt(hashString) % SNARK_SCALAR_FIELD;
+    return numberToHex(hashBigint);
   }
 
   /**

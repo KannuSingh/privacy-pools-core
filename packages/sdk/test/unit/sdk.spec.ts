@@ -8,14 +8,18 @@ import { getAddress } from "viem";
 import { ProofError } from "../../src/errors/base.error.js";
 
 vi.mock("snarkjs");
-vi.mock("viem", () => ({
-  keccak256: vi.fn().mockReturnValue("0x1234"),
-  getAddress: vi.fn().mockImplementation((addr) => addr),
-  encodeAbiParameters: vi.fn().mockImplementation((types, values) => ({
-    types,
-    values,
-  })),
-}));
+vi.mock("viem", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("viem")>();
+  return {
+    ...actual,
+    keccak256: vi.fn().mockReturnValue("0x1234"),
+    getAddress: vi.fn().mockImplementation((addr) => addr),
+    encodeAbiParameters: vi.fn().mockImplementation((types, values) => ({
+      types,
+      values,
+    })),
+  }
+});
 
 describe("PrivacyPoolSDK", () => {
   let circuits: CircuitsMock;
@@ -54,7 +58,6 @@ describe("PrivacyPoolSDK", () => {
         BigInt(3) as Secret,
         BigInt(4) as Secret,
       );
-
       expect(result).toStrictEqual({
         proof: "PROOF",
         publicSignals: "SIGNALS"
