@@ -5,12 +5,16 @@ import {IntegrationBase} from './IntegrationBase.sol';
 import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+import {IState} from 'interfaces/IState.sol';
 
 contract IntegrationERC20 is IntegrationBase {
   using InternalLeanIMT for LeanIMTData;
 
   Commitment internal _commitment;
 
+  /**
+   * @notice Test that users can make a deposit and fully withdraw its value (after fees) directly, without a relayer
+   */
   function test_fullDirectWithdrawal() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -34,6 +38,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can make a deposit and fully withdraw its value (after fees) through a relayer
+   */
   function test_fullRelayedWithdrawal() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -57,6 +64,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can make a deposit and partially withdraw, without a relayer
+   */
   function test_partialDirectWithdrawal() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -80,6 +90,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can make a deposit and do multiple partial withdrawals without a relayer
+   */
   function test_multiplePartialDirectWithdrawals() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -139,6 +152,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can make a deposit and do a partial withdrawal through a relayer
+   */
   function test_partialRelayedWithdrawal() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -162,6 +178,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can make a deposit and do multiple partial withdrawals through a relayer
+   */
   function test_multiplePartialRelayedWithdrawals() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -221,6 +240,9 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 
+  /**
+   * @notice Test that users can ragequit a commitment when their label is not in the ASP tree
+   */
   function test_ragequit() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -247,6 +269,9 @@ contract IntegrationERC20 is IntegrationBase {
     _ragequit(_ALICE, _commitment);
   }
 
+  /**
+   * @notice Test that users can get approved by the ASP, make a partial withdrawal, and if removed from the ASP set, they can only ragequit
+   */
   function test_aspRemoval() public {
     // Alice deposits 5000 DAI
     _commitment = _deposit(
@@ -287,5 +312,110 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Ragequit
     _ragequit(_ALICE, _commitment);
+  }
+
+  /**
+   * @notice Test that users can't spend a commitment more than once
+   */
+  function test_failWhenCommitmentAlreadySpent() public {
+    // Alice deposits 5000 DAI
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _DAI, amount: 5000 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Fully spend child commitment
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Fail to spend same commitment that was just spent
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: IState.NullifierAlreadySpent.selector
+      })
+    );
+  }
+
+  /**
+   * @notice Test that commitments with reused nullifiers can not be spent
+   */
+  function test_failWhenReusingNullifier() public {
+    // Alice deposits 5000 DAI
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _DAI, amount: 5000 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Bob withdraws some of Alice's commitment
+    _commitment = _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 2000 ether,
+        newNullifier: 'nullifier_1', // Reusing nullifier of deposit for new commitment
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: NONE
+      })
+    );
+
+    // Fail to spend the child commitment
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: 2000 ether,
+        newNullifier: 'nullifier_3',
+        newSecret: 'secret_3',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: IState.NullifierAlreadySpent.selector
+      })
+    );
+  }
+
+  /**
+   * @notice Test that spent commitments can not be ragequitted (and spent again)
+   */
+  function test_failWhenTryingToSpendRagequitCommitment() public {
+    // Alice deposits 5000 DAI
+    _commitment = _deposit(
+      DepositParams({depositor: _ALICE, asset: _DAI, amount: 5000 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
+    );
+
+    // Ragequit full amount
+    _ragequit(_ALICE, _commitment);
+
+    // Push ASP root with label included
+    vm.prank(_POSTMAN);
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+
+    // Fail to withdraw commitment that was already ragequitted
+    _selfWithdraw(
+      WithdrawalParams({
+        withdrawnAmount: _commitment.value,
+        newNullifier: 'nullifier_2',
+        newSecret: 'secret_2',
+        recipient: _BOB,
+        commitment: _commitment,
+        revertReason: IState.NullifierAlreadySpent.selector
+      })
+    );
   }
 }

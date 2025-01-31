@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { ethers } from "ethers";
 import {
   PrivacyPoolSDK,
@@ -14,6 +13,31 @@ function padSiblings(siblings, treeDepth) {
     paddedSiblings.push(0n);
   }
   return paddedSiblings;
+}
+
+// Function to temporarily redirect stdout
+function withSilentStdout(fn) {
+  const originalStdoutWrite = process.stdout.write;
+  const originalStderrWrite = process.stderr.write;
+
+  return async (...args) => {
+    // Temporarily disable stdout/stderr
+    process.stdout.write = () => true;
+    process.stderr.write = () => true;
+
+    try {
+      const result = await fn(...args);
+      // Restore stdout/stderr
+      process.stdout.write = originalStdoutWrite;
+      process.stderr.write = originalStderrWrite;
+      return result;
+    } catch (error) {
+      // Restore stdout/stderr
+      process.stdout.write = originalStdoutWrite;
+      process.stderr.write = originalStderrWrite;
+      throw error;
+    }
+  };
 }
 
 async function main() {
@@ -32,94 +56,97 @@ async function main() {
     aspTreeDepth,
   ] = process.argv.slice(2);
 
-  const circuits = new Circuits();
-  const sdk = new PrivacyPoolSDK(circuits);
+  try {
+    const circuits = new Circuits();
+    const sdk = new PrivacyPoolSDK(circuits);
 
-  // Decode the Merkle proofs
-  const abiCoder = new ethers.AbiCoder();
-  const stateMerkleProof = abiCoder.decode(
-    ["uint256", "uint256", "uint256[]"],
-    stateMerkleProofHex,
-  );
-  const aspMerkleProof = abiCoder.decode(
-    ["uint256", "uint256", "uint256[]"],
-    aspMerkleProofHex,
-  );
+    const abiCoder = new ethers.AbiCoder();
+    const stateMerkleProof = abiCoder.decode(
+      ["uint256", "uint256", "uint256[]"],
+      stateMerkleProofHex,
+    );
+    const aspMerkleProof = abiCoder.decode(
+      ["uint256", "uint256", "uint256[]"],
+      aspMerkleProofHex,
+    );
 
-  const commitment = getCommitment(
-    existingValue,
-    label,
-    existingNullifier,
-    existingSecret,
-  );
+    const commitment = getCommitment(
+      existingValue,
+      label,
+      existingNullifier,
+      existingSecret,
+    );
 
-  // Pad siblings arrays to required length
-  const paddedStateSiblings = padSiblings(stateMerkleProof[2], 32);
-  const paddedAspSiblings = padSiblings(aspMerkleProof[2], 32);
+    const paddedStateSiblings = padSiblings(stateMerkleProof[2], 32);
+    const paddedAspSiblings = padSiblings(aspMerkleProof[2], 32);
 
-  // Generate withdrawal proof
-  const { proof, publicSignals } = await sdk.proveWithdrawal(commitment, {
-    context,
-    withdrawalAmount: withdrawnValue,
-    stateMerkleProof: {
-      root: stateMerkleProof[0],
-      leaf: commitment.hash,
-      index: stateMerkleProof[1],
-      siblings: paddedStateSiblings,
-    },
-    aspMerkleProof: {
-      root: aspMerkleProof[0],
-      leaf: commitment.hash,
-      index: aspMerkleProof[1],
-      siblings: paddedAspSiblings,
-    },
-    stateRoot: stateMerkleProof[0],
-    stateTreeDepth: parseInt(stateTreeDepth),
-    aspRoot: aspMerkleProof[0],
-    aspTreeDepth: parseInt(aspTreeDepth),
-    newSecret,
-    newNullifier,
-  });
+    // Wrap the proveWithdrawal call with stdout redirection
+    const silentProveWithdrawal = withSilentStdout(
+      sdk.proveWithdrawal.bind(sdk),
+    );
 
-  // Format the proof to match the Solidity struct
-  const withdrawalProof = {
-    _pA: [BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1])],
-    _pB: [
-      [BigInt(proof.pi_b[0][1]), BigInt(proof.pi_b[0][0])],
-      [BigInt(proof.pi_b[1][1]), BigInt(proof.pi_b[1][0])],
-    ],
-    _pC: [BigInt(proof.pi_c[0]), BigInt(proof.pi_c[1])],
-    _pubSignals: [
-      publicSignals[0], // new commitment hash
-      publicSignals[1], // existing nullifier hash
-      publicSignals[2], // withdrawn value
-      publicSignals[3], // state root
-      publicSignals[4], // state depth
-      publicSignals[5], // asp root
-      publicSignals[6], // asp depth
-      publicSignals[7], // context
-    ].map((x) => BigInt(x)),
-  };
-
-  // ABI encode the proof
-  const encodedProof = encodeAbiParameters(
-    [
-      {
-        type: "tuple",
-        components: [
-          { name: "_pA", type: "uint256[2]" },
-          { name: "_pB", type: "uint256[2][2]" },
-          { name: "_pC", type: "uint256[2]" },
-          { name: "_pubSignals", type: "uint256[8]" },
-        ],
+    const { proof, publicSignals } = await silentProveWithdrawal(commitment, {
+      context,
+      withdrawalAmount: withdrawnValue,
+      stateMerkleProof: {
+        root: stateMerkleProof[0],
+        leaf: commitment.hash,
+        index: stateMerkleProof[1],
+        siblings: paddedStateSiblings,
       },
-    ],
-    [withdrawalProof],
-  );
+      aspMerkleProof: {
+        root: aspMerkleProof[0],
+        leaf: commitment.hash,
+        index: aspMerkleProof[1],
+        siblings: paddedAspSiblings,
+      },
+      stateRoot: stateMerkleProof[0],
+      stateTreeDepth: parseInt(stateTreeDepth),
+      aspRoot: aspMerkleProof[0],
+      aspTreeDepth: parseInt(aspTreeDepth),
+      newSecret,
+      newNullifier,
+    });
 
-  // Write to stdout as hex string
-  process.stdout.write(encodedProof);
-  process.exit(0);
+    const withdrawalProof = {
+      _pA: [BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1])],
+      _pB: [
+        [BigInt(proof.pi_b[0][1]), BigInt(proof.pi_b[0][0])],
+        [BigInt(proof.pi_b[1][1]), BigInt(proof.pi_b[1][0])],
+      ],
+      _pC: [BigInt(proof.pi_c[0]), BigInt(proof.pi_c[1])],
+      _pubSignals: [
+        publicSignals[0],
+        publicSignals[1],
+        publicSignals[2],
+        publicSignals[3],
+        publicSignals[4],
+        publicSignals[5],
+        publicSignals[6],
+        publicSignals[7],
+      ].map((x) => BigInt(x)),
+    };
+
+    const encodedProof = encodeAbiParameters(
+      [
+        {
+          type: "tuple",
+          components: [
+            { name: "_pA", type: "uint256[2]" },
+            { name: "_pB", type: "uint256[2][2]" },
+            { name: "_pC", type: "uint256[2]" },
+            { name: "_pubSignals", type: "uint256[8]" },
+          ],
+        },
+      ],
+      [withdrawalProof],
+    );
+
+    process.stdout.write(encodedProof);
+    process.exit(0);
+  } catch {
+    process.exit(1);
+  }
 }
 
-main().catch(console.error);
+main().catch(() => process.exit(1));

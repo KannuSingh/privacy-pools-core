@@ -1,26 +1,51 @@
 #!/usr/bin/env node
-
 import { PrivacyPoolSDK, Circuits } from "@privacy-pool-core/sdk";
 import { encodeAbiParameters } from "viem";
 
+// Function to temporarily redirect stdout
+function withSilentStdout(fn) {
+  const originalStdoutWrite = process.stdout.write;
+  const originalStderrWrite = process.stderr.write;
+
+  return async (...args) => {
+    // Temporarily disable stdout/stderr
+    process.stdout.write = () => true;
+    process.stderr.write = () => true;
+
+    try {
+      const result = await fn(...args);
+      // Restore stdout/stderr
+      process.stdout.write = originalStdoutWrite;
+      process.stderr.write = originalStderrWrite;
+      return result;
+    } catch (error) {
+      // Restore stdout/stderr
+      process.stdout.write = originalStdoutWrite;
+      process.stderr.write = originalStderrWrite;
+      throw error;
+    }
+  };
+}
+
 async function main() {
-  // Get command line arguments
   const [value, label, nullifier, secret] = process.argv.slice(2).map(BigInt);
 
-  // Initialize SDK with circuits
-  const circuits = new Circuits();
-  const privacyPoolSDK = new PrivacyPoolSDK(circuits);
-
   try {
-    // Generate the commitment proof
-    const { proof, publicSignals } = await privacyPoolSDK.proveCommitment(
+    const circuits = new Circuits();
+    const privacyPoolSDK = new PrivacyPoolSDK(circuits);
+
+    // Wrap the proveCommitment call with stdout redirection
+    const silentProveCommitment = withSilentStdout(
+      privacyPoolSDK.proveCommitment.bind(privacyPoolSDK),
+    );
+
+    const { proof, publicSignals } = await silentProveCommitment(
       value,
       label,
       nullifier,
       secret,
     );
 
-    // Format the proof to match the Solidity struct
     const ragequitProof = {
       _pA: [BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1])],
       _pB: [
@@ -37,7 +62,6 @@ async function main() {
       ].map((x) => BigInt(x)),
     };
 
-    // ABI encode the proof
     const encodedProof = encodeAbiParameters(
       [
         {
@@ -53,13 +77,13 @@ async function main() {
       [ragequitProof],
     );
 
-    // Output the encoded proof directly to stdout
     process.stdout.write(encodedProof);
     process.exit(0);
-  } catch (error) {
-    console.error("Error generating proof:", error);
+  } catch {
+    // Exit silently on any error
     process.exit(1);
   }
 }
 
-main().catch(console.error);
+// Catch any uncaught errors and exit silently
+main().catch(() => process.exit(1));

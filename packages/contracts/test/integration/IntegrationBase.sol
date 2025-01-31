@@ -27,6 +27,10 @@ import {Constants} from 'test/helper/Constants.sol';
 contract IntegrationBase is Test {
   using InternalLeanIMT for LeanIMTData;
 
+  error WithdrawalProofGenerationFailed();
+  error RagequitProofGenerationFailed();
+  error MerkleProofGenerationFailed();
+
   /*///////////////////////////////////////////////////////////////
                              STRUCTS 
   //////////////////////////////////////////////////////////////*/
@@ -274,7 +278,7 @@ contract IntegrationBase is Test {
     IPrivacyPool.Withdrawal memory _withdrawal,
     WithdrawalParams memory _params,
     bool _direct
-  ) private returns (Commitment memory _commitment) {
+  ) internal returns (Commitment memory _commitment) {
     // Fetch balances before withdrawal
     uint256 _recipientInitialBalance = _balance(_params.recipient, _params.commitment.asset);
     uint256 _entrypointInitialBalance = _balance(address(_entrypoint), _params.commitment.asset);
@@ -406,7 +410,7 @@ contract IntegrationBase is Test {
     uint256 _label,
     uint256 _nullifier,
     uint256 _secret
-  ) private returns (ProofLib.RagequitProof memory _proof) {
+  ) internal returns (ProofLib.RagequitProof memory _proof) {
     // Generate real proof using the helper script
     string[] memory _inputs = new string[](5);
     _inputs[0] = vm.toString(_value);
@@ -420,18 +424,26 @@ contract IntegrationBase is Test {
     _scriptArgs[1] = 'test/helper/RagequitProofGenerator.mjs';
     bytes memory _proofData = vm.ffi(_concat(_scriptArgs, _inputs));
 
+    if (_proofData.length == 0) {
+      revert RagequitProofGenerationFailed();
+    }
+
     // Decode the ABI-encoded proof directly
     _proof = abi.decode(_proofData, (ProofLib.RagequitProof));
   }
 
   function _generateWithdrawalProof(WithdrawalProofParams memory _params)
-    private
+    internal
     returns (ProofLib.WithdrawProof memory _proof)
   {
     // Generate state merkle proof
     bytes memory _stateMerkleProof = _generateMerkleProof(_merkleLeaves, _params.existingCommitment);
     // Generate ASP merkle proof
     bytes memory _aspMerkleProof = _generateMerkleProof(_aspLeaves, _params.label);
+
+    if (_aspMerkleProof.length == 0 || _stateMerkleProof.length == 0) {
+      revert MerkleProofGenerationFailed();
+    }
 
     string[] memory _inputs = new string[](12);
     _inputs[0] = vm.toString(_params.existingValue);
@@ -453,11 +465,14 @@ contract IntegrationBase is Test {
     _scriptArgs[1] = 'test/helper/WithdrawalProofGenerator.mjs';
     bytes memory _proofData = vm.ffi(_concat(_scriptArgs, _inputs));
 
-    // Decode the ABI-encoded proof directly
+    if (_proofData.length == 0) {
+      revert WithdrawalProofGenerationFailed();
+    }
+
     _proof = abi.decode(_proofData, (ProofLib.WithdrawProof));
   }
 
-  function _generateMerkleProof(uint256[] storage _leaves, uint256 _leaf) private returns (bytes memory _proof) {
+  function _generateMerkleProof(uint256[] storage _leaves, uint256 _leaf) internal returns (bytes memory _proof) {
     uint256 _leavesAmt = _leaves.length;
     string[] memory inputs = new string[](_leavesAmt + 1);
     inputs[0] = vm.toString(_leaf);
@@ -532,7 +547,7 @@ contract IntegrationBase is Test {
     _commitmentHash = PoseidonT4.hash([_amount, _label, _precommitment]);
   }
 
-  function _genSecretBySeed(string memory _seed) private pure returns (uint256 _secret) {
+  function _genSecretBySeed(string memory _seed) internal pure returns (uint256 _secret) {
     _secret = uint256(keccak256(bytes(_seed))) % Constants.SNARK_SCALAR_FIELD;
   }
 }
