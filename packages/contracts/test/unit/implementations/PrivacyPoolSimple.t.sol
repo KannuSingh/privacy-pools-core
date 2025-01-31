@@ -182,7 +182,7 @@ contract UnitPush is UnitPrivacyPoolSimple {
     vm.etch(_recipient, revertingCode);
 
     // Expect revert when ETH transfer fails
-    vm.expectRevert(IPrivacyPoolSimple.FailedToSendETH.selector);
+    vm.expectRevert(IPrivacyPoolSimple.FailedToSendNativeAsset.selector);
     vm.prank(_recipient);
     _pool.push(_recipient, _amount);
   }

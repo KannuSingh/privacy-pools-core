@@ -175,9 +175,9 @@ interface IEntrypoint {
   error EmptyRoot();
 
   /**
-   * @notice Thrown when failing to send ETH to an account
+   * @notice Thrown when failing to send the native asset to an account
    */
-  error ETHTransferFailed();
+  error NativeAssetTransferFailed();
 
   /**
    * @notice Thrown when an address parameter is zero

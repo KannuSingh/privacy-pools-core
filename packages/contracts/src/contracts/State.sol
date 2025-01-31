@@ -16,6 +16,7 @@ https://defi.sucks
 
 */
 
+import {Constants} from './lib/Constants.sol';
 import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
@@ -29,10 +30,6 @@ import {IVerifier} from 'interfaces/IVerifier.sol';
  */
 abstract contract State is IState {
   using InternalLeanIMT for LeanIMTData;
-
-  // @notice The SNARK scalar field
-  uint256 internal constant _SNARK_SCALAR_FIELD =
-    21_888_242_871_839_275_222_246_405_745_257_275_088_548_364_400_416_034_343_698_204_186_575_808_495_617;
 
   /// @inheritdoc IState
   string public constant VERSION = '0.1.0';
@@ -110,7 +107,7 @@ abstract contract State is IState {
     currentRootIndex = newRootIndex;
 
     // Store the new root at the new index
-    roots[newRootIndex] = _updatedRoot % _SNARK_SCALAR_FIELD;
+    roots[newRootIndex] = _updatedRoot % Constants.SNARK_SCALAR_FIELD;
 
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }

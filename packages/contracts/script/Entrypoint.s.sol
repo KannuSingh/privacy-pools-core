@@ -9,33 +9,47 @@ import {Script} from 'forge-std/Script.sol';
 import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
-contract RegisterPool is Script {
-  Entrypoint public entrypoint;
+import {Constants} from 'contracts/lib/Constants.sol';
 
+/**
+ * @notice Script to register a Privacy Pool.
+ */
+contract RegisterPool is Script {
+  // @notice The deployed Entrypoint
+  Entrypoint public entrypoint;
+  // @notice The Pool asset
   IERC20 internal _asset;
+  // @notice The PrivacyPool address
   IPrivacyPool internal _pool;
+  // @notice The minimum amount to deposit
   uint256 internal _minimumDepositAmount;
+  // @notice The vetting fee in basis points
   uint256 internal _vettingFeeBPS;
 
-  address internal constant _ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
   function setUp() public {
+    // Read the Entrypoint address from environment
     entrypoint = Entrypoint(payable(vm.envAddress('ENTRYPOINT_ADDRESS')));
 
-    try vm.parseAddress(vm.prompt('Enter asset address')) returns (address _assetAddress) {
+    // Ask the user for the asset address
+    try vm.parseAddress(vm.prompt('Enter asset address (empty for native)')) returns (address _assetAddress) {
       _asset = IERC20(_assetAddress);
     } catch {
-      _asset = IERC20(_ETH);
+      _asset = IERC20(Constants.NATIVE_ASSET);
     }
 
+    // Ask the user for the PrivayPool address
     _pool = IPrivacyPool(vm.parseAddress(vm.prompt('Enter pool address')));
-    _minimumDepositAmount = vm.parseUint(vm.prompt('Enter minimum deposit amount'));
+    // Ask the user for the minimum deposit amount
+    _minimumDepositAmount = vm.parseUint(vm.prompt('Enter minimum deposit amount padded with decimals'));
+    // Ask the user for the vetting fee in basis points
     _vettingFeeBPS = vm.parseUint(vm.prompt('Enter vetting fee BPS'));
   }
 
+  // @dev Must be called with the `--account` flag which acts as the caller
   function run() public {
     vm.startBroadcast();
 
+    // Register pool
     entrypoint.registerPool(_asset, _pool, _minimumDepositAmount, _vettingFeeBPS);
 
     vm.stopBroadcast();

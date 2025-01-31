@@ -2,20 +2,24 @@
 
 pragma solidity 0.8.28;
 
-import {Entrypoint} from 'contracts/Entrypoint.sol';
+import {ERC20, IERC20} from '@oz/token/ERC20/ERC20.sol';
+import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
+import {Script} from 'forge-std/Script.sol';
+import {console} from 'forge-std/console.sol';
 
+import {Constants} from 'contracts/lib/Constants.sol';
+
+import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+
+import {Entrypoint} from 'contracts/Entrypoint.sol';
 import {PrivacyPoolComplex} from 'contracts/implementations/PrivacyPoolComplex.sol';
 import {PrivacyPoolSimple} from 'contracts/implementations/PrivacyPoolSimple.sol';
 import {CommitmentVerifier} from 'contracts/verifiers/CommitmentVerifier.sol';
 import {WithdrawalVerifier} from 'contracts/verifiers/WithdrawalVerifier.sol';
 
-import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
-
-import {ERC20, IERC20} from '@oz/token/ERC20/ERC20.sol';
-
-import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+/*///////////////////////////////////////////////////////////////
+                      TEST TOKEN
+//////////////////////////////////////////////////////////////*/
 
 contract TestToken is ERC20 {
   constructor() ERC20('Test Token', 'TST') {
@@ -23,156 +27,184 @@ contract TestToken is ERC20 {
   }
 }
 
-contract DeployVerifier is Script {
-  function run() public {
-    vm.startBroadcast();
+/*///////////////////////////////////////////////////////////////
+                    BASE DEPLOY SCRIPT
+//////////////////////////////////////////////////////////////*/
 
-    CommitmentVerifier commitmentVerifier = new CommitmentVerifier();
-    WithdrawalVerifier withdrawalVerifier = new WithdrawalVerifier();
-    console.log('Commitment Verifier deployed at: %s', address(commitmentVerifier));
-    console.log('Withdrawal Verifier deployed at: %s', address(withdrawalVerifier));
-
-    vm.stopBroadcast();
+/**
+ * @notice Abstract script to deploy the PrivacyPool protocol.
+ * @dev Assets and chain specific configurations must be defined in a parent contract.
+ */
+abstract contract DeployProtocol is Script {
+  // @notice Struct for Pool deployment and configuration
+  struct PoolConfig {
+    string symbol;
+    IERC20 asset;
+    uint256 minimumDepositAmount;
+    uint256 vettingFeeBPS;
   }
-}
 
-contract DeployEntrypoint is Script {
+  // @notice Deployed Entrypoint
   Entrypoint public entrypoint;
-  address public owner;
-  address public postman;
-
-  function setUp() public {
-    owner = vm.envAddress('OWNER_ADDRESS');
-    postman = vm.envAddress('POSTMAN_ADDRESS');
-  }
-
-  function run() public {
-    vm.startBroadcast();
-
-    address _impl = address(new Entrypoint());
-    entrypoint = Entrypoint(
-      payable(UnsafeUpgrades.deployUUPSProxy(_impl, abi.encodeCall(Entrypoint.initialize, (owner, postman))))
-    );
-
-    console.log('Entrypoint proxy deployed at: %s', address(entrypoint));
-    console.log('Entrypoint implementation deployed at: %s', _impl);
-
-    vm.stopBroadcast();
-  }
-}
-
-contract DeployPoolSimple is Script {
-  PrivacyPoolSimple public pool;
-
-  address public entrypoint;
-  address public withdrawalVerifier;
-  address public ragequitVerifier;
-
-  function setUp() public {
-    entrypoint = vm.envAddress('ENTRYPOINT_ADDRESS');
-    withdrawalVerifier = vm.envAddress('WITHDRAWAL_VERIFIER_ADDRESS');
-    ragequitVerifier = vm.envAddress('RAGEQUIT_VERIFIER_ADDRESS');
-  }
-
-  function run() public {
-    vm.startBroadcast();
-
-    pool = new PrivacyPoolSimple(entrypoint, withdrawalVerifier, ragequitVerifier);
-    console.log('Pool deployed at: %s', address(pool));
-
-    vm.stopBroadcast();
-  }
-}
-
-contract DeployPoolComplex is Script {
-  PrivacyPoolComplex public pool;
-
-  address public entrypoint;
-  address public withdrawalVerifier;
-  address public ragequitVerifier;
-  address public asset;
-
-  function setUp() public {
-    entrypoint = vm.envAddress('ENTRYPOINT_ADDRESS');
-    withdrawalVerifier = vm.envAddress('WITHDRAWAL_VERIFIER_ADDRESS');
-    ragequitVerifier = vm.envAddress('RAGEQUIT_VERIFIER_ADDRESS');
-
-    asset = vm.parseAddress(vm.prompt('Enter asset address'));
-  }
-
-  function run() public {
-    vm.startBroadcast();
-
-    pool = new PrivacyPoolComplex(entrypoint, withdrawalVerifier, ragequitVerifier, asset);
-    console.log('Pool deployed at: %s', address(pool));
-
-    vm.stopBroadcast();
-  }
-}
-
-contract DeployProtocol is Script {
-  IPrivacyPool public poolSimple;
-  IPrivacyPool public poolComplex;
-
-  Entrypoint public entrypoint;
+  // @notice Deployed Groth16 Withdrawal Verifier
   WithdrawalVerifier public withdrawalVerifier;
+  // @notice Deployed Groth16 Ragequit Verifier
   CommitmentVerifier public ragequitVerifier;
-  IERC20 public asset;
 
+  // @notice Initial Entrypoint `ONWER_ROLE`
   address public owner;
+  // @notice Initial Entrypoint `POSTMAN_ROLE`
   address public postman;
 
-  address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  // @notice Native asset pool configuration
+  PoolConfig internal _simpleConfig;
+  // @notice ERC20 pools configurations
+  PoolConfig[] internal _poolConfigs;
 
-  function setUp() public {
+  function setUp() public virtual {
     owner = vm.envAddress('OWNER_ADDRESS');
     postman = vm.envAddress('POSTMAN_ADDRESS');
   }
 
-  function run() public {
+  // @dev Must be called with the `--account` flag which acts as the caller
+  function run() public virtual {
     vm.startBroadcast();
 
-    // Deploy Verifier
+    // Deploy verifiers
+    _deployGroth16Verifiers();
+    // Deploy Entrypoint
+    _deployEntrypoint();
+
+    // Deploy the native asset pool
+    _deploySimplePool(_simpleConfig.symbol, _simpleConfig.minimumDepositAmount, _simpleConfig.vettingFeeBPS);
+
+    // Deploy the ERC20 pools
+    for (uint256 _i; _i < _poolConfigs.length; ++_i) {
+      PoolConfig memory _config = _poolConfigs[_i];
+      _deployComplexPool(_config.symbol, _config.asset, _config.minimumDepositAmount, _config.vettingFeeBPS);
+    }
+
+    vm.stopBroadcast();
+  }
+
+  function _deployGroth16Verifiers() private {
     withdrawalVerifier = new WithdrawalVerifier();
     ragequitVerifier = new CommitmentVerifier();
 
-    // Deploy Entrypoint (proxy + implementation)
+    console.log('Withdrawal Verifier deployed at: %s', address(withdrawalVerifier));
+    console.log('Ragequit Verifier deployed at: %s', address(ragequitVerifier));
+  }
+
+  function _deployEntrypoint() private {
+    // Deploy implementation
     address _impl = address(new Entrypoint());
+
+    // Deploy and initialize proxy
     entrypoint = Entrypoint(
       payable(UnsafeUpgrades.deployUUPSProxy(_impl, abi.encodeCall(Entrypoint.initialize, (owner, postman))))
     );
 
-    // Deploy native asset Pool
-    poolSimple = IPrivacyPool(
+    console.log('Entrypoint deployed at: %s', address(entrypoint));
+  }
+
+  function _deploySimplePool(string memory _symbol, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS) private {
+    // Deploy pool
+    IPrivacyPool _pool = IPrivacyPool(
       address(new PrivacyPoolSimple(address(entrypoint), address(withdrawalVerifier), address(ragequitVerifier)))
     );
 
-    // Deploy test token
-    asset = IERC20(address(new TestToken()));
+    // Register pool at entrypoint with defined configuration
+    entrypoint.registerPool(IERC20(Constants.NATIVE_ASSET), _pool, _minimumDepositAmount, _vettingFeeBPS);
 
-    // Deploy TestToken Pool
-    poolComplex = IPrivacyPool(
+    console.log('%s Pool deployed at: %s', _symbol, address(_pool));
+  }
+
+  function _deployComplexPool(
+    string memory _symbol,
+    IERC20 _asset,
+    uint256 _minimumDepositAmount,
+    uint256 _vettingFeeBPS
+  ) private {
+    // Deploy pool
+    IPrivacyPool _pool = IPrivacyPool(
       address(
         new PrivacyPoolComplex(
-          address(entrypoint), address(withdrawalVerifier), address(ragequitVerifier), address(asset)
+          address(entrypoint), address(withdrawalVerifier), address(ragequitVerifier), address(_asset)
         )
       )
     );
 
-    entrypoint.registerPool(IERC20(ETH), poolSimple, 0, 100);
+    // Register pool at entrypoint with defined configuration
+    entrypoint.registerPool(_asset, _pool, _minimumDepositAmount, _vettingFeeBPS);
 
-    entrypoint.registerPool(asset, poolComplex, 0, 100);
+    console.log('%s Pool deployed at: %s', _symbol, address(_pool));
+  }
 
-    console.log('Withdrawal Verifier deployed at: %s', address(withdrawalVerifier));
-    console.log('Ragequit Verifier deployed at: %s', address(ragequitVerifier));
-    console.log('Entrypoint deployed at: %s', address(entrypoint));
-    console.log('Pool Simple deployed at: %s', address(poolSimple));
-    console.log('Pool Complex deployed at: %s', address(poolComplex));
-    console.log('Test asset deployed at: %s', address(asset));
+  function _deployTestToken() internal returns (IERC20 _asset) {
+    _asset = IERC20(address(new TestToken()));
+    console.log('TestToken deployed at: %s', address(_asset));
+  }
+}
 
-    console.log('Registered Simple Pool');
-    console.log('Registered Complex Pool');
+/*///////////////////////////////////////////////////////////////
+                     ETHEREUM SEPOLIA 
+//////////////////////////////////////////////////////////////*/
+
+// @notice Protocol configuration for Ethereum Sepolia
+contract EthereumSepolia is DeployProtocol {
+  function setUp() public override {
+    // Native asset pool
+    _simpleConfig = PoolConfig({
+      symbol: 'ETH',
+      asset: IERC20(Constants.NATIVE_ASSET),
+      minimumDepositAmount: 0.001 ether,
+      vettingFeeBPS: 100
+    });
+
+    super.setUp();
+  }
+
+  // Overriding `run` to deploy TestToken before deploying the protocol
+  function run() public override {
+    vm.startBroadcast();
+
+    // TestToken
+    _poolConfigs.push(
+      PoolConfig({symbol: 'TST', asset: _deployTestToken(), minimumDepositAmount: 100 ether, vettingFeeBPS: 100}) // 1%
+    );
 
     vm.stopBroadcast();
+
+    super.run();
+  }
+}
+
+/*///////////////////////////////////////////////////////////////
+                     ETHEREUM MAINNET
+//////////////////////////////////////////////////////////////*/
+
+// @notice Protocol configuration for Ethereum Mainnet
+// TODO: update with actual mainnet configuration
+contract EthereumMainnet is DeployProtocol {
+  function setUp() public override {
+    // Native asset pool
+    _simpleConfig = PoolConfig({
+      symbol: 'ETH',
+      asset: IERC20(Constants.NATIVE_ASSET),
+      minimumDepositAmount: 0.001 ether,
+      vettingFeeBPS: 100
+    });
+
+    // USDT
+    _poolConfigs.push(
+      PoolConfig({symbol: 'USDT', asset: IERC20(address(0)), minimumDepositAmount: 100 ether, vettingFeeBPS: 100}) // 1%
+    );
+
+    // USDC
+    _poolConfigs.push(
+      PoolConfig({symbol: 'USDC', asset: IERC20(address(0)), minimumDepositAmount: 100 ether, vettingFeeBPS: 100}) // 1%
+    );
+
+    super.setUp();
   }
 }

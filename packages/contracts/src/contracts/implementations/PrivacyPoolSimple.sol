@@ -16,7 +16,9 @@ https://defi.sucks/
 
 */
 
-import {PrivacyPool} from '../PrivacyPool.sol';
+import {Constants} from 'contracts/lib/Constants.sol';
+
+import {PrivacyPool} from 'contracts/PrivacyPool.sol';
 import {IPrivacyPoolSimple} from 'interfaces/IPrivacyPool.sol';
 
 /**
@@ -28,7 +30,7 @@ contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
     address _entrypoint,
     address _withdrawalVerifier,
     address _ragequitVerifier
-  ) PrivacyPool(_entrypoint, _withdrawalVerifier, _ragequitVerifier, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {}
+  ) PrivacyPool(_entrypoint, _withdrawalVerifier, _ragequitVerifier, Constants.NATIVE_ASSET) {}
 
   /**
    * @notice Handle receiving native asset asset
@@ -47,6 +49,6 @@ contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
   function _push(address _recipient, uint256 _amount) internal override(PrivacyPool) {
     /// Try to send native asset to recipient
     (bool _success,) = _recipient.call{value: _amount}('');
-    if (!_success) revert FailedToSendETH();
+    if (!_success) revert FailedToSendNativeAsset();
   }
 }

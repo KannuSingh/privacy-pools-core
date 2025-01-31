@@ -185,7 +185,7 @@ interface IPrivacyPoolSimple is IPrivacyPool {
   /**
    * @notice Thrown when failing to send native asset to an account
    */
-  error FailedToSendETH();
+  error FailedToSendNativeAsset();
 }
 
 /**

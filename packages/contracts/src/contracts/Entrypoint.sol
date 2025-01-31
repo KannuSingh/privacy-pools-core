@@ -16,13 +16,15 @@ https://defi.sucks/
 
 */
 
+import {Constants} from './lib/Constants.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
 import {AccessControlUpgradeable} from '@oz-upgradeable/access/AccessControlUpgradeable.sol';
 import {UUPSUpgradeable} from '@oz-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
 import {ReentrancyGuardUpgradeable} from '@oz-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
+
 import {IERC20} from '@oz/interfaces/IERC20.sol';
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
@@ -39,8 +41,6 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
   // `keccak256('ASP_POSTMAN')`
   bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
-  // Constant address for the native asset
-  address private immutable ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   /// @inheritdoc IEntrypoint
   mapping(uint256 _scope => IPrivacyPool _pool) public scopeToPool;
@@ -103,7 +103,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
   /// @inheritdoc IEntrypoint
   function deposit(uint256 _precommitment) external payable returns (uint256 _commitment) {
-    _commitment = _handleDeposit(IERC20(ETH), msg.value, _precommitment);
+    _commitment = _handleDeposit(IERC20(Constants.NATIVE_ASSET), msg.value, _precommitment);
   }
 
   /// @inheritdoc IEntrypoint
@@ -188,7 +188,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _config.vettingFeeBPS = _vettingFeeBPS;
 
     // If asset is an ERC20, approve pool to spend
-    if (address(_asset) != ETH) _asset.approve(address(_pool), type(uint256).max);
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), type(uint256).max);
 
     emit PoolRegistered(_pool, _asset, _scope);
   }
@@ -203,7 +203,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _scope = _pool.SCOPE();
 
     // If asset is an ERC20, revoke pool allowance
-    if (address(_asset) != ETH) _asset.approve(address(_pool), 0);
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), 0);
 
     // Remove pool configuration
     delete scopeToPool[_scope];
@@ -278,7 +278,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   function _authorizeUpgrade(address) internal override onlyRole(OWNER_ROLE) {}
 
   /**
-   * @notice Handle deposit logic for both ETH and ERC20 deposits
+   * @notice Handle deposit logic for both native asset and ERC20 deposits
    * @param _asset The asset being deposited
    * @param _value The amount being deposited
    * @param _precommitment The precommitment for the deposit
@@ -297,7 +297,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _amountAfterFees = _deductFee(_value, _config.vettingFeeBPS);
 
     // Deposit commitment into pool (forwarding native asset if applicable)
-    uint256 _nativeAssetValue = address(_asset) == ETH ? _amountAfterFees : 0;
+    uint256 _nativeAssetValue = address(_asset) == Constants.NATIVE_ASSET ? _amountAfterFees : 0;
     _commitment = _pool.deposit{value: _nativeAssetValue}(msg.sender, _amountAfterFees, _precommitment);
 
     emit Deposited(msg.sender, _pool, _commitment, _amountAfterFees);
@@ -310,9 +310,9 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    * @param _amount The amount to send
    */
   function _transfer(IERC20 _asset, address _recipient, uint256 _amount) internal {
-    if (_asset == IERC20(ETH)) {
+    if (_asset == IERC20(Constants.NATIVE_ASSET)) {
       (bool _success,) = _recipient.call{value: _amount}('');
-      if (!_success) revert ETHTransferFailed();
+      if (!_success) revert NativeAssetTransferFailed();
     } else {
       _asset.safeTransfer(_recipient, _amount);
     }
@@ -324,7 +324,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    * @return _balance The asset balance
    */
   function _assetBalance(IERC20 _asset) internal view returns (uint256 _balance) {
-    if (_asset == IERC20(ETH)) {
+    if (_asset == IERC20(Constants.NATIVE_ASSET)) {
       _balance = address(this).balance;
     } else {
       _balance = _asset.balanceOf(address(this));

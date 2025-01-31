@@ -17,6 +17,8 @@ https://defi.sucks/
 */
 
 import {State} from './State.sol';
+
+import {Constants} from './lib/Constants.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
 import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
@@ -44,7 +46,9 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (msg.sender != _w.processooor) revert InvalidProcesooor();
 
     // Check the context matches the proof's public signal to ensure its integrity
-    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE))) % _SNARK_SCALAR_FIELD) revert ContextMismatch();
+    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE))) % Constants.SNARK_SCALAR_FIELD) {
+      revert ContextMismatch();
+    }
 
     // Check the state root is known
     if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
@@ -69,7 +73,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Store asset address
     ASSET = _asset;
     // Compute SCOPE
-    SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset))) % _SNARK_SCALAR_FIELD;
+    SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset))) % Constants.SNARK_SCALAR_FIELD;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -86,7 +90,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     if (dead) revert PoolIsDead();
 
     // Compute label
-    uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce))) % _SNARK_SCALAR_FIELD;
+    uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce))) % Constants.SNARK_SCALAR_FIELD;
     // Store depositor and ragequit cooldown
     deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
 

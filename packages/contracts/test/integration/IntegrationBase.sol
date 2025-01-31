@@ -90,8 +90,8 @@ contract IntegrationBase is Test {
   WithdrawalVerifier internal _withdrawalVerifier;
 
   // Assets
-  IERC20 internal constant _ETH = IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
   IERC20 internal constant _DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+  IERC20 internal _ETH = IERC20(Constants.NATIVE_ASSET);
 
   // Mirrored Merkle Trees
   LeanIMTData internal _shadowMerkleTree;
@@ -157,7 +157,7 @@ contract IntegrationBase is Test {
     );
 
     // Register ETH pool
-    _entrypoint.registerPool(_ETH, IPrivacyPool(_ethPool), _MIN_DEPOSIT, _VETTING_FEE_BPS);
+    _entrypoint.registerPool(IERC20(Constants.NATIVE_ASSET), IPrivacyPool(_ethPool), _MIN_DEPOSIT, _VETTING_FEE_BPS);
 
     // Register DAI pool
     _entrypoint.registerPool(_DAI, IPrivacyPool(_daiPool), _MIN_DEPOSIT, _VETTING_FEE_BPS);
@@ -173,14 +173,14 @@ contract IntegrationBase is Test {
     // Deal the asset to the depositor
     _deal(_params.depositor, _params.asset, _params.amount);
 
-    // If not ETH, approve Entrypoint to deposit funds
-    if (_params.asset != _ETH) {
+    // If not native asset, approve Entrypoint to deposit funds
+    if (_params.asset != IERC20(Constants.NATIVE_ASSET)) {
       vm.prank(_params.depositor);
       _params.asset.approve(address(_entrypoint), _params.amount);
     }
 
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.asset == _ETH ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
 
     // Fetch current nonce
     uint256 _currentNonce = _pool.nonce();
@@ -219,7 +219,7 @@ contract IntegrationBase is Test {
 
     // Deposit
     vm.prank(_params.depositor);
-    if (_params.asset == _ETH) {
+    if (_params.asset == IERC20(Constants.NATIVE_ASSET)) {
       _entrypoint.deposit{value: _params.amount}(_commitment.precommitment);
     } else {
       _entrypoint.deposit(_params.asset, _params.amount, _commitment.precommitment);
@@ -247,7 +247,7 @@ contract IntegrationBase is Test {
 
   function _selfWithdraw(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.commitment.asset == _ETH ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
 
     // Build `Withdrawal` object for direct withdrawal
     IPrivacyPool.Withdrawal memory _withdrawal =
@@ -259,7 +259,7 @@ contract IntegrationBase is Test {
 
   function _withdrawThroughRelayer(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.commitment.asset == _ETH ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
 
     // Build `Withdrawal` object for relayed withdrawal
     IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({
@@ -356,7 +356,7 @@ contract IntegrationBase is Test {
 
   function _ragequit(address _depositor, Commitment memory _commitment) internal {
     // Define pool to ragequit from
-    IPrivacyPool _pool = _commitment.asset == _ETH ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
 
     uint256 _depositorInitialBalance = _balance(_depositor, _commitment.asset);
     uint256 _entrypointInitialBalance = _balance(address(_entrypoint), _commitment.asset);
@@ -512,7 +512,7 @@ contract IntegrationBase is Test {
   }
 
   function _deal(address _account, IERC20 _asset, uint256 _amount) private {
-    if (_asset == _ETH) {
+    if (_asset == IERC20(Constants.NATIVE_ASSET)) {
       deal(_account, _amount);
     } else {
       deal(address(_asset), _account, _amount);
@@ -520,7 +520,7 @@ contract IntegrationBase is Test {
   }
 
   function _balance(address _account, IERC20 _asset) private view returns (uint256 _bal) {
-    if (_asset == _ETH) {
+    if (_asset == IERC20(Constants.NATIVE_ASSET)) {
       _bal = _account.balance;
     } else {
       _bal = _asset.balanceOf(_account);
