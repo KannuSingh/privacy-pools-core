@@ -1,0 +1,43 @@
+{
+  "name": "@privacy-pool-core/relayer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A simple note relayer",
+  "license": "MIT",
+  "author": "Wonderland",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "directories": {
+    "src": "src"
+  },
+  "files": [
+    "dist/*",
+    "package.json",
+    "!**/*.tsbuildinfo"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node ./dist/src/index.js",
+    "build:start": "yarn build && yarn start",
+    "start:ts": "node --no-warnings=ExperimentalWarning --loader ts-node/esm src/index.ts",
+    "check-types": "tsc --noEmit -p ./tsconfig.json",
+    "clean": "rm -rf dist/",
+    "format": "prettier --check \"{src,test}/**/*.{js,ts,json}\"",
+    "format:fix": "prettier --write \"{src,test}/**/*.{js,ts,json}\"",
+    "lint": "eslint \"{src,test}/**/*.{js,ts,json}\"",
+    "lint:fix": "eslint \"{src,test}/**/*.{js,ts,json}\" --fix",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "test:cov": "vitest run --config vitest.config.ts --coverage"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "express": "4.21.2",
+    "sqlite": "5.1.1",
+    "sqlite3": "5.1.7",
+    "viem": "2.22.14"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0"
+  }
+}

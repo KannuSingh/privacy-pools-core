@@ -8,9 +8,10 @@ import {
 } from "../interfaces/circuits.interface.js";
 import { Commitment } from "../types/commitment.js";
 import {
-    Withdrawal,
-    WithdrawalPayload,
-    WithdrawalProofInput,
+  Withdrawal,
+  WithdrawalPayload,
+  WithdrawalProof,
+  WithdrawalProofInput,
 } from "../types/withdrawal.js";
 
 /**
@@ -31,7 +32,7 @@ export class WithdrawalService {
   public async proveWithdrawal(
     commitment: Commitment,
     input: WithdrawalProofInput,
-  ): Promise<WithdrawalPayload> {
+  ): Promise<WithdrawalProof> {
     try {
       const inputSignals = this.prepareInputSignals(commitment, input);
 
@@ -63,14 +64,13 @@ export class WithdrawalService {
    * @throws {ProofError} If verification fails
    */
   public async verifyWithdrawal(
-    withdrawalPayload: WithdrawalPayload,
+    withdrawalPayload: WithdrawalProof,
   ): Promise<boolean> {
     try {
       const vkeyBin = await this.circuits.getVerificationKey(
         CircuitName.Withdraw,
       );
       const vkey = JSON.parse(new TextDecoder("utf-8").decode(vkeyBin));
-
       return await snarkjs.groth16.verify(
         vkey,
         withdrawalPayload.publicSignals,

@@ -9,6 +9,16 @@
   "workspaces": [
     "packages/circuits",
     "packages/contracts",
-    "packages/sdk"
-  ]
+    "packages/sdk",
+    "packages/relayer"
+  ],
+  "devDependencies": {
+    "prettier": "3.3.3",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
+    "eslint": "9.18.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-prettier": "5.2.1",
+    "typescript-eslint": "8.20.0"
+  }
 }

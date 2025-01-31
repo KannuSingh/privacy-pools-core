@@ -5,6 +5,7 @@ import { Commitment, CommitmentProof } from "../types/commitment.js";
 import {
   Withdrawal,
   WithdrawalPayload,
+  WithdrawalProof,
   WithdrawalProofInput,
 } from "../types/withdrawal.js";
 
@@ -62,18 +63,19 @@ export class PrivacyPoolSDK {
   public async proveWithdrawal(
     commitment: Commitment,
     input: WithdrawalProofInput,
-  ): Promise<WithdrawalPayload> {
-    return this.withdrawalService.proveWithdrawal(commitment, input);
+  ): Promise<WithdrawalProof> {
+    const withdrawalProof = await this.withdrawalService.proveWithdrawal(commitment, input);
+    return withdrawalProof;
   }
 
   /**
    * Verifies a withdrawal proof.
    *
-   * @param withdrawalPayload - The withdrawal payload to verify
+   * @param withdrawalProof - The withdrawal payload to verify
    */
   public async verifyWithdrawal(
-    withdrawalPayload: WithdrawalPayload,
+    withdrawalProof: WithdrawalProof,
   ): Promise<boolean> {
-    return this.withdrawalService.verifyWithdrawal(withdrawalPayload);
+    return this.withdrawalService.verifyWithdrawal(withdrawalProof);
   }
 }

@@ -12,12 +12,17 @@ export interface Withdrawal {
   readonly data: Uint8Array;
 }
 
+export interface WithdrawalProof {
+  readonly proof: Groth16Proof;
+  readonly publicSignals: PublicSignals;
+}
+
 /**
  * Complete withdrawal payload including proof and public signals.
  */
 export interface WithdrawalPayload {
-  readonly proof: Groth16Proof;
-  readonly publicSignals: PublicSignals;
+  readonly proof: WithdrawalProof;
+  readonly withdrawal: Withdrawal;
 }
 
 /**
