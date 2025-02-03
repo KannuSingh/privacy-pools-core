@@ -8,18 +8,22 @@ The protocol implements a system of smart contracts and zero-knowledge proofs to
 
 ## Repository Structure
 
-This is a Yarn workspaces monorepo containing two main packages:
+This is a Yarn workspaces monorepo containing four packages:
 
 ```
 ├── packages/
-│   ├── circuits/    # Zero-knowledge circuit implementations
+│   ├── circuits/    # Zero-knowledge circuits
 │   └── contracts/   # Smart contract implementations
+│   └── relayer/     # Minimal relayer implementation
+│   └── sdk/         # Typescript toolkit
 ```
 
 See the README in each package for detailed information about their specific implementations:
 
 - [Circuits Package](./packages/circuits/README.md)
 - [Contracts Package](./packages/contracts/README.md)
+- [Relayer Package](./packages/relayer/README.md)
+- [SDK Package](./packages/sdk/README.md)
 
 ## Development
 

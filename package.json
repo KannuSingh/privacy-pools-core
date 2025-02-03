@@ -1,7 +1,7 @@
 {
   "name": "privacy-pool-core",
   "version": "0.1.0",
-  "description": "Core repository for the Privacy Pool protocol circuits and smart contracts",
+  "description": "Core repository for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
   "license": "MIT",
   "author": "Wonderland",
@@ -13,12 +13,15 @@
     "packages/relayer"
   ],
   "devDependencies": {
-    "prettier": "3.3.3",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
     "eslint": "9.18.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.2.1",
+    "prettier": "3.3.3",
     "typescript-eslint": "8.20.0"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.2"
   }
 }

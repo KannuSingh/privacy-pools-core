@@ -28,15 +28,14 @@ To withdraw funds privately, users:
 3. The pool verifies the proof and processes the withdrawal
 4. A new commitment is created for the remaining funds (even if it is zero)
 
-### Emergency Exit (`ragequit`) 
+### Emergency Exit (`ragequit`)
 
-The protocol implements a ragequit mechanism that allows original depositors to withdraw their funds directly in case of emergency. This process:
+The protocol implements a ragequit mechanism that allows original depositors to withdraw their funds directly for non ASP approved funds. This process:
 
 1. Requires the original deposit label
-2. Reveals the nullifier and secret
-3. Bypasses the approved address set verification
-4. Can only be executed by the original depositor
-5. Withdraws the full deposit amount
+2. Bypasses the approved address set verification
+3. Can only be executed by the original depositor
+4. Withdraws the full commitment amount
 
 ## Contract Architecture
 
@@ -94,9 +93,6 @@ Manages protocol-wide operations:
 **`ProofLib.sol`**
 Handles accessing a proof signals values.
 
-**`Poseidon.sol`**
-Poseidon hashers generated using `circomlibjs`.
-
 ## Development
 
 ### Prerequisites
@@ -115,6 +111,11 @@ yarn build
 ### Testing
 
 ```bash
-# Run contract tests
-yarn test
+# Run unit tests
+yarn test:unit
+```
+
+```bash
+# Run integration tests (with `ffi` enabled)
+yarn test:integraiton
 ```

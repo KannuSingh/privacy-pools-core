@@ -14,19 +14,19 @@ The withdrawal circuit verifies that a user can privately withdraw funds from th
 - The unique related commitments identifier (label)
 - A state root and ASP (Association Set Provider) root
 - A proof of inclusion in the state tree
-- A proof of membership in the ASP tree
+- A proof of inclusion in the ASP tree
 - Nullifier and commitment secrets
 
 The circuit ensures the withdrawal is valid by verifying:
 
+- The user knows the preimage of the commitment
 - The commitment exists in the state tree
 - The comimtment label is included in the ASP tree
 - The withdrawal amount is valid and matches the commitment
-- The nullifier has not been previously used
 
 ### LeanIMT Circuit
 
-The LeanIMT (Lean Incremental Merkle Tree) circuit handles Merkle tree operations. It implements an optimized Merkle tree that:
+The LeanIMT (Lean Incremental Merkle Tree) circuit handles merkle tree operations. It implements an optimized merkle tree that:
 
 - Supports dynamic depth
 - Optimizes node computations by propagating single child values
@@ -60,6 +60,18 @@ yarn compile
 ```bash
 # Run circuit tests
 yarn test
+```
+
+### Generating Groth16 Solidity verifiers
+
+```bash
+# Generate verifier for the withdrawal circuit
+yarn gencontract:withdraw
+```
+
+```bash
+# Generate verifier for the commitment circuit
+yarn gencontract:commitment
 ```
 
 ## Directory Structure
