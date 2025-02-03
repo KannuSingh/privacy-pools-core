@@ -87,6 +87,10 @@ contract EntrypointForTest is Entrypoint {
   function mockAssociationSets(uint256 _root, bytes32 _ipfsHash) external {
     associationSets.push(IEntrypoint.AssociationSetData({root: _root, ipfsHash: _ipfsHash, timestamp: block.timestamp}));
   }
+
+  bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
+
+  bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
 }
 
 /**

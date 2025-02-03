@@ -118,6 +118,24 @@ interface IState {
   function currentRootIndex() external view returns (uint32 _index);
 
   /**
+   * @notice Returns the current state root
+   * @return _root The current state root
+   */
+  function currentRoot() external view returns (uint256 _root);
+
+  /**
+   * @notice Returns the current state tree depth
+   * @return _depth The current state tree depth
+   */
+  function currentTreeDepth() external view returns (uint256 _depth);
+
+  /**
+   * @notice Returns the current state tree size
+   * @return _size The current state tree size
+   */
+  function currentTreeSize() external view returns (uint256 _size);
+
+  /**
    * @notice Returns the current label nonce
    * @return _nonce The current nonce
    */

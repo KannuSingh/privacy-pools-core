@@ -20,13 +20,12 @@ import {Constants} from './lib/Constants.sol';
 import {InternalLeanIMT, LeanIMTData} from 'lean-imt/InternalLeanIMT.sol';
 
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
-
 import {IState} from 'interfaces/IState.sol';
 import {IVerifier} from 'interfaces/IVerifier.sol';
 
 /**
  * @title State
- * @notice Base contract for the state of a Privacy Pool
+ * @notice Base contract for the managing the state of a Privacy Pool
  */
 abstract contract State is IState {
   using InternalLeanIMT for LeanIMTData;
@@ -39,9 +38,9 @@ abstract contract State is IState {
   /// @inheritdoc IState
   IEntrypoint public immutable ENTRYPOINT;
   /// @inheritdoc IState
-  IVerifier public immutable WITHDRAWAL_VERIFIER; // groth16 verifier contract output of snarkjs
-
-  IVerifier public immutable RAGEQUIT_VERIFIER; // groth16 verifier contract output of snarkjs
+  IVerifier public immutable WITHDRAWAL_VERIFIER;
+  /// @inheritdoc IState
+  IVerifier public immutable RAGEQUIT_VERIFIER;
 
   /// @inheritdoc IState
   uint256 public nonce;
@@ -69,10 +68,32 @@ abstract contract State is IState {
     _;
   }
 
+  /**
+   * @notice Initialize the state addresses
+   */
   constructor(address _entrypoint, address _withdrawalVerifier, address _ragequitVerifier) {
     ENTRYPOINT = IEntrypoint(_entrypoint);
     WITHDRAWAL_VERIFIER = IVerifier(_withdrawalVerifier);
     RAGEQUIT_VERIFIER = IVerifier(_ragequitVerifier);
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                              VIEWS
+  //////////////////////////////////////////////////////////////*/
+
+  /// @inheritdoc IState
+  function currentRoot() external view returns (uint256 _root) {
+    _root = _merkleTree._root();
+  }
+
+  /// @inheritdoc IState
+  function currentTreeDepth() external view returns (uint256 _depth) {
+    _depth = _merkleTree.depth;
+  }
+
+  /// @inheritdoc IState
+  function currentTreeSize() external view returns (uint256 _size) {
+    _size = _merkleTree.size;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -116,7 +137,7 @@ abstract contract State is IState {
    * @notice Returns whether the root is a known root
    * @param _root The root to check
    */
-  function _isKnownRoot(uint256 _root) internal view returns (bool _known) {
+  function _isKnownRoot(uint256 _root) internal view returns (bool) {
     if (_root == 0) return false;
 
     // Iterate the root circular buffer to find the root

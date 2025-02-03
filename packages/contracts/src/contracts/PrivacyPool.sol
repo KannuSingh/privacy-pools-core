@@ -16,14 +16,14 @@ https://defi.sucks/
 
 */
 
-import {State} from './State.sol';
+import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 
 import {Constants} from './lib/Constants.sol';
 import {ProofLib} from './lib/ProofLib.sol';
 
-import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
-
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+
+import {State} from './State.sol';
 
 /**
  * @title PrivacyPool
@@ -41,23 +41,33 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   /// @inheritdoc IPrivacyPool
   address public immutable ASSET;
 
-  modifier validWithdrawal(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) {
+  /**
+   * @notice Does a series of sanity checks on the proof public signals
+   */
+  modifier validWithdrawal(Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof) {
     // Check caller is the allowed processooor
-    if (msg.sender != _w.processooor) revert InvalidProcesooor();
+    if (msg.sender != _withdrawal.processooor) revert InvalidProcesooor();
 
-    // Check the context matches the proof's public signal to ensure its integrity
-    if (_p.context() != uint256(keccak256(abi.encode(_w, SCOPE))) % Constants.SNARK_SCALAR_FIELD) {
+    // Check the context matches to ensure its integrity
+    if (_proof.context() != uint256(keccak256(abi.encode(_withdrawal, SCOPE))) % Constants.SNARK_SCALAR_FIELD) {
       revert ContextMismatch();
     }
 
     // Check the state root is known
-    if (!_isKnownRoot(_p.stateRoot())) revert UnknownStateRoot();
+    if (!_isKnownRoot(_proof.stateRoot())) revert UnknownStateRoot();
 
     // Check the ASP root is the latest
-    if (_p.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
+    if (_proof.ASPRoot() != ENTRYPOINT.latestRoot()) revert IncorrectASPRoot();
     _;
   }
 
+  /**
+   * @notice Initializes the contract state addresses
+   * @param _entrypoint Address of the Entrypoint that operates this pool
+   * @param _withdrawalVerifier Address of the Groth16 verifier for withdrawal proofs
+   * @param _ragequitVerifier Address of the Groth16 verifier for ragequit proofs
+   * @param _asset Address of the pool asset
+   */
   constructor(
     address _entrypoint,
     address _withdrawalVerifier,
@@ -107,41 +117,46 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   }
 
   /// @inheritdoc IPrivacyPool
-  function withdraw(Withdrawal memory _w, ProofLib.WithdrawProof memory _p) external validWithdrawal(_w, _p) {
+  function withdraw(
+    Withdrawal memory _withdrawal,
+    ProofLib.WithdrawProof memory _proof
+  ) external validWithdrawal(_withdrawal, _proof) {
     // Verify proof with Groth16 verifier
-    if (!WITHDRAWAL_VERIFIER.verifyProof(_p.pA, _p.pB, _p.pC, _p.pubSignals)) revert InvalidProof();
+    if (!WITHDRAWAL_VERIFIER.verifyProof(_proof.pA, _proof.pB, _proof.pC, _proof.pubSignals)) revert InvalidProof();
 
-    // Mark commitment nullifier as spent
-    _spend(_p.existingNullifierHash());
+    // Mark existing commitment nullifier as spent
+    _spend(_proof.existingNullifierHash());
 
     // Insert new commitment in state
-    _insert(_p.newCommitmentHash());
+    _insert(_proof.newCommitmentHash());
 
     // Transfer out funds to procesooor
-    _push(_w.processooor, _p.withdrawnValue());
+    _push(_withdrawal.processooor, _proof.withdrawnValue());
 
-    emit Withdrawn(_w.processooor, _p.withdrawnValue(), _p.existingNullifierHash(), _p.newCommitmentHash());
+    emit Withdrawn(
+      _withdrawal.processooor, _proof.withdrawnValue(), _proof.existingNullifierHash(), _proof.newCommitmentHash()
+    );
   }
 
   /// @inheritdoc IPrivacyPool
-  function ragequit(ProofLib.RagequitProof memory _p) external {
+  function ragequit(ProofLib.RagequitProof memory _proof) external {
     // Check if caller is original depositor
-    uint256 _label = _p.label();
+    uint256 _label = _proof.label();
     if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
 
     // Verify proof with Groth16 verifier
-    if (!RAGEQUIT_VERIFIER.verifyProof(_p.pA, _p.pB, _p.pC, _p.pubSignals)) revert InvalidProof();
+    if (!RAGEQUIT_VERIFIER.verifyProof(_proof.pA, _proof.pB, _proof.pC, _proof.pubSignals)) revert InvalidProof();
 
     // Check commitment exists in state
-    if (!_isInState(_p.commitmentHash())) revert InvalidCommitment();
+    if (!_isInState(_proof.commitmentHash())) revert InvalidCommitment();
 
     // Mark nullifier hash as pending for ragequit
-    _spend(_p.nullifierHash());
+    _spend(_proof.nullifierHash());
 
     // Transfer out funds to ragequitter
-    _push(msg.sender, _p.value());
+    _push(msg.sender, _proof.value());
 
-    emit Ragequit(msg.sender, _p.commitmentHash(), _p.label(), _p.value());
+    emit Ragequit(msg.sender, _proof.commitmentHash(), _proof.label(), _proof.value());
   }
 
   /*///////////////////////////////////////////////////////////////

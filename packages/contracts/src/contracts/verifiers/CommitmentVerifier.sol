@@ -18,6 +18,8 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
+// NOTE: this contract was generated using the Hermez Rollup precalculated Powers of Tau. This contract MUST be used for testing purposes only.
+
 pragma solidity >=0.7.0 <0.9.0;
 
 contract CommitmentVerifier {

@@ -16,16 +16,17 @@ https://defi.sucks/
 
 */
 
-import {Constants} from './lib/Constants.sol';
-import {ProofLib} from './lib/ProofLib.sol';
-
 import {AccessControlUpgradeable} from '@oz-upgradeable/access/AccessControlUpgradeable.sol';
 import {UUPSUpgradeable} from '@oz-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-
 import {ReentrancyGuardUpgradeable} from '@oz-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
 import {IERC20} from '@oz/interfaces/IERC20.sol';
+import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
+
+import {Constants} from './lib/Constants.sol';
+import {ProofLib} from './lib/ProofLib.sol';
+
 import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
@@ -37,10 +38,10 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   using SafeERC20 for IERC20;
   using ProofLib for ProofLib.WithdrawProof;
 
-  // `keccak256('OWNER_ROLE')`
-  bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
-  // `keccak256('ASP_POSTMAN')`
-  bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
+  // @notice keccak256('OWNER_ROLE')
+  bytes32 internal constant _OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
+  // @notice keccak256('ASP_POSTMAN')
+  bytes32 internal constant _ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
 
   /// @inheritdoc IEntrypoint
   mapping(uint256 _scope => IPrivacyPool _pool) public scopeToPool;
@@ -55,10 +56,14 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
                           INITIALIZATION
   //////////////////////////////////////////////////////////////*/
 
+  /**
+   * @notice Disables initializers. Using UUPS upgradeability pattern
+   */
   constructor() {
     _disableInitializers();
   }
 
+  /// @inheritdoc IEntrypoint
   function initialize(address _owner, address _postman) external initializer {
     // Sanity check initial addresses
     if (_owner == address(0)) revert ZeroAddress();
@@ -69,28 +74,23 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     __AccessControl_init();
 
     // Initialize roles
-    _setRoleAdmin(DEFAULT_ADMIN_ROLE, OWNER_ROLE);
-    _grantRole(OWNER_ROLE, _owner);
-    _grantRole(ASP_POSTMAN, _postman);
+    _setRoleAdmin(DEFAULT_ADMIN_ROLE, _OWNER_ROLE);
+
+    _grantRole(_OWNER_ROLE, _owner);
+    _grantRole(_ASP_POSTMAN, _postman);
   }
-
-  /*///////////////////////////////////////////////////////////////
-                            RECEIVE
-  //////////////////////////////////////////////////////////////*/
-
-  receive() external payable {}
 
   /*///////////////////////////////////////////////////////////////
                       ASSOCIATION SET METHODS
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
-  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(ASP_POSTMAN) returns (uint256 _index) {
+  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(_ASP_POSTMAN) returns (uint256 _index) {
     // Check provided values are non-zero
     if (_root == 0) revert EmptyRoot();
     if (_ipfsHash == 0) revert EmptyIPFSHash();
 
-    // Push new association set
+    // Push new association set and update index
     associationSets.push(AssociationSetData(_root, _ipfsHash, block.timestamp));
     _index = associationSets.length;
 
@@ -103,6 +103,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
   /// @inheritdoc IEntrypoint
   function deposit(uint256 _precommitment) external payable returns (uint256 _commitment) {
+    // Handle deposit as native asset
     _commitment = _handleDeposit(IERC20(Constants.NATIVE_ASSET), msg.value, _precommitment);
   }
 
@@ -110,6 +111,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   function deposit(IERC20 _asset, uint256 _value, uint256 _precommitment) external returns (uint256 _commitment) {
     // Pull funds from user
     _asset.safeTransferFrom(msg.sender, address(this), _value);
+    // Handle deposit as ERC20
     _commitment = _handleDeposit(_asset, _value, _precommitment);
   }
 
@@ -122,7 +124,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     IPrivacyPool.Withdrawal calldata _withdrawal,
     ProofLib.WithdrawProof calldata _proof
   ) external nonReentrant {
-    // Check withdrawal amount is non-zero
+    // Check withdrawn amount is non-zero
     if (_proof.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
     // Check allowed processooor is this Entrypoint
     if (_withdrawal.processooor != address(this)) revert InvalidProcessooor();
@@ -167,10 +169,11 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     IPrivacyPool _pool,
     uint256 _minimumDepositAmount,
     uint256 _vettingFeeBPS
-  ) external onlyRole(OWNER_ROLE) {
+  ) external onlyRole(_OWNER_ROLE) {
     // Sanity check values
     if (address(_asset) == address(0)) revert ZeroAddress();
     if (address(_pool) == address(0)) revert ZeroAddress();
+    // Vetting fee can't be greater than 100%
     if (_vettingFeeBPS > 10_000) revert InvalidFeeBPS();
 
     // Fetch pool configuration
@@ -194,7 +197,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   }
 
   /// @inheritdoc IEntrypoint
-  function removePool(IERC20 _asset) external onlyRole(OWNER_ROLE) {
+  function removePool(IERC20 _asset) external onlyRole(_OWNER_ROLE) {
     // Fetch pool by asset
     IPrivacyPool _pool = assetConfig[_asset].pool;
     if (address(_pool) == address(0)) revert PoolNotFound();
@@ -217,7 +220,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     IERC20 _asset,
     uint256 _minimumDepositAmount,
     uint256 _vettingFeeBPS
-  ) external onlyRole(OWNER_ROLE) {
+  ) external onlyRole(_OWNER_ROLE) {
     // Check fee is less than 100%
     if (_vettingFeeBPS > 10_000) revert InvalidFeeBPS();
 
@@ -233,7 +236,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   }
 
   /// @inheritdoc IEntrypoint
-  function windDownPool(IPrivacyPool _pool) external onlyRole(OWNER_ROLE) {
+  function windDownPool(IPrivacyPool _pool) external onlyRole(_OWNER_ROLE) {
     // Call `windDown` on pool
     _pool.windDown();
 
@@ -241,7 +244,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   }
 
   /// @inheritdoc IEntrypoint
-  function withdrawFees(IERC20 _asset, address _recipient) external nonReentrant onlyRole(OWNER_ROLE) {
+  function withdrawFees(IERC20 _asset, address _recipient) external nonReentrant onlyRole(_OWNER_ROLE) {
     // Fetch current asset balance
     uint256 _balance = _assetBalance(_asset);
 
@@ -268,14 +271,20 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   }
 
   /*///////////////////////////////////////////////////////////////
+                            RECEIVE
+  //////////////////////////////////////////////////////////////*/
+
+  receive() external payable {}
+
+  /*///////////////////////////////////////////////////////////////
                         INTERNAL METHODS 
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Authorize an upgrade
+   * @notice Authorize an upgrade if the caller is `OWNER_ROLE`
    * @dev Inherited from `UUPSUpgradeable`
    */
-  function _authorizeUpgrade(address) internal override onlyRole(OWNER_ROLE) {}
+  function _authorizeUpgrade(address) internal override onlyRole(_OWNER_ROLE) {}
 
   /**
    * @notice Handle deposit logic for both native asset and ERC20 deposits
@@ -337,9 +346,6 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    * @param _feeBPS The fee in basis points
    */
   function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
-    unchecked {
-      // Fee calculation cannot overflow as _feeBPS is validated to be <= 10000
-      _afterFees = _amount - (_amount * _feeBPS / 10_000);
-    }
+    _afterFees = _amount - (_amount * _feeBPS / 10_000);
   }
 }

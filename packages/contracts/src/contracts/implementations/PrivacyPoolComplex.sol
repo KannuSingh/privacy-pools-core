@@ -16,10 +16,11 @@ https://defi.sucks/
 
 */
 
-import {PrivacyPool} from '../PrivacyPool.sol';
-
 import {IERC20, SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
+
 import {IPrivacyPoolComplex} from 'interfaces/IPrivacyPool.sol';
+
+import {PrivacyPool} from '../PrivacyPool.sol';
 
 /**
  * @title PrivacyPoolComplex
@@ -28,6 +29,7 @@ import {IPrivacyPoolComplex} from 'interfaces/IPrivacyPool.sol';
 contract PrivacyPoolComplex is PrivacyPool, IPrivacyPoolComplex {
   using SafeERC20 for IERC20;
 
+  // @notice Initializes the state addresses
   constructor(
     address _entrypoint,
     address _withdrawalVerifier,

@@ -26,6 +26,7 @@ import {IPrivacyPoolSimple} from 'interfaces/IPrivacyPool.sol';
  * @notice Native asset implementation of Privacy Pool.
  */
 contract PrivacyPoolSimple is PrivacyPool, IPrivacyPoolSimple {
+  // @notice Initializes the state addresses
   constructor(
     address _entrypoint,
     address _withdrawalVerifier,

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {ProofLib} from '../contracts/lib/ProofLib.sol';
-
 import {IERC20} from '@oz/interfaces/IERC20.sol';
+
+import {ProofLib} from '../contracts/lib/ProofLib.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
 
 /**
@@ -202,6 +202,13 @@ interface IEntrypoint {
   /*//////////////////////////////////////////////////////////////
                                 LOGIC
   //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Initializes the contract state
+   * @param _owner The initial owner
+   * @param _postman The initial postman
+   */
+  function initialize(address _owner, address _postman) external;
 
   /**
    * @notice Push a new root to the association root set

@@ -9,3 +9,6 @@ node_modules
 
 # Avoid ignoring gitkeep
 !/**/.gitkeep
+
+# Cursor rules files
+.cursorrules*
