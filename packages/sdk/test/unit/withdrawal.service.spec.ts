@@ -21,21 +21,22 @@ describe("WithdrawalService", () => {
 
   it("calculates the context correctly", () => {
     const withdrawal: Withdrawal = {
-      procesooor: getAddress("0x7359Ca02A152f8F466dc9A4cB3ad1ED62792F46A"),
+      processooor: getAddress("0x7359Ca02A152f8F466dc9A4cB3ad1ED62792F46A"),
       scope: BigInt("12345") as Hash,
-      data: Uint8Array.from((new TextEncoder()).encode("This is some binary data")),
+      data: keccak256("0x123")
     };
-    expect(service.calculateContext(withdrawal)).toStrictEqual("0x302394f42f14aa47c0f84c2e6c325aa17866f8c28cd3243fa08df47b88262be8");
-  })
+    expect(service.calculateContext(withdrawal)).toStrictEqual(
+      "0x127096bf8b62b2dea071de6617ca1893e1194d06ca4fb3bd3987f27c5c7c7352",
+    );
+  });
 
   it("calculates returns a scalar field bounded value", () => {
     const withdrawal: Withdrawal = {
-      procesooor: privateKeyToAccount(generatePrivateKey()).address,
+      processooor: privateKeyToAccount(generatePrivateKey()).address,
       scope: BigInt(keccak256(generatePrivateKey())) as Hash,
-      data: hexToBytes(keccak256(generatePrivateKey())),
+      data: keccak256(generatePrivateKey()),
     };
     const result = service.calculateContext(withdrawal);
     expect(BigInt(result) % SNARK_SCALAR_FIELD).toStrictEqual(BigInt(result));
-  })
-
-})
+  });
+});

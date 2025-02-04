@@ -2,8 +2,8 @@
  * Available circuit types in the system.
  */
 export enum CircuitName {
-  Commitment = 'commitment',
-  Withdraw = 'withdraw'
+  Commitment = "commitment",
+  Withdraw = "withdraw",
 }
 
 /**
@@ -31,4 +31,4 @@ export interface CircuitsInterface {
    * Gets the verification key for a circuit.
    */
   getVerificationKey(name: CircuitName): Promise<Uint8Array>;
-} 
+}

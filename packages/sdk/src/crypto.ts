@@ -6,7 +6,8 @@ import {
   ErrorCode,
   PrivacyPoolError,
 } from "./exceptions/privacyPool.exception.js";
-import { Commitment, Hash, Secret } from "./types/index.js";
+import { Commitment, Hash, Secret, Withdrawal } from "./types/index.js";
+import { encodeAbiParameters, Hex, keccak256 } from "viem";
 
 /**
  * Validates that a bigint value is not zero
@@ -18,7 +19,7 @@ function validateNonZero(value: bigint, name: string) {
   if (value === BigInt(0)) {
     throw new PrivacyPoolError(
       ErrorCode.INVALID_VALUE,
-      `Invalid input: '${name}' cannot be zero.`
+      `Invalid input: '${name}' cannot be zero.`,
     );
   }
 }
@@ -60,9 +61,9 @@ export function getCommitment(
   nullifier: Secret,
   secret: Secret,
 ): Commitment {
-  validateNonZero(nullifier as bigint, 'nullifier');
-  validateNonZero(label, 'label');
-  validateNonZero(secret as bigint, 'secret');
+  validateNonZero(nullifier as bigint, "nullifier");
+  validateNonZero(label, "label");
+  validateNonZero(secret as bigint, "secret");
 
   const precommitment = {
     hash: hashPrecommitment(nullifier, secret),
@@ -105,9 +106,48 @@ export function generateMerkleProof(
   if (leafIndex === -1) {
     throw new PrivacyPoolError(
       ErrorCode.MERKLE_ERROR,
-      "Leaf not found in the leaves array."
+      "Leaf not found in the leaves array.",
     );
   }
 
   return tree.generateProof(leafIndex);
+}
+
+export function bigintToHash(value: bigint): Hash {
+  return `0x${value.toString(16).padStart(64, "0")}` as unknown as Hash;
+}
+
+export function bigintToHex(num: bigint | string | undefined): Hex {
+  if (num === undefined) throw new Error("Undefined bigint value!");
+  return `0x${BigInt(num).toString(16).padStart(64, "0")}`;
+}
+
+/**
+ * Calculates the context hash for a withdrawal.
+ */
+export function calculateContext(withdrawal: Withdrawal): string {
+  return keccak256(
+    encodeAbiParameters(
+      [
+        {
+          name: "withdrawal",
+          type: "tuple",
+          components: [
+            { name: "processooor", type: "address" },
+            { name: "scope", type: "uint256" },
+            { name: "data", type: "bytes" },
+          ],
+        },
+        { name: "scope", type: "uint256" },
+      ],
+      [
+        {
+          processooor: withdrawal.processooor,
+          scope: withdrawal.scope,
+          data: withdrawal.data,
+        },
+        withdrawal.scope,
+      ],
+    ),
+  );
 }

@@ -1,4 +1,4 @@
-import { Address } from "viem";
+import { Address, Hex } from "viem";
 import { Groth16Proof, PublicSignals } from "snarkjs";
 import { LeanIMTMerkleProof } from "@zk-kit/lean-imt";
 import { Hash, Secret } from "./commitment.js";
@@ -7,22 +7,14 @@ import { Hash, Secret } from "./commitment.js";
  * Represents a withdrawal request in the system.
  */
 export interface Withdrawal {
-  readonly procesooor: Address;
+  readonly processooor: Address;
   readonly scope: Hash;
-  readonly data: Uint8Array;
+  readonly data: Hex;
 }
 
 export interface WithdrawalProof {
   readonly proof: Groth16Proof;
   readonly publicSignals: PublicSignals;
-}
-
-/**
- * Complete withdrawal payload including proof and public signals.
- */
-export interface WithdrawalPayload {
-  readonly proof: WithdrawalProof;
-  readonly withdrawal: Withdrawal;
 }
 
 /**

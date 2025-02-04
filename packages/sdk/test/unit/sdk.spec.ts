@@ -4,7 +4,6 @@ import { PrivacyPoolSDK } from "../../src/core/sdk.js";
 import * as snarkjs from "snarkjs";
 import { Commitment, Hash, Secret } from "../../src/types/commitment.js";
 import { LeanIMTMerkleProof } from "@zk-kit/lean-imt";
-import { getAddress } from "viem";
 import { ProofError } from "../../src/errors/base.error.js";
 
 vi.mock("snarkjs");
@@ -18,7 +17,7 @@ vi.mock("viem", async (importOriginal) => {
       types,
       values,
     })),
-  }
+  };
 });
 
 describe("PrivacyPoolSDK", () => {
@@ -38,7 +37,7 @@ describe("PrivacyPoolSDK", () => {
     it("should use Circuits binaries and delegate to snarkjs prover", async () => {
       snarkjs.groth16.fullProve = vi.fn().mockResolvedValue({
         proof: "PROOF",
-        publicSignals: "SIGNALS"
+        publicSignals: "SIGNALS",
       });
 
       const inputSignals = {
@@ -60,7 +59,7 @@ describe("PrivacyPoolSDK", () => {
       );
       expect(result).toStrictEqual({
         proof: "PROOF",
-        publicSignals: "SIGNALS"
+        publicSignals: "SIGNALS",
       });
       expect(downloadArtifactsSpy).toHaveBeenCalledOnce();
       expect(snarkjs.groth16.fullProve).toHaveBeenCalledWith(
@@ -81,7 +80,7 @@ describe("PrivacyPoolSDK", () => {
       await expect(
         sdk.verifyCommitment({
           proof: {} as snarkjs.Groth16Proof,
-          publicSignals: []
+          publicSignals: [],
         }),
       ).rejects.toThrow(ProofError);
     });
@@ -94,7 +93,7 @@ describe("PrivacyPoolSDK", () => {
 
       const result = await sdk.verifyCommitment({
         proof: {} as snarkjs.Groth16Proof,
-        publicSignals: []
+        publicSignals: [],
       });
       expect(result).toBe(true);
     });
@@ -135,12 +134,6 @@ describe("PrivacyPoolSDK", () => {
         siblings: [BigInt(9), BigInt(10)],
       };
 
-      const withdrawal = {
-        procesooor: getAddress("0x1234567890123456789012345678901234567890"),
-        scope: BigInt(11) as Hash,
-        data: new Uint8Array(),
-      };
-
       const withdrawalInput = {
         withdrawalAmount: BigInt(500),
         stateMerkleProof,
@@ -151,17 +144,14 @@ describe("PrivacyPoolSDK", () => {
         newSecret: BigInt(13) as Secret,
         context: BigInt(1),
         stateTreeDepth: BigInt(32),
-        aspTreeDepth: BigInt(32)
+        aspTreeDepth: BigInt(32),
       };
 
       const downloadArtifactsSpy = vi
         .spyOn(circuits, "downloadArtifacts")
         .mockResolvedValue(binariesMock);
 
-      const result = await sdk.proveWithdrawal(
-        mockCommitment,
-        withdrawalInput
-      );
+      const result = await sdk.proveWithdrawal(mockCommitment, withdrawalInput);
 
       expect(result).toHaveProperty("proof", "mockProof");
       expect(result).toHaveProperty("publicSignals", "mockPublicSignals");
@@ -187,12 +177,6 @@ describe("PrivacyPoolSDK", () => {
         siblings: [BigInt(9), BigInt(10)],
       };
 
-      const mockWithdrawal = {
-        procesooor: getAddress("0x1234567890123456789012345678901234567890"),
-        scope: BigInt(11) as Hash,
-        data: new Uint8Array(),
-      };
-
       const withdrawalInput = {
         withdrawalAmount: BigInt(500),
         stateMerkleProof: mockStateMerkleProof,
@@ -203,22 +187,13 @@ describe("PrivacyPoolSDK", () => {
         newSecret: BigInt(15) as Secret,
         context: BigInt(1),
         stateTreeDepth: BigInt(32),
-        aspTreeDepth: BigInt(32)
+        aspTreeDepth: BigInt(32),
       };
 
       await expect(
-        sdk.proveWithdrawal(
-          mockCommitment,
-          withdrawalInput
-        ),
+        sdk.proveWithdrawal(mockCommitment, withdrawalInput),
       ).rejects.toThrow(ProofError);
     });
-
-    const mockWithdrawal = {
-      procesooor: getAddress("0x1234567890123456789012345678901234567890"),
-      scope: BigInt(13) as Hash,
-      data: new Uint8Array(),
-    };
 
     it("should throw an error when verification fails", async () => {
       circuits.getVerificationKey = vi

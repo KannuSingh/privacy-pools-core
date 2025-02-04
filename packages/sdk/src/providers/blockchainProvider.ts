@@ -5,22 +5,22 @@ import { mainnet } from "viem/chains";
 import { IBlockchainProvider, InvalidRpcUrl } from "../internal.js";
 
 export class BlockchainProvider implements IBlockchainProvider {
-    private client: ReturnType<typeof createPublicClient<HttpTransport, Chain>>;
+  private client: ReturnType<typeof createPublicClient<HttpTransport, Chain>>;
 
-    constructor(rpcUrl: string) {
-        // dummy check for the rpcUrl
-        if (!rpcUrl || !rpcUrl.startsWith("http")) {
-            throw new InvalidRpcUrl(rpcUrl);
-        }
-
-        this.client = createPublicClient({
-            chain: mainnet,
-            transport: http(rpcUrl),
-        });
+  constructor(rpcUrl: string) {
+    // dummy check for the rpcUrl
+    if (!rpcUrl || !rpcUrl.startsWith("http")) {
+      throw new InvalidRpcUrl(rpcUrl);
     }
 
-    /** @inheritdoc */
-    async getBalance(address: Address): Promise<bigint> {
-        return this.client.getBalance({ address });
-    }
+    this.client = createPublicClient({
+      chain: mainnet,
+      transport: http(rpcUrl),
+    });
+  }
+
+  /** @inheritdoc */
+  async getBalance(address: Address): Promise<bigint> {
+    return this.client.getBalance({ address });
+  }
 }

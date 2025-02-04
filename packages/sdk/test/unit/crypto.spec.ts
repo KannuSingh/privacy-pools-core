@@ -47,19 +47,34 @@ describe("Crypto Utilities", () => {
 
     it("throws error for zero nullifier", () => {
       expect(() =>
-        getCommitment(BigInt(1000), BigInt(42), BigInt(0) as Secret, BigInt(123) as Secret),
+        getCommitment(
+          BigInt(1000),
+          BigInt(42),
+          BigInt(0) as Secret,
+          BigInt(123) as Secret,
+        ),
       ).toThrow("Invalid input: 'nullifier' cannot be zero.");
     });
 
     it("throws error for zero label", () => {
       expect(() =>
-        getCommitment(BigInt(1000), BigInt(0), BigInt(123) as Secret, BigInt(456) as Secret),
+        getCommitment(
+          BigInt(1000),
+          BigInt(0),
+          BigInt(123) as Secret,
+          BigInt(456) as Secret,
+        ),
       ).toThrow("Invalid input: 'label' cannot be zero.");
     });
 
     it("throws error for zero secret", () => {
       expect(() =>
-        getCommitment(BigInt(1000), BigInt(42), BigInt(123) as Secret, BigInt(0) as Secret),
+        getCommitment(
+          BigInt(1000),
+          BigInt(42),
+          BigInt(123) as Secret,
+          BigInt(0) as Secret,
+        ),
       ).toThrow("Invalid input: 'secret' cannot be zero.");
     });
   });

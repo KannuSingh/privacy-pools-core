@@ -4,8 +4,8 @@ import {
   CircuitsInterface,
   CircuitSignals,
 } from "../interfaces/circuits.interface.js";
-import { Commitment, CommitmentProof } from "../types/commitment.js";
-import { ErrorCode, ProofError } from "../errors/base.error.js";
+import { CommitmentProof } from "../types/commitment.js";
+import { ProofError } from "../errors/base.error.js";
 
 /**
  * Service responsible for handling commitment-related operations.

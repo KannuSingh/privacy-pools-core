@@ -1,15 +1,19 @@
 import * as snarkjs from "snarkjs";
-import { bytesToHex, encodeAbiParameters, hexToBigInt, keccak256, numberToHex } from "viem";
+import {
+  encodeAbiParameters,
+  hexToBigInt,
+  keccak256,
+  numberToHex,
+} from "viem";
 import { SNARK_SCALAR_FIELD } from "../constants.js";
 import { ProofError } from "../errors/base.error.js";
 import {
-    CircuitName,
-    CircuitsInterface
+  CircuitName,
+  CircuitsInterface,
 } from "../interfaces/circuits.interface.js";
 import { Commitment } from "../types/commitment.js";
 import {
   Withdrawal,
-  WithdrawalPayload,
   WithdrawalProof,
   WithdrawalProofInput,
 } from "../types/withdrawal.js";
@@ -18,7 +22,7 @@ import {
  * Service responsible for handling withdrawal-related operations.
  */
 export class WithdrawalService {
-  constructor(private readonly circuits: CircuitsInterface) {}
+  constructor(private readonly circuits: CircuitsInterface) { }
 
   /**
    * Generates a withdrawal proof.
@@ -103,9 +107,9 @@ export class WithdrawalService {
         ],
         [
           {
-            processooor: withdrawal.procesooor,
+            processooor: withdrawal.processooor,
             scope: withdrawal.scope,
-            data: bytesToHex(withdrawal.data),
+            data: withdrawal.data,
           },
           withdrawal.scope,
         ],

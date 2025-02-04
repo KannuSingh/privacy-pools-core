@@ -2,12 +2,9 @@ import { CommitmentService } from "./commitment.service.js";
 import { WithdrawalService } from "./withdrawal.service.js";
 import { CircuitsInterface } from "../interfaces/circuits.interface.js";
 import { Commitment, CommitmentProof } from "../types/commitment.js";
-import {
-  Withdrawal,
-  WithdrawalPayload,
-  WithdrawalProof,
-  WithdrawalProofInput,
-} from "../types/withdrawal.js";
+import { WithdrawalProof, WithdrawalProofInput } from "../types/withdrawal.js";
+import { ContractInteractionsService } from "./contracts.service.js";
+import { Hex, Address, Chain } from "viem";
 
 /**
  * Main SDK class providing access to all privacy pool functionality.
@@ -20,6 +17,21 @@ export class PrivacyPoolSDK {
   constructor(circuits: CircuitsInterface) {
     this.commitmentService = new CommitmentService(circuits);
     this.withdrawalService = new WithdrawalService(circuits);
+  }
+
+  public createContractInstance(
+    rpcUrl: string,
+    chain: Chain,
+    entrypointAddress: Address,
+    privateKey: Hex,
+  ): ContractInteractionsService {
+    const contractInteractionsService = new ContractInteractionsService(
+      rpcUrl,
+      chain,
+      entrypointAddress,
+      privateKey,
+    );
+    return contractInteractionsService;
   }
 
   /**
@@ -64,7 +76,10 @@ export class PrivacyPoolSDK {
     commitment: Commitment,
     input: WithdrawalProofInput,
   ): Promise<WithdrawalProof> {
-    const withdrawalProof = await this.withdrawalService.proveWithdrawal(commitment, input);
+    const withdrawalProof = await this.withdrawalService.proveWithdrawal(
+      commitment,
+      input,
+    );
     return withdrawalProof;
   }
 

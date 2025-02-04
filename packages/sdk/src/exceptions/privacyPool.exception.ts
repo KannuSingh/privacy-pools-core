@@ -5,15 +5,15 @@ export enum ErrorCode {
   INVALID_SECRET = "INVALID_SECRET",
   INVALID_VALUE = "INVALID_VALUE",
   INVALID_LABEL = "INVALID_LABEL",
-  MERKLE_ERROR = "MERKLE_ERROR"
+  MERKLE_ERROR = "MERKLE_ERROR",
 }
 
 export class PrivacyPoolError extends Error {
   constructor(
     public code: ErrorCode,
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "PrivacyPoolError";
   }
-} 
+}

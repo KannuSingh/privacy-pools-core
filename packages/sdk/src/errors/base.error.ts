@@ -3,24 +3,24 @@
  */
 export enum ErrorCode {
   // Base errors
-  UNKNOWN = 'UNKNOWN',
-  INVALID_INPUT = 'INVALID_INPUT',
-  OPERATION_FAILED = 'OPERATION_FAILED',
-  NETWORK_ERROR = 'NETWORK_ERROR',
+  UNKNOWN = "UNKNOWN",
+  INVALID_INPUT = "INVALID_INPUT",
+  OPERATION_FAILED = "OPERATION_FAILED",
+  NETWORK_ERROR = "NETWORK_ERROR",
 
   // Proof errors
-  PROOF_GENERATION_FAILED = 'PROOF_GENERATION_FAILED',
-  PROOF_VERIFICATION_FAILED = 'PROOF_VERIFICATION_FAILED',
-  INVALID_PROOF = 'INVALID_PROOF',
-  INVALID_PUBLIC_SIGNALS = 'INVALID_PUBLIC_SIGNALS',
-  CIRCUIT_ERROR = 'CIRCUIT_ERROR',
+  PROOF_GENERATION_FAILED = "PROOF_GENERATION_FAILED",
+  PROOF_VERIFICATION_FAILED = "PROOF_VERIFICATION_FAILED",
+  INVALID_PROOF = "INVALID_PROOF",
+  INVALID_PUBLIC_SIGNALS = "INVALID_PUBLIC_SIGNALS",
+  CIRCUIT_ERROR = "CIRCUIT_ERROR",
 
   // Contract errors
-  CONTRACT_ERROR = 'CONTRACT_ERROR',
+  CONTRACT_ERROR = "CONTRACT_ERROR",
 
   // Crypto errors
-  CRYPTO_ERROR = 'CRYPTO_ERROR',
-  MERKLE_ERROR = 'MERKLE_ERROR'
+  CRYPTO_ERROR = "CRYPTO_ERROR",
+  MERKLE_ERROR = "MERKLE_ERROR",
 }
 
 /**
@@ -31,11 +31,11 @@ export class SDKError extends Error {
   constructor(
     message: string,
     public readonly code: ErrorCode = ErrorCode.UNKNOWN,
-    public readonly details?: Record<string, unknown>
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = this.constructor.name;
-    
+
     // Maintains proper stack trace
     Error.captureStackTrace(this, this.constructor);
   }
@@ -61,7 +61,7 @@ export class ProofError extends SDKError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.PROOF_GENERATION_FAILED,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
   ) {
     super(message, code, details);
   }
@@ -69,22 +69,26 @@ export class ProofError extends SDKError {
   /**
    * Creates an error for proof generation failures.
    */
-  public static generationFailed(details?: Record<string, unknown>): ProofError {
+  public static generationFailed(
+    details?: Record<string, unknown>,
+  ): ProofError {
     return new ProofError(
-      'Failed to generate proof',
+      "Failed to generate proof",
       ErrorCode.PROOF_GENERATION_FAILED,
-      details
+      details,
     );
   }
 
   /**
    * Creates an error for proof verification failures.
    */
-  public static verificationFailed(details?: Record<string, unknown>): ProofError {
+  public static verificationFailed(
+    details?: Record<string, unknown>,
+  ): ProofError {
     return new ProofError(
-      'Failed to verify proof',
+      "Failed to verify proof",
       ErrorCode.PROOF_VERIFICATION_FAILED,
-      details
+      details,
     );
   }
 
@@ -93,9 +97,9 @@ export class ProofError extends SDKError {
    */
   public static invalidProof(details?: Record<string, unknown>): ProofError {
     return new ProofError(
-      'Invalid proof format',
+      "Invalid proof format",
       ErrorCode.INVALID_PROOF,
-      details
+      details,
     );
   }
-} 
+}
