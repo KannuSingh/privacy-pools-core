@@ -30,6 +30,14 @@ export class ContractInteractionsService implements ContractInteractions {
   private entrypointAddress: Address;
   private account: Account;
 
+  /**
+   * Initializes the contract interactions service.
+   *
+   * @param rpcUrl - The RPC endpoint URL for the blockchain network.
+   * @param chain - The blockchain network configuration.
+   * @param entrypointAddress - The address of the entrypoint contract.
+   * @param accountPrivateKey - The private key used for signing transactions. 
+  */
   constructor(
     rpcUrl: string,
     chain: Chain,
@@ -58,6 +66,15 @@ export class ContractInteractionsService implements ContractInteractions {
     this.entrypointAddress = entrypointAddress;
   }
 
+
+  /**
+   * Deposits ERC20 tokens into the privacy pool.
+   *
+   * @param asset - The address of the ERC20 token.
+   * @param amount - The amount of tokens to deposit.
+   * @param precommitment - The precommitment value.
+   * @returns Transaction response containing the transaction hash.
+   */
   async depositERC20(
     asset: Address,
     amount: bigint,
@@ -81,6 +98,13 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
+  /**
+   * Deposits ETH into the privacy pool.
+   *
+   * @param amount - The amount of ETH to deposit.
+   * @param precommitment - The precommitment value.
+   * @returns Transaction response containing the transaction hash.
+   */
   async depositETH(
     amount: bigint,
     precommitment: bigint,
@@ -104,6 +128,13 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
+  /**
+   * Withdraws funds from the privacy pool.
+   *
+   * @param withdrawal - The withdrawal object containing recipient details and amount.
+   * @param withdrawalProof - The cryptographic proof verifying the withdrawal.
+   * @returns Transaction response containing the transaction hash.
+   */
   async withdraw(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
@@ -134,6 +165,14 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
+  /**
+   * Relays a withdrawal transaction to the entrypoint contract.
+   * This function is used to facilitate relayer transactions.
+   *
+   * @param withdrawal - The withdrawal data structure.
+   * @param withdrawalProof - The cryptographic proof required for withdrawal.
+   * @returns Transaction response containing hash and wait function.
+   */
   async relay(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
@@ -160,6 +199,14 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
+  /**
+   * Executes a ragequit operation, allowing a user to exit the pool
+   * by nullifying their commitment and proving their withdrawal.
+   *
+   * @param commitmentProof - The cryptographic proof of the commitment.
+   * @param privacyPoolAddress - The address of the privacy pool contract.
+   * @returns Transaction response containing hash and wait function.
+   */
   async ragequit(
     commitmentProof: CommitmentProof,
     privacyPoolAddress: Address,
@@ -184,6 +231,12 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
+  /**
+   * Retrieves the scope identifier of a given privacy pool.
+   *
+   * @param privacyPoolAddress - The address of the privacy pool contract.
+   * @returns The scope identifier as a bigint.
+   */
   async getScope(privacyPoolAddress: Address): Promise<bigint> {
     const scope = await this.publicClient.readContract({
       address: privacyPoolAddress,
@@ -195,6 +248,12 @@ export class ContractInteractionsService implements ContractInteractions {
     return BigInt(scope as string);
   }
 
+  /**
+   * Retrieves the latest state root of the privacy pool from the entrypoint contract.
+   *
+   * @param privacyPoolAddress - The address of the privacy pool contract.
+   * @returns The latest state root as a bigint.
+   */
   async getStateRoot(privacyPoolAddress: Address): Promise<bigint> {
     const stateRoot = await this.publicClient.readContract({
       address: privacyPoolAddress,
@@ -206,6 +265,12 @@ export class ContractInteractionsService implements ContractInteractions {
     return BigInt(stateRoot as string);
   }
 
+  /**
+   * Retrieves the current state size of the privacy pool.
+   *
+   * @param privacyPoolAddress - The address of the privacy pool contract.
+   * @returns The size of the state tree as a bigint.
+   */
   async getStateSize(privacyPoolAddress: Address): Promise<bigint> {
     const stateSize = await this.publicClient.readContract({
       address: privacyPoolAddress,
@@ -218,6 +283,14 @@ export class ContractInteractionsService implements ContractInteractions {
     return BigInt(stateSize as string);
   }
 
+  /**
+   * Retrieves data about a specific scope, including the associated privacy pool
+   * and the asset used in that pool.
+   *
+   * @param scope - The scope identifier to look up.
+   * @returns An object containing the privacy pool address and asset address.
+   * @throws ContractError if the scope does not exist.
+   */
   async getScopeData(scope: bigint): Promise<{ poolAddress: Address; assetAddress: Address }> {
     try {
       // get pool address fro entrypoint
