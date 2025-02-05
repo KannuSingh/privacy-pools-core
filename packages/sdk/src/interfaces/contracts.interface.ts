@@ -45,4 +45,6 @@ export interface ContractInteractions {
   getStateRoot(privacyPoolAddress: Address): Promise<bigint>;
   getStateSize(privacyPoolAddress: Address): Promise<bigint>;
   getScopeData(scope: bigint): Promise<{ poolAddress: Address | null; assetAddress: Address | null }>;
+
+  approveERC20(spenderAddress: Address, tokenAddress: Address, amount: bigint): Promise<TransactionResponse>;
 }

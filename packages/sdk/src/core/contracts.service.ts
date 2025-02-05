@@ -18,6 +18,7 @@ import {
 } from "../interfaces/contracts.interface.js";
 import { IEntrypointABI } from "../abi/IEntrypoint.js";
 import { IPrivacyPoolABI } from "../abi/IPrivacyPool.js";
+import { ERC20ABI } from "../abi/ERC20.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { CommitmentProof } from "../types/commitment.js";
 import { bigintToHex } from "../crypto.js";
@@ -247,6 +248,34 @@ export class ContractInteractionsService implements ContractInteractions {
         throw error;
       console.error(`Error resolving scope ${scope.toString()}:`, error);
       throw new Error(`Failed to resolve scope ${scope.toString()}: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+
+  /**
+   * Approves the entrypoint contract to spend a specified amount of ERC20 tokens.
+   *
+   * @param spenderAddress - The address of the entity that will be approved to spend tokens.
+   * @param tokenAddress - The address of the ERC20 token contract.
+   * @param amount - The amount of tokens to approve.
+   * @returns Transaction response containing hash and wait function.
+   */
+  async approveERC20(spenderAddress: Address, tokenAddress: Address, amount: bigint): Promise<TransactionResponse> {
+    try {
+      const { request } = await this.publicClient.simulateContract({
+        address: tokenAddress,
+        abi: ERC20ABI as Abi,
+        functionName: "approve",
+        args: [spenderAddress, amount],
+        account: this.account,
+      });
+
+      return await this.executeTransaction(request);
+    } catch (error) {
+      console.error("ERC20 Approval Error:", { error, tokenAddress, amount });
+      throw new Error(
+        `Failed to approve ERC20: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
