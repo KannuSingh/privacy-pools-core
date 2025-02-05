@@ -12,7 +12,8 @@ const outDirBrowser = path.join(rootOutDir, "esm");
 
 const typescriptConfig = {
   tsconfig: path.resolve(`./tsconfig.build.json`),
-  exclude: ["**/*spec.ts"],
+  include: ["src/**/*.ts",  "src/**/*.js"],
+  exclude: ["**/*spec.ts", "__mocks__", "tests/*"],
   outputToFilesystem: false,
 }
 
@@ -79,7 +80,7 @@ export default [
     output: [
       {
         dir: path.join(rootOutDir, "types"),
-        sourcemap: true,
+        sourcemap: false,
       },
     ],
     plugins: [
@@ -100,7 +101,7 @@ export default [
   },
 
   {
-    input: path.join(rootOutDir, "types", "src", "index.d.ts"),
+    input: path.join(rootOutDir, "types", "index.d.ts"),
     output: [{ file: path.join(rootOutDir, "index.d.mts"), format: "esm" }],
     plugins: [dts()],
   }

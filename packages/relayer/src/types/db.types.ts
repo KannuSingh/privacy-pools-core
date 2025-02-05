@@ -1,4 +1,4 @@
-import { WithdrawalPayload } from "@privacy-pool-core/sdk";
+import { WithdrawalPayload } from "../interfaces/relayer/request.js";
 
 export interface RelayerDatabase {
   initialized: boolean;

@@ -1,4 +1,3 @@
-export * from "./external.js";
 import { app } from "./app.js";
 import { db } from "./providers/db.provider.js";
 

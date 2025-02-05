@@ -21,6 +21,7 @@ import { IPrivacyPoolABI } from "../abi/IPrivacyPool.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { CommitmentProof } from "../types/commitment.js";
 import { bigintToHex } from "../crypto.js";
+import { ContractError } from "../errors/base.error.js";
 
 export class ContractInteractionsService implements ContractInteractions {
   private publicClient: PublicClient;
@@ -229,7 +230,7 @@ export class ContractInteractionsService implements ContractInteractions {
 
       // if no pool throw error 
       if (!poolAddress || poolAddress === "0x0000000000000000000000000000000000000000") {
-        throw new Error(`No pool found for scope ${scope.toString()}`);
+        throw ContractError.scopeNotFound(scope);
       }
 
       // get asset adress from pool 
@@ -242,6 +243,8 @@ export class ContractInteractionsService implements ContractInteractions {
 
       return { poolAddress: getAddress(poolAddress as string), assetAddress: getAddress(assetAddress as string) };
     } catch (error) {
+      if (error instanceof ContractError)
+        throw error;
       console.error(`Error resolving scope ${scope.toString()}:`, error);
       throw new Error(`Failed to resolve scope ${scope.toString()}: ${error instanceof Error ? error.message : "Unknown error"}`);
     }

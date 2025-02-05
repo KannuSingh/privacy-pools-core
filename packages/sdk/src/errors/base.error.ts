@@ -103,3 +103,18 @@ export class ProofError extends SDKError {
     );
   }
 }
+
+export class ContractError extends SDKError {
+  constructor(
+    message: string,
+    code: ErrorCode = ErrorCode.CONTRACT_ERROR,
+    details?: Record<string, unknown>,
+  ) {
+    super(message, code);
+    this.name = "ContractError";
+  }
+
+  public static scopeNotFound(scope: bigint): ContractError {
+    return new ContractError(`No pool found for scope ${scope.toString()}`, ErrorCode.CONTRACT_ERROR);
+  }
+}

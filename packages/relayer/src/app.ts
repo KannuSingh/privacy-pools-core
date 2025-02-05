@@ -17,10 +17,13 @@ const parseJsonMiddleware = bodyParser.json();
 app.use(parseJsonMiddleware);
 app.use(marshalResponseMiddleware);
 
+// ping route
 app.use("/ping", (req: Request, res: Response, next: NextFunction) => {
   res.send("pong");
   next();
 });
+
+// relayer route
 app.use("/relayer", relayerRouter);
 
 // Error and 404 handling

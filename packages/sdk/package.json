@@ -54,7 +54,7 @@
     "maci-crypto": "2.5.0",
     "snarkjs": "0.7.5",
     "@types/snarkjs": "0.7.9",
-    "viem": "2.21.4"
+    "viem": "2.22.14"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "19.4.1",

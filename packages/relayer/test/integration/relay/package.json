@@ -1,0 +1,19 @@
+{
+  "name": "api-test",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "viem": "2.22.14"
+  },
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "main": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@privacy-pool-core/sdk": "0.1.0",
+    "@types/node": "^22.13.0",
+    "typescript": "5.5.4"
+  }
+}

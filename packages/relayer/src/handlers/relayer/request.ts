@@ -1,24 +1,31 @@
-import { Hash, WithdrawalPayload } from "@privacy-pool-core/sdk";
+import { Hash } from "@privacy-pool-core/sdk";
 import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
 import { ValidationError } from "../../exceptions/base.exception.js";
 import {
   RelayerResponse,
   RelayRequestBody,
+  WithdrawalPayload,
 } from "../../interfaces/relayer/request.js";
 import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
-import { RequestMashall } from "../../types.js";
 import { PrivacyPoolRelayer } from "../../services/index.js";
+import { RequestMashall } from "../../types.js";
 
+/**
+ * Converts a RelayRequestBody into a WithdrawalPayload.
+ *
+ * @param {RelayRequestBody} body - The relay request body containing proof and withdrawal details.
+ * @returns {WithdrawalPayload} - The formatted withdrawal payload.
+ */
 function relayRequestBodyToWithdrawalPayload(
   body: RelayRequestBody,
 ): WithdrawalPayload {
   const proof = { ...body.proof, protocol: "groth16", curve: "bn128" };
   const publicSignals = body.publicSignals;
   const withdrawal = {
-    procesooor: getAddress(body.withdrawal.procesooor),
+    processooor: getAddress(body.withdrawal.processooor),
     scope: BigInt(body.withdrawal.scope) as Hash,
-    data: Uint8Array.from(Buffer.from(body.withdrawal.data, "hex")),
+    data: body.withdrawal.data as `0x{string}`,
   };
   const wp = {
     proof: {
@@ -30,6 +37,13 @@ function relayRequestBodyToWithdrawalPayload(
   return wp;
 }
 
+/**
+ * Parses and validates the withdrawal request body.
+ *
+ * @param {Request["body"]} body - The request body to parse.
+ * @returns {WithdrawalPayload} - The validated and formatted withdrawal payload.
+ * @throws {ValidationError} - If the input data is invalid.
+ */
 function parseWithdrawal(body: Request["body"]): WithdrawalPayload {
   if (validateRelayRequestBody(body)) {
     try {
@@ -46,6 +60,13 @@ function parseWithdrawal(body: Request["body"]): WithdrawalPayload {
   }
 }
 
+/**
+ * Express route handler for relaying requests.
+ *
+ * @param {Request} req - The incoming HTTP request.
+ * @param {Response} res - The HTTP response object.
+ * @param {NextFunction} next - The next middleware function.
+ */
 export async function relayRequestHandler(
   req: Request,
   res: Response,

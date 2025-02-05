@@ -88,38 +88,6 @@ export class WithdrawalService {
   }
 
   /**
-   * Calculates the context hash for a withdrawal.
-   */
-  protected calculateContext(withdrawal: Withdrawal): string {
-    const hashString = keccak256(
-      encodeAbiParameters(
-        [
-          {
-            name: "withdrawal",
-            type: "tuple",
-            components: [
-              { name: "processooor", type: "address" },
-              { name: "scope", type: "uint256" },
-              { name: "data", type: "bytes" },
-            ],
-          },
-          { name: "scope", type: "uint256" },
-        ],
-        [
-          {
-            processooor: withdrawal.processooor,
-            scope: withdrawal.scope,
-            data: withdrawal.data,
-          },
-          withdrawal.scope,
-        ],
-      ),
-    );
-    const hashBigint = hexToBigInt(hashString) % SNARK_SCALAR_FIELD;
-    return numberToHex(hashBigint);
-  }
-
-  /**
    * Prepares input signals for the withdrawal circuit.
    */
   private prepareInputSignals(

@@ -1,0 +1,24 @@
+services:
+  relayer:
+    network_mode: host
+    user: 1000:1000
+    build:
+      context: ../../
+      dockerfile: packages/relayer/Dockerfile
+    environment:
+      FEE_RECEIVER_ADDRESS: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+      PROVIDER_URL: http://0.0.0.0:8545
+      FEE_BPS: 1000
+      SIGNER_PRIVATE_KEY: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      SQLITE_DB_PATH: /tmp/pp_relayer.sqlite
+      CONFIG_PATH: ./withdraw_amounts.example.json
+      ENTRYPOINT_ADDRESS: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+      POOL_ADDRESS: 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6
+      CHAIN: localhost
+      CHAIN_ID: 31337
+    volumes:
+      - /tmp/pp_relayer.sqlite:/pp_relayer.sqlite
+      - ./withdraw_amounts.example.json:/build/packages/relayer/withdraw_amounts.example.json
+      - ../circuits/artifacts:/build/node_modules/@privacy-pool-core/sdk/dist/node/artifacts
+    ports:
+      - "3000:3000" # HOST:CONTAINER

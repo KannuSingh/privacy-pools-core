@@ -6,14 +6,27 @@ export enum ErrorCode {
   UNKNOWN = "UNKNOWN",
   INVALID_INPUT = "INVALID_INPUT",
 
+  // Withdrawal data assertions
+  INVALID_DATA = "INVALID_DATA",
+  INVALID_ABI = "INVALID_ABI",
+  RECEIVER_MISMATCH = "RECEIVER_MISMATCH",
+  FEE_MISMATCH = "FEE_MISMATCH",
+  CONTEXT_MISMATCH = "CONTEXT_MISMATCH",
+  INSUFFICIENT_WITHDRAWN_VALUE = "INSUFFICIENT_WITHDRAWN_VALUE",
+
   // Config errors
   INVALID_CONFIG = "INVALID_CONFIG",
+  FEE_BPS_OUT_OF_BOUNDS = "FEE_BPS_OUT_OF_BOUNDS",
+  CHAIN_NOT_SUPPORTED = "CHAIN_NOT_SUPPORTED",
 
   // Proof errors
   INVALID_PROOF = "INVALID_PROOF",
 
   // Contract errors
   CONTRACT_ERROR = "CONTRACT_ERROR",
+
+  // SDK error. Wrapper for sdk's native errors
+  SDK_ERROR = "SDK_ERROR",
 }
 
 /**
@@ -24,7 +37,7 @@ export class RelayerError extends Error {
   constructor(
     message: string,
     public readonly code: ErrorCode = ErrorCode.UNKNOWN,
-    public readonly details?: Record<string, unknown>,
+    public readonly details?: Record<string, unknown> | string,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -43,6 +56,10 @@ export class RelayerError extends Error {
       code: this.code,
       details: this.details,
     };
+  }
+
+  public static unknown(message?: string): RelayerError {
+    return new RelayerError(message || "", ErrorCode.UNKNOWN);
   }
 }
 
@@ -105,9 +122,95 @@ export class ConfigError extends RelayerError {
     return new ConfigError("Invalid config", ErrorCode.INVALID_CONFIG, details);
   }
 
-  public static unknown(message: string): ConfigError {
+  public static feeBpsOutOfBounds(
+    details?: Record<string, unknown>,
+  ): ConfigError {
+    return new ConfigError(
+      "Invalid config: FEE_BPS must be in range [0, 10_000]",
+      ErrorCode.FEE_BPS_OUT_OF_BOUNDS,
+      details,
+    );
+  }
+
+  public static chainNotSupported(
+    details?: Record<string, unknown>,
+  ): ConfigError {
+    return new ConfigError(
+      "Invalid config: CHAIN must be one of `localhost`, `sepolia`, `mainnet`",
+      ErrorCode.CHAIN_NOT_SUPPORTED,
+      details,
+    );
+  }
+
+  public static override unknown(message: string): ConfigError {
     return new ConfigError("Invalid config", ErrorCode.INVALID_CONFIG, {
       context: `Unknown error for ${message}`,
     });
+  }
+}
+
+export class WithdrawalValidationError extends RelayerError {
+  constructor(
+    message: string,
+    code: ErrorCode = ErrorCode.INVALID_DATA,
+    details?: Record<string, unknown> | string,
+  ) {
+    super(message, code, details);
+    this.name = this.constructor.name;
+  }
+
+  public static invalidWithdrawalAbi(
+    details?: Record<string, unknown>,
+  ): WithdrawalValidationError {
+    return new WithdrawalValidationError(
+      "Failed to parse withdrawal data",
+      ErrorCode.INVALID_ABI,
+      details,
+    );
+  }
+
+  public static feeReceiverMismatch(
+    details: string,
+  ): WithdrawalValidationError {
+    return new WithdrawalValidationError(
+      "Fee receiver does not match relayer",
+      ErrorCode.RECEIVER_MISMATCH,
+      details,
+    );
+  }
+
+  public static feeMismatch(details: string) {
+    return new WithdrawalValidationError(
+      "Fee does not match relayer fee",
+      ErrorCode.FEE_MISMATCH,
+      details,
+    );
+  }
+
+  public static contextMismatch(details: string) {
+    return new WithdrawalValidationError(
+      "Context does not match public signal",
+      ErrorCode.CONTEXT_MISMATCH,
+      details,
+    );
+  }
+
+  public static withdrawnValueTooSmall(details: string) {
+    return new WithdrawalValidationError(
+      "Withdrawn value is too small",
+      ErrorCode.INSUFFICIENT_WITHDRAWN_VALUE,
+      details,
+    );
+  }
+}
+
+export class SdkError extends RelayerError {
+  constructor(message: string, details?: Record<string, unknown> | string) {
+    super(message, ErrorCode.SDK_ERROR, details);
+    this.name = this.constructor.name;
+  }
+
+  public static scopeDataError(error: Error) {
+    return new SdkError(`SdkError: SCOPE_DATA_ERROR ${error.message}`);
   }
 }

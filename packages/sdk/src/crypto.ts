@@ -7,7 +7,8 @@ import {
   PrivacyPoolError,
 } from "./exceptions/privacyPool.exception.js";
 import { Commitment, Hash, Secret, Withdrawal } from "./types/index.js";
-import { encodeAbiParameters, Hex, keccak256 } from "viem";
+import { encodeAbiParameters, Hex, keccak256, numberToHex } from "viem";
+import { SNARK_SCALAR_FIELD } from "./constants.js";
 
 /**
  * Validates that a bigint value is not zero
@@ -126,7 +127,7 @@ export function bigintToHex(num: bigint | string | undefined): Hex {
  * Calculates the context hash for a withdrawal.
  */
 export function calculateContext(withdrawal: Withdrawal): string {
-  return keccak256(
+  const hash = BigInt(keccak256(
     encodeAbiParameters(
       [
         {
@@ -149,5 +150,6 @@ export function calculateContext(withdrawal: Withdrawal): string {
         withdrawal.scope,
       ],
     ),
-  );
+  )) % SNARK_SCALAR_FIELD;
+  return numberToHex(hash);
 }

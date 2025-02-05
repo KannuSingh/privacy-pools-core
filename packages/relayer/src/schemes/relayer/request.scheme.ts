@@ -10,11 +10,11 @@ const relayRequestSchema: JSONSchemaType<RelayRequestBody> = {
     withdrawal: {
       type: "object",
       properties: {
-        procesooor: { type: "string" },
+        processooor: { type: "string" },
         scope: { type: "string" },
-        data: { type: "string" },
+        data: { type: "string", pattern: "0x[0-9a-fA-F]+" },
       },
-      required: ["procesooor", "scope", "data"],
+      required: ["processooor", "scope", "data"],
     },
     publicSignals: {
       type: "array",
