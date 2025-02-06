@@ -31,8 +31,8 @@ function validateNonZero(value: bigint, name: string) {
  * @returns {{ nullifier: Secret, secret: Secret }} Randomly generated secrets.
  */
 export function generateSecrets(): { nullifier: Secret; secret: Secret } {
-  const nullifier = BigInt(generatePrivateKey()) as Secret;
-  const secret = BigInt(generatePrivateKey()) as Secret;
+  const nullifier = BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD as Secret;
+  const secret = BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD as Secret;
   return { nullifier, secret };
 }
 
