@@ -1,152 +1,87 @@
-import path from "node:path";
 import fs from "node:fs";
-import { Address, Chain, defineChain, getAddress, Hex, isHex } from "viem";
-import { ConfigError } from "./exceptions/base.exception.js";
+import path from "node:path";
+import { defineChain, getAddress } from "viem";
 import { localhost, mainnet, sepolia } from "viem/chains";
+import { z } from "zod";
+import { ConfigError } from "./exceptions/base.exception.js";
 
-const enum ConfigEnv {
-  CONFIG_PATH = "CONFIG_PATH",
-  FEE_RECEIVER_ADDRESS = "FEE_RECEIVER_ADDRESS",
-  ENTRYPOINT_ADDRESS = "ENTRYPOINT_ADDRESS",
-  PROVIDER_URL = "PROVIDER_URL",
-  SIGNER_PRIVATE_KEY = "SIGNER_PRIVATE_KEY",
-  FEE_BPS = "FEE_BPS",
-  SQLITE_DB_PATH = "SQLITE_DB_PATH",
-  CHAIN = "CHAIN",
-  CHAIN_ID = "CHAIN_ID",
-}
-
-type ConfigEnvString = `${ConfigEnv}`;
-
-interface ConfigEnvVarChecker {
-  (varNameValue: string): void;
-}
-
-function checkConfigVar(
-  varName: ConfigEnvString,
-  checker?: ConfigEnvVarChecker,
-) {
-  const varNameValue = process.env[varName];
-  if (varNameValue === undefined) {
-    throw ConfigError.default({
-      context: `Environment variable \`${varName}\` is undefined`,
-    });
-  }
-  if (checker) {
-    try {
-      checker(varNameValue);
-    } catch (error) {
-      if (error instanceof ConfigError) {
-        throw error;
-      } else {
-        throw ConfigError.default({
-          context: `Environment variable \`${varName}\` has an incorrect format`,
-        });
-      }
-    }
-  }
-  return varNameValue;
-}
-
-function checkHex(v: string) {
-  if (!isHex(v, { strict: true })) {
-    throw ConfigError.default({
-      context: `String ${v} is not a properly formatted hex string`,
-    });
-  }
-}
-
-function getFeeReceiverAddress(): Address {
-  return getAddress(
-    checkConfigVar(ConfigEnv.FEE_RECEIVER_ADDRESS, (v) => getAddress(v)),
-  );
-}
-
-function getEntrypointAddress(): Address {
-  return getAddress(
-    checkConfigVar(ConfigEnv.ENTRYPOINT_ADDRESS, (v) => getAddress(v)),
-  );
-}
-
-function getProviderURL() {
-  // TODO: check provider url format
-  return checkConfigVar(ConfigEnv.PROVIDER_URL);
-}
-
-function getSignerPrivateKey() {
-  // TODO: check pk format
-  return checkConfigVar(ConfigEnv.SIGNER_PRIVATE_KEY, checkHex) as Hex;
-}
-
-function getFeeBps() {
-  // TODO: check feeBPS format
-  const feeBps = BigInt(checkConfigVar(ConfigEnv.FEE_BPS));
-  // range validation
-  if (feeBps > 10_000n || feeBps < 0) {
-    throw ConfigError.feeBpsOutOfBounds();
-  }
-  return feeBps;
-}
-
-function getSqliteDbPath() {
-  // check path exists of warn of new one
-  return checkConfigVar(ConfigEnv.SQLITE_DB_PATH, (v) => {
-    const dbPath = path.resolve(v);
-    if (!fs.existsSync(v)) {
-      console.log("Creating new DB at", dbPath);
-    }
-  });
-}
-
-function getMinWithdrawAmounts(): Record<string, bigint> {
-  const envVar = checkConfigVar(ConfigEnv.CONFIG_PATH, (v) => {
-    const configPath = path.resolve(v);
-    if (!fs.existsSync(v)) {
-      throw ConfigError.default({
-        context: `${configPath} does not exist.`,
-      });
-    }
-  });
-  const withdrawAmountsRaw = JSON.parse(
-    fs.readFileSync(path.resolve(envVar), { encoding: "utf-8" }),
-  );
-  const withdrawAmounts: Record<string, bigint> = {};
-  for (const entry of Object.entries(withdrawAmountsRaw)) {
-    const [asset, amount] = entry;
-    if (typeof amount === "string" || typeof amount === "number") {
-      withdrawAmounts[asset] = BigInt(amount);
+const zAddress = z
+  .string()
+  .regex(/^0x[0-9a-fA-F]+/)
+  .length(42)
+  .transform((v) => getAddress(v));
+const zPkey = z
+  .string()
+  .regex(/^0x[0-9a-fA-F]+/)
+  .length(66)
+  .transform((v) => v as `0x${string}`);
+const zChain = z
+  .object({
+    name: z.enum(["localhost", "mainnet", "sepolia"]),
+    id: z
+      .string()
+      .or(z.number())
+      .pipe(z.coerce.number())
+      .refine((x) => x > 0)
+      .default(31337),
+  })
+  .transform((c) => {
+    if (c.name === "localhost") {
+      return defineChain({ ...localhost, id: c.id });
+    } else if (c.name === "sepolia") {
+      return sepolia;
+    } else if (c.name === "mainnet") {
+      return mainnet;
     } else {
-      console.error(`Unable to parse asset ${asset} with value ${amount}`);
+      return z.NEVER;
     }
+  });
+const zWithdrawAmounts = z.record(
+  zAddress,
+  z.number().nonnegative().pipe(z.coerce.bigint()),
+);
+const fee_bps = z
+  .string()
+  .or(z.number())
+  .pipe(z.coerce.bigint().nonnegative().max(10_000n));
+
+const configSchema = z
+  .object({
+    fee_receiver_address: zAddress,
+    fee_bps: fee_bps,
+    signer_private_key: zPkey,
+    entrypoint_address: zAddress,
+    provider_url: z.string().url(),
+    chain: zChain,
+    sqlite_db_path: z.string().transform((p) => path.resolve(p)),
+    withdraw_amounts: zWithdrawAmounts,
+  })
+  .strict()
+  .readonly();
+
+function readConfigFile(): Record<string, unknown> {
+  let configPathString = process.env["CONFIG_PATH"];
+  if (!configPathString) {
+    console.warn(
+      "RELAYER_CONFIG is not set, using default path: ./config.json",
+    );
+    configPathString = "./config.json";
   }
-  return withdrawAmounts;
+  if (!fs.existsSync(configPathString)) {
+    throw ConfigError.default("No config.json found for relayer.");
+  }
+  return JSON.parse(
+    fs.readFileSync(path.resolve(configPathString), { encoding: "utf-8" }),
+  );
 }
 
-function getChainConfig(): Chain {
-  const chainName = checkConfigVar(ConfigEnv.CHAIN);
-  const chainId = process.env[ConfigEnv.CHAIN_ID];
-  return ((chainNameValue) => {
-    switch (chainNameValue) {
-      case "localhost":
-        if (chainId) {
-          return defineChain({ ...localhost, id: Number(chainId) });
-        }
-        return localhost;
-      case "sepolia":
-        return sepolia;
-      case "mainnet":
-        return mainnet;
-      default:
-        throw ConfigError.chainNotSupported();
-    }
-  })(chainName);
-}
+const config = configSchema.parse(readConfigFile());
 
-export const FEE_RECEIVER_ADDRESS = getFeeReceiverAddress();
-export const ENTRYPOINT_ADDRESS = getEntrypointAddress();
-export const PROVIDER_URL = getProviderURL();
-export const SIGNER_PRIVATE_KEY = getSignerPrivateKey();
-export const FEE_BPS = getFeeBps();
-export const SQLITE_DB_PATH = getSqliteDbPath();
-export const WITHDRAW_AMOUNTS = getMinWithdrawAmounts();
-export const CHAIN = getChainConfig();
+export const FEE_RECEIVER_ADDRESS = config.fee_receiver_address;
+export const ENTRYPOINT_ADDRESS = config.entrypoint_address;
+export const PROVIDER_URL = config.provider_url;
+export const SIGNER_PRIVATE_KEY = config.signer_private_key;
+export const FEE_BPS = config.fee_bps;
+export const SQLITE_DB_PATH = config.sqlite_db_path;
+export const WITHDRAW_AMOUNTS = config.withdraw_amounts;
+export const CHAIN = config.chain;

@@ -109,7 +109,7 @@ export class ConfigError extends RelayerError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.INVALID_CONFIG,
-    details?: Record<string, unknown>,
+    details?: Record<string, unknown> | string,
   ) {
     super(message, code, details);
     this.name = this.constructor.name;
@@ -118,34 +118,10 @@ export class ConfigError extends RelayerError {
   /**
    * Creates an error for input validation failures.
    */
-  public static default(details?: Record<string, unknown>): ConfigError {
+  public static default(
+    details?: Record<string, unknown> | string,
+  ): ConfigError {
     return new ConfigError("Invalid config", ErrorCode.INVALID_CONFIG, details);
-  }
-
-  public static feeBpsOutOfBounds(
-    details?: Record<string, unknown>,
-  ): ConfigError {
-    return new ConfigError(
-      "Invalid config: FEE_BPS must be in range [0, 10_000]",
-      ErrorCode.FEE_BPS_OUT_OF_BOUNDS,
-      details,
-    );
-  }
-
-  public static chainNotSupported(
-    details?: Record<string, unknown>,
-  ): ConfigError {
-    return new ConfigError(
-      "Invalid config: CHAIN must be one of `localhost`, `sepolia`, `mainnet`",
-      ErrorCode.CHAIN_NOT_SUPPORTED,
-      details,
-    );
-  }
-
-  public static override unknown(message: string): ConfigError {
-    return new ConfigError("Invalid config", ErrorCode.INVALID_CONFIG, {
-      context: `Unknown error for ${message}`,
-    });
   }
 }
 
