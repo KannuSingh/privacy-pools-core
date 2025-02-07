@@ -1,66 +1,72 @@
-# ts-turborepo-boilerplate: sample-lib package
+# Privacy Pool Core SDK
 
-> Note: use this lib as reference but preferred way is to re-write package
-> from zero instead of refactoring this one.
-> When you don't need this anymore, you can delete it
+A TypeScript SDK for interacting with the Privacy Pool protocol. This SDK provides a comprehensive set of tools and utilities for integrating with Privacy Pool, enabling deposits, withdrawals, and other core functionality.
 
-Sample library that exposes a Blockchain provider to query
-account balances on Ethereum mainnet or EVM-compatible blockchains
+## Installation
+
+```bash
+npm install @privacy-pool-core/sdk
+# or
+yarn add @privacy-pool-core/sdk
+# or
+pnpm add @privacy-pool-core/sdk
+```
 
 ## Setup
 
-1. Change package name to your own in [`package.json`](./package.json)
-2. Install dependencies running `pnpm install`
+1. Install dependencies by running `pnpm install`
+2. Build the SDK by running `pnpm build`
 
 ## Available Scripts
 
-Available scripts that can be run using `pnpm`:
-
 | Script        | Description                                             |
 | ------------- | ------------------------------------------------------- |
-| `build`       | Build library using tsc                                 |
-| `check-types` | Check types issues using tsc                            |
-| `clean`       | Remove `dist` folder                                    |
-| `lint`        | Run ESLint to check for coding standards                |
-| `lint:fix`    | Run linter and automatically fix code formatting issues |
-| `format`      | Check code formatting and style using Prettier          |
-| `format:fix`  | Run formatter and automatically fix issues              |
-| `test`        | Run tests using vitest                                  |
-| `test:cov`    | Run tests with coverage report                          |
+| `build`       | Build the SDK using Rollup                              |
+| `build:bundle`| Build the SDK and set up circuits                       |
+| `check-types` | Check for TypeScript type issues                        |
+| `clean`       | Remove build artifacts                                  |
+| `lint`        | Run ESLint to check code quality                        |
+| `lint:fix`    | Fix linting issues automatically                        |
+| `format`      | Check code formatting using Prettier                    |
+| `format:fix`  | Fix formatting issues automatically                     |
+| `test`        | Run tests using Vitest                                  |
+| `test:cov`    | Generate test coverage report                           |
 
 ## Usage
 
-### Importing the Package
-
-You can import the package in your TypeScript or JavaScript files as follows:
-
 ```typescript
-import { BlockchainProvider } from "@ts-turborepo-boilerplate/sample-lib";
+import { PrivacyPoolSDK } from '@privacy-pool-core/sdk';
+
+// Initialize the SDK
+const sdk = new PrivacyPoolSDK({
+  // Configuration options
+});
+
+// Example: Create a deposit
+const deposit = await sdk.deposit({
+  // Deposit parameters
+});
+
+// Example: Create a withdrawal
+const withdrawal = await sdk.withdraw({
+  // Withdrawal parameters
+});
 ```
 
-### Example
+For detailed usage examples and API documentation, please refer to our [documentation](https://github.com/defi-wonderland/privacy-pool-core/tree/main/docs).
 
-```typescript
-// EVM-provider
-const rpcUrl = ""; //non-empty valid url
-const address = "0x...";
+## Features
 
-const provider = new BlockchainProvider(rpcUrl);
+- Deposit and withdrawal functionality
+- Zero-knowledge proof generation
+- Commitment management
+- Contract interactions
+- Type-safe API
 
-const balance = await provider.getBalance(address);
+## Contributing
 
-console.log(`Balance of ${address} is ${balance}`);
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## API
+## License
 
-### [IBlockchainProvider](./src/interfaces/blockchainProvider.interface.ts)
-
-Available methods
-
--   `getBalance(address: Address)`
-
-## References
-
--   [Viem](https://viem.sh/)
--   [Offchain docs: Internal module pattern](https://www.notion.so/defi-wonderland/Best-Practices-c08b71f28e59490f8dadef64cf61c9ac?pvs=4#89f99d33053a426285bacc6275d994c0)
+MIT License - see the [LICENSE](LICENSE) file for details.
