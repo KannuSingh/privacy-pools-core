@@ -1,5 +1,5 @@
 {
-  "name": "privacy-pool-core",
+  "name": "@defi-wonderland/privacy-pool-core",
   "version": "0.1.0",
   "description": "Core repository for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
