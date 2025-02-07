@@ -5,11 +5,11 @@ A TypeScript SDK for interacting with the Privacy Pool protocol. This SDK provid
 ## Installation
 
 ```bash
-npm install @privacy-pool-core/sdk
+npm install @defi-wonderland/privacy-pool-core-sdk
 # or
-yarn add @privacy-pool-core/sdk
+yarn add @defi-wonderland/privacy-pool-core-sdk
 # or
-pnpm add @privacy-pool-core/sdk
+pnpm add @defi-wonderland/privacy-pool-core-sdk
 ```
 
 ## Setup
@@ -35,7 +35,7 @@ pnpm add @privacy-pool-core/sdk
 ## Usage
 
 ```typescript
-import { PrivacyPoolSDK } from '@privacy-pool-core/sdk';
+import { PrivacyPoolSDK } from '@defi-wonderland/privacy-pool-core-sdk';
 
 // Initialize the SDK
 const sdk = new PrivacyPoolSDK({

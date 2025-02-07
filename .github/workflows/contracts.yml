@@ -79,7 +79,7 @@ jobs:
       - name: Link SDK
         run: |
           cd ../sdk && yarn link
-          cd ../contracts && yarn link "@privacy-pool-core/sdk"
+          cd ../contracts && yarn link "@defi-wonderland/privacy-pool-core-sdk"
         shell: bash
 
       - name: Precompile

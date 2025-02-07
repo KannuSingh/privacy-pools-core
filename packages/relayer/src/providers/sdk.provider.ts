@@ -10,7 +10,7 @@ import {
   Withdrawal,
   WithdrawalProof,
   SDKError,
-} from "@privacy-pool-core/sdk";
+} from "@defi-wonderland/privacy-pool-core-sdk";
 import { Address } from "viem";
 import {
   CHAIN,

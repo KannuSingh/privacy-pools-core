@@ -1,4 +1,4 @@
-import { Hash } from "@privacy-pool-core/sdk";
+import { Hash } from "@defi-wonderland/privacy-pool-core-sdk";
 import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
 import { ValidationError } from "../../exceptions/base.exception.js";

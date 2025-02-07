@@ -4,7 +4,7 @@ import {
   PrivacyPoolSDK,
   Circuits,
   getCommitment,
-} from "@privacy-pool-core/sdk";
+} from "@defi-wonderland/privacy-pool-core-sdk";
 import { encodeAbiParameters } from "viem";
 
 function padSiblings(siblings, treeDepth) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { ethers } from "ethers";
-import { generateMerkleProof } from "@privacy-pool-core/sdk";
+import { generateMerkleProof } from "@defi-wonderland/privacy-pool-core-sdk";
 
 // Function to temporarily redirect stdout
 function withSilentStdout(fn) {

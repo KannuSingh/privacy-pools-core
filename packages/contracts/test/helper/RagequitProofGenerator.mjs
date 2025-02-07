@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { PrivacyPoolSDK, Circuits } from "@privacy-pool-core/sdk";
+import { PrivacyPoolSDK, Circuits } from "@defi-wonderland/privacy-pool-core-sdk";
 import { encodeAbiParameters } from "viem";
 
 // Function to temporarily redirect stdout
