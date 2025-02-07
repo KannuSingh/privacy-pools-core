@@ -1,5 +1,5 @@
 {
-  "name": "@privacy-pool-core/sdk",
+  "name": "@defi-wonderland/privacy-pool-core-sdk",
   "version": "0.1.0",
   "description": "Typescript SDK for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
