@@ -39,7 +39,7 @@
     "circuits:setup": "cd ../circuits/ && yarn install && yarn compile && yarn setup:all",
     "circuits:copy": "sh ./scripts/copy_circuits.sh",
     "build": "yarn clean && rollup -c ./configs/rollup.config.mjs",
-    "build:bundle": "yarn clean && rollup -c ./configs/rollup.config.mjs && yarn circuits:setup && yarn circuits:copy",
+    "build:bundle": "yarn clean && rollup -c ./configs/rollup.config.mjs && yarn circuits:copy",
     "check-types": "tsc --noEmit -p ./tsconfig.json",
     "clean": "rm -rf dist .rollup.cache tsconfig.build.tsbuildinfo",
     "format": "prettier --check \"{src,test}/**/*.{js,ts,json}\"",
