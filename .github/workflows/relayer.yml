@@ -51,6 +51,9 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Build sdk
+        run: cd ../sdk && yarn install && yarn build
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 

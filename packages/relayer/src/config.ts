@@ -62,9 +62,7 @@ const configSchema = z
 function readConfigFile(): Record<string, unknown> {
   let configPathString = process.env["CONFIG_PATH"];
   if (!configPathString) {
-    console.warn(
-      "RELAYER_CONFIG is not set, using default path: ./config.json",
-    );
+    console.warn("CONFIG_PATH is not set, using default path: ./config.json");
     configPathString = "./config.json";
   }
   if (!fs.existsSync(configPathString)) {

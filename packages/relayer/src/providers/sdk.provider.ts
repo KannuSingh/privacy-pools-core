@@ -20,11 +20,12 @@ import {
 } from "../config.js";
 import { WithdrawalPayload } from "../interfaces/relayer/request.js";
 import { RelayerError, SdkError } from "../exceptions/base.exception.js";
+import { SdkProviderInterface } from "../types/sdk.types.js";
 
 /**
  * Class representing the SDK provider for interacting with Privacy Pool SDK.
  */
-export class SdkProvider {
+export class SdkProvider implements SdkProviderInterface {
   /** Instance of the PrivacyPoolSDK. */
   private sdk: PrivacyPoolSDK;
   private contracts: ContractInteractionsService;

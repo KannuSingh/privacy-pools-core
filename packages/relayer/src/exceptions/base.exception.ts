@@ -9,7 +9,8 @@ export enum ErrorCode {
   // Withdrawal data assertions
   INVALID_DATA = "INVALID_DATA",
   INVALID_ABI = "INVALID_ABI",
-  RECEIVER_MISMATCH = "RECEIVER_MISMATCH",
+  PROCESSOOOR_MISMATCH = "PROCESSOOOR_MISMATCH",
+  FEE_RECEIVER_MISMATCH = "FEE_RECEIVER_MISMATCH",
   FEE_MISMATCH = "FEE_MISMATCH",
   CONTEXT_MISMATCH = "CONTEXT_MISMATCH",
   INSUFFICIENT_WITHDRAWN_VALUE = "INSUFFICIENT_WITHDRAWN_VALUE",
@@ -145,12 +146,22 @@ export class WithdrawalValidationError extends RelayerError {
     );
   }
 
+  public static processooorMismatch(
+    details?: string,
+  ): WithdrawalValidationError {
+    return new WithdrawalValidationError(
+      "Processooor must be the Entrypoint when relaying",
+      ErrorCode.PROCESSOOOR_MISMATCH,
+      details,
+    );
+  }
+
   public static feeReceiverMismatch(
     details: string,
   ): WithdrawalValidationError {
     return new WithdrawalValidationError(
       "Fee receiver does not match relayer",
-      ErrorCode.RECEIVER_MISMATCH,
+      ErrorCode.FEE_RECEIVER_MISMATCH,
       details,
     );
   }

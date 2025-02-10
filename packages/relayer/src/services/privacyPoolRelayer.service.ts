@@ -3,6 +3,7 @@
  */
 import { getAddress } from "viem";
 import {
+  ENTRYPOINT_ADDRESS,
   FEE_BPS,
   FEE_RECEIVER_ADDRESS,
   PROVIDER_URL,
@@ -21,15 +22,16 @@ import {
 import { db, SdkProvider } from "../providers/index.js";
 import { RelayerDatabase } from "../types/db.types.js";
 import { decodeWithdrawalData, parseSignals } from "../utils.js";
+import { SdkProviderInterface } from "../types/sdk.types.js";
 
 /**
  * Class representing the Privacy Pool Relayer, responsible for processing withdrawal requests.
  */
 export class PrivacyPoolRelayer {
   /** Database instance for storing and updating request states. */
-  private db: RelayerDatabase;
+  protected db: RelayerDatabase;
   /** SDK provider for handling blockchain interactions. */
-  private sdkProvider: SdkProvider;
+  protected sdkProvider: SdkProviderInterface;
   /** RPC URL for blockchain communication. */
   private readonly rpcUrl: string = PROVIDER_URL;
   /** Private key for signing transactions. */
@@ -54,7 +56,7 @@ export class PrivacyPoolRelayer {
     const timestamp = Date.now();
 
     try {
-      this.db.createNewRequest(requestId, timestamp, req);
+      await this.db.createNewRequest(requestId, timestamp, req);
       await this.validateWithdrawal(req);
 
       const isValidWithdrawalProof = await this.verifyProof(req.proof);
@@ -90,7 +92,7 @@ export class PrivacyPoolRelayer {
    * @param {WithdrawalPayload["proof"]} proof - The proof to be verified.
    * @returns {Promise<boolean>} - A promise resolving to a boolean indicating verification success.
    */
-  private async verifyProof(
+  protected async verifyProof(
     proof: WithdrawalPayload["proof"],
   ): Promise<boolean> {
     return this.sdkProvider.verifyWithdrawal(proof);
@@ -102,7 +104,7 @@ export class PrivacyPoolRelayer {
    * @param {WithdrawalPayload} withdrawal - The withdrawal payload.
    * @returns {Promise<{ hash: string }>} - A promise resolving to the transaction hash.
    */
-  private async broadcastWithdrawal(
+  protected async broadcastWithdrawal(
     withdrawal: WithdrawalPayload,
   ): Promise<{ hash: string }> {
     return this.sdkProvider.broadcastWithdrawal(withdrawal);
@@ -115,11 +117,17 @@ export class PrivacyPoolRelayer {
    * @throws {WithdrawalValidationError} - If validation fails.
    * @throws {ValidationError} - If public signals are malformed.
    */
-  private async validateWithdrawal(wp: WithdrawalPayload) {
+  protected async validateWithdrawal(wp: WithdrawalPayload) {
     const { feeRecipient, relayFeeBPS } = decodeWithdrawalData(
       wp.withdrawal.data,
     );
     const proofSignals = parseSignals(wp.proof.publicSignals);
+
+    if (wp.withdrawal.processooor !== ENTRYPOINT_ADDRESS) {
+      throw WithdrawalValidationError.processooorMismatch(
+        `Processooor mismatch: expected "${ENTRYPOINT_ADDRESS}", got "${wp.withdrawal.processooor}".`,
+      );
+    }
 
     if (getAddress(feeRecipient) !== FEE_RECEIVER_ADDRESS) {
       throw WithdrawalValidationError.feeReceiverMismatch(
