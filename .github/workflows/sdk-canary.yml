@@ -26,8 +26,7 @@ jobs:
         with:
           node-version: 20.x
           cache: "yarn"
-          registry-url: 'https://registry.npmjs.org'
-          token: ${{ secrets.NPM_TOKEN }}
+          registry-url: "https://npm.pkg.github.com/"
 
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
@@ -45,3 +44,5 @@ jobs:
       - name: Publish canary
         # run: npm publish --access public --tag canary
         run: npm publish --access restricted --tag canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

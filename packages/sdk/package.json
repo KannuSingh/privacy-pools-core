@@ -9,6 +9,9 @@
   "main": "./dist/node/index.mjs",
   "module": "./dist/esm/index.mjs",
   "browser": "./dist/esm/index.mjs",
+  "publishConfig": {
+    "@defi-wonderland:registry": "https://npm.pkg.github.com"
+  },
   "types": {
     "import": "./dist/index.d.mts"
   },

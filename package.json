@@ -2,7 +2,10 @@
   "name": "privacy-pool-core",
   "version": "0.1.0",
   "description": "Core repository for the Privacy Pool protocol",
-  "repository": "https://github.com/defi-wonderland/privacy-pool-core",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/defi-wonderland/privacy-pool-core.git"
+  },
   "license": "MIT",
   "author": "Wonderland",
   "private": true,
@@ -13,7 +16,7 @@
     "packages/relayer"
   ],
   "scripts": {
-      "docker:build:relayer": "docker build -f packages/relayer/Dockerfile -t privacy-pool/relayer ."
+    "docker:build:relayer": "docker build -f packages/relayer/Dockerfile -t privacy-pool/relayer ."
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "7.18.0",
