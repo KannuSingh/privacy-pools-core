@@ -55,3 +55,39 @@ contract RegisterPool is Script {
     vm.stopBroadcast();
   }
 }
+
+contract UpdateRoot is Script {
+  // @notice The deployed Entrypoint
+  Entrypoint public entrypoint;
+
+  bytes32 public IPFS_HASH = keccak256('ipfs_hash');
+  uint256 public newRoot;
+
+  function setUp() public {
+    // Read the Entrypoint address from environment
+    entrypoint = Entrypoint(payable(vm.envAddress('ENTRYPOINT_ADDRESS')));
+
+    // Build merkle tree and compute root
+    newRoot = computeMerkleRoot();
+  }
+
+  function computeMerkleRoot() internal returns (uint256) {
+    string[] memory runCommand = new string[](2);
+    runCommand[0] = 'node';
+    runCommand[1] = 'script/utils/tree.mjs';
+    bytes memory result = vm.ffi(runCommand);
+
+    // Parse the root from the output
+    return abi.decode(result, (uint256));
+  }
+
+  // @dev Must be called with the `--account` flag which acts as the caller
+  function run() public {
+    vm.startBroadcast();
+
+    // Register pool
+    entrypoint.updateRoot(newRoot, IPFS_HASH);
+
+    vm.stopBroadcast();
+  }
+}
