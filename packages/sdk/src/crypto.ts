@@ -1,5 +1,4 @@
 import { generatePrivateKey } from "viem/accounts";
-// TODO: might have to fix this import
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT, LeanIMTMerkleProof } from "@zk-kit/lean-imt";
 import {
@@ -31,8 +30,9 @@ function validateNonZero(value: bigint, name: string) {
  * @returns {{ nullifier: Secret, secret: Secret }} Randomly generated secrets.
  */
 export function generateSecrets(): { nullifier: Secret; secret: Secret } {
-  const nullifier = BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD as Secret;
-  const secret = BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD as Secret;
+  const nullifier = (BigInt(generatePrivateKey()) %
+    SNARK_SCALAR_FIELD) as Secret;
+  const secret = (BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD) as Secret;
   return { nullifier, secret };
 }
 
@@ -126,30 +126,31 @@ export function bigintToHex(num: bigint | string | undefined): Hex {
 /**
  * Calculates the context hash for a withdrawal.
  */
-export function calculateContext(withdrawal: Withdrawal): string {
-  const hash = BigInt(keccak256(
-    encodeAbiParameters(
-      [
-        {
-          name: "withdrawal",
-          type: "tuple",
-          components: [
-            { name: "processooor", type: "address" },
+export function calculateContext(withdrawal: Withdrawal, scope: Hash): string {
+  const hash =
+    BigInt(
+      keccak256(
+        encodeAbiParameters(
+          [
+            {
+              name: "withdrawal",
+              type: "tuple",
+              components: [
+                { name: "processooor", type: "address" },
+                { name: "data", type: "bytes" },
+              ],
+            },
             { name: "scope", type: "uint256" },
-            { name: "data", type: "bytes" },
           ],
-        },
-        { name: "scope", type: "uint256" },
-      ],
-      [
-        {
-          processooor: withdrawal.processooor,
-          scope: withdrawal.scope,
-          data: withdrawal.data,
-        },
-        withdrawal.scope,
-      ],
-    ),
-  )) % SNARK_SCALAR_FIELD;
+          [
+            {
+              processooor: withdrawal.processooor,
+              data: withdrawal.data,
+            },
+            scope,
+          ],
+        ),
+      ),
+    ) % SNARK_SCALAR_FIELD;
   return numberToHex(hash);
 }

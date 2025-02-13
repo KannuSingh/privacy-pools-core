@@ -20,7 +20,7 @@ import { IEntrypointABI } from "../abi/IEntrypoint.js";
 import { IPrivacyPoolABI } from "../abi/IPrivacyPool.js";
 import { ERC20ABI } from "../abi/ERC20.js";
 import { privateKeyToAccount } from "viem/accounts";
-import { CommitmentProof } from "../types/commitment.js";
+import { CommitmentProof, Hash } from "../types/commitment.js";
 import { bigintToHex } from "../crypto.js";
 import { ContractError } from "../errors/base.error.js";
 
@@ -36,8 +36,8 @@ export class ContractInteractionsService implements ContractInteractions {
    * @param rpcUrl - The RPC endpoint URL for the blockchain network.
    * @param chain - The blockchain network configuration.
    * @param entrypointAddress - The address of the entrypoint contract.
-   * @param accountPrivateKey - The private key used for signing transactions. 
-  */
+   * @param accountPrivateKey - The private key used for signing transactions.
+   */
   constructor(
     rpcUrl: string,
     chain: Chain,
@@ -65,7 +65,6 @@ export class ContractInteractionsService implements ContractInteractions {
 
     this.entrypointAddress = entrypointAddress;
   }
-
 
   /**
    * Deposits ERC20 tokens into the privacy pool.
@@ -138,12 +137,13 @@ export class ContractInteractionsService implements ContractInteractions {
   async withdraw(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
+    scope: Hash,
   ): Promise<TransactionResponse> {
     try {
       const formattedProof = this.formatProof(withdrawalProof);
 
       // get pool address from scope
-      const scopeData = await this.getScopeData(withdrawal.scope);
+      const scopeData = await this.getScopeData(scope);
 
       const { request } = await this.publicClient.simulateContract({
         address: scopeData.poolAddress,
@@ -182,17 +182,16 @@ export class ContractInteractionsService implements ContractInteractions {
 
       const { request } = await this.publicClient.simulateContract({
         address: this.entrypointAddress,
-        abi: [...IEntrypointABI as Abi, ...IPrivacyPoolABI as Abi],
+        abi: [...(IEntrypointABI as Abi), ...(IPrivacyPoolABI as Abi)],
         functionName: "relay",
         account: this.account.address as Address,
-        args: [withdrawal, formattedProof]
+        args: [withdrawal, formattedProof],
       });
 
       return await this.executeTransaction(request);
     } catch (error) {
       console.error("Withdraw Error Details:", {
         error,
-        scope: withdrawal.scope,
         accountAddress: this.account.address,
       });
       throw error;
@@ -291,7 +290,9 @@ export class ContractInteractionsService implements ContractInteractions {
    * @returns An object containing the privacy pool address and asset address.
    * @throws ContractError if the scope does not exist.
    */
-  async getScopeData(scope: bigint): Promise<{ poolAddress: Address; assetAddress: Address }> {
+  async getScopeData(
+    scope: bigint,
+  ): Promise<{ poolAddress: Address; assetAddress: Address }> {
     try {
       // get pool address fro entrypoint
       const poolAddress = await this.publicClient.readContract({
@@ -302,12 +303,15 @@ export class ContractInteractionsService implements ContractInteractions {
         functionName: "scopeToPool",
       });
 
-      // if no pool throw error 
-      if (!poolAddress || poolAddress === "0x0000000000000000000000000000000000000000") {
+      // if no pool throw error
+      if (
+        !poolAddress ||
+        poolAddress === "0x0000000000000000000000000000000000000000"
+      ) {
         throw ContractError.scopeNotFound(scope);
       }
 
-      // get asset adress from pool 
+      // get asset adress from pool
       const assetAddress = await this.publicClient.readContract({
         address: getAddress(poolAddress as string),
         abi: IPrivacyPoolABI as Abi,
@@ -315,15 +319,18 @@ export class ContractInteractionsService implements ContractInteractions {
         functionName: "ASSET",
       });
 
-      return { poolAddress: getAddress(poolAddress as string), assetAddress: getAddress(assetAddress as string) };
+      return {
+        poolAddress: getAddress(poolAddress as string),
+        assetAddress: getAddress(assetAddress as string),
+      };
     } catch (error) {
-      if (error instanceof ContractError)
-        throw error;
+      if (error instanceof ContractError) throw error;
       console.error(`Error resolving scope ${scope.toString()}:`, error);
-      throw new Error(`Failed to resolve scope ${scope.toString()}: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to resolve scope ${scope.toString()}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
-
 
   /**
    * Approves the entrypoint contract to spend a specified amount of ERC20 tokens.
@@ -333,7 +340,11 @@ export class ContractInteractionsService implements ContractInteractions {
    * @param amount - The amount of tokens to approve.
    * @returns Transaction response containing hash and wait function.
    */
-  async approveERC20(spenderAddress: Address, tokenAddress: Address, amount: bigint): Promise<TransactionResponse> {
+  async approveERC20(
+    spenderAddress: Address,
+    tokenAddress: Address,
+    amount: bigint,
+  ): Promise<TransactionResponse> {
     try {
       const { request } = await this.publicClient.simulateContract({
         address: tokenAddress,

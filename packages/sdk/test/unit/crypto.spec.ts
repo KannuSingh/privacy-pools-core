@@ -108,24 +108,32 @@ describe("Crypto Utilities", () => {
 
   describe("calculateContext", () => {
     it("calculates the context correctly", () => {
-
       const withdrawal = {
         processooor: getAddress("0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"),
-        scope: BigInt("0x0555c5fdc167f1f1519c1b21a690de24d9be5ff0bde19447a5f28958d9256e50") as Hash,
         data: "0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000c350" as Hex,
       };
-      expect(calculateContext(withdrawal)).toStrictEqual("0x21a25ae329bcce0ede103b5f8279c83b61b647dfd2bc8cfac3836456011cf3b6");
-    })
+      expect(
+        calculateContext(
+          withdrawal,
+          BigInt(
+            "0x0555c5fdc167f1f1519c1b21a690de24d9be5ff0bde19447a5f28958d9256e50",
+          ) as Hash,
+        ),
+      ).toStrictEqual(
+        "0x266f59df0823b7efe6821eba38eb5de1177c6366a214b59f12154cd16079965a",
+      );
+    });
 
     it("calculates returns a scalar field bounded value", () => {
       const withdrawal: Withdrawal = {
         processooor: privateKeyToAccount(generatePrivateKey()).address,
-        scope: BigInt(keccak256(generatePrivateKey())) as Hash,
         data: keccak256(generatePrivateKey()),
       };
-      const result = calculateContext(withdrawal);
+      const result = calculateContext(
+        withdrawal,
+        BigInt(keccak256(generatePrivateKey())) as Hash,
+      );
       expect(BigInt(result) % SNARK_SCALAR_FIELD).toStrictEqual(BigInt(result));
-    })
-  })
-
+    });
+  });
 });

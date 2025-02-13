@@ -8,7 +8,6 @@ import { Hash, Secret } from "./commitment.js";
  */
 export interface Withdrawal {
   readonly processooor: Address;
-  readonly scope: Hash;
   readonly data: Hex;
 }
 

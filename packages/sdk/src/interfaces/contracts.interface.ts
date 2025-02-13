@@ -1,6 +1,6 @@
 import { Address } from "viem";
 import { Withdrawal, WithdrawalProof } from "../types/withdrawal.js";
-import { CommitmentProof } from "../types/commitment.js";
+import { CommitmentProof, Hash } from "../types/commitment.js";
 
 export interface SolidityGroth16Proof {
   pA: [bigint, bigint];
@@ -29,6 +29,7 @@ export interface ContractInteractions {
   withdraw(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
+    scope: Hash,
   ): Promise<TransactionResponse>;
 
   relay(
@@ -44,7 +45,13 @@ export interface ContractInteractions {
   getScope(privacyPoolAddress: Address): Promise<bigint>;
   getStateRoot(privacyPoolAddress: Address): Promise<bigint>;
   getStateSize(privacyPoolAddress: Address): Promise<bigint>;
-  getScopeData(scope: bigint): Promise<{ poolAddress: Address | null; assetAddress: Address | null }>;
+  getScopeData(
+    scope: bigint,
+  ): Promise<{ poolAddress: Address | null; assetAddress: Address | null }>;
 
-  approveERC20(spenderAddress: Address, tokenAddress: Address, amount: bigint): Promise<TransactionResponse>;
+  approveERC20(
+    spenderAddress: Address,
+    tokenAddress: Address,
+    amount: bigint,
+  ): Promise<TransactionResponse>;
 }
