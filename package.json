@@ -15,9 +15,6 @@
     "packages/sdk",
     "packages/relayer"
   ],
-  "scripts": {
-    "docker:build:relayer": "docker build -f packages/relayer/Dockerfile -t privacy-pool/relayer ."
-  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",

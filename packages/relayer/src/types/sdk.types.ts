@@ -10,7 +10,7 @@ export interface SdkProviderInterface {
   broadcastWithdrawal(
     withdrawalPayload: WithdrawalPayload,
   ): Promise<{ hash: string }>;
-  calculateContext(withdrawal: Withdrawal): string;
+  calculateContext(withdrawal: Withdrawal, scope: bigint): string;
   scopeData(
     scope: bigint,
   ): Promise<{ poolAddress: Address; assetAddress: Address }>;

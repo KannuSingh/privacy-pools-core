@@ -27,11 +27,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build sdk
-        run: cd ../sdk && yarn install && yarn build
+      - name: Setup .npmrc file
+        run: |
+          echo "@defi-wonderland:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PKG_REGISTRY_TOKEN }}" >> .npmrc
 
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Build
         run: yarn build
@@ -51,11 +55,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build sdk
-        run: cd ../sdk && yarn install && yarn build
+      - name: Setup .npmrc file
+        run: |
+          echo "@defi-wonderland:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PKG_REGISTRY_TOKEN }}" >> .npmrc
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests with coverage
         run: yarn test:cov

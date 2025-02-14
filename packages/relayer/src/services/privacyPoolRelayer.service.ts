@@ -142,7 +142,7 @@ export class PrivacyPoolRelayer {
     }
 
     const withdrawalContext = BigInt(
-      this.sdkProvider.calculateContext(wp.withdrawal),
+      this.sdkProvider.calculateContext(wp.withdrawal, wp.scope),
     );
     if (proofSignals.context !== withdrawalContext) {
       throw WithdrawalValidationError.contextMismatch(
@@ -150,9 +150,7 @@ export class PrivacyPoolRelayer {
       );
     }
 
-    const { assetAddress } = await this.sdkProvider.scopeData(
-      wp.withdrawal.scope,
-    );
+    const { assetAddress } = await this.sdkProvider.scopeData(wp.scope);
     const MIN_WITHDRAW_DEFAULT = 100_000n;
     const minWithdrawAmount =
       WITHDRAW_AMOUNTS[assetAddress] ?? MIN_WITHDRAW_DEFAULT;

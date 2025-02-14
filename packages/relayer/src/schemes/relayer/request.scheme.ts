@@ -11,10 +11,9 @@ const relayRequestSchema: JSONSchemaType<RelayRequestBody> = {
       type: "object",
       properties: {
         processooor: { type: "string" },
-        scope: { type: "string" },
         data: { type: "string", pattern: "0x[0-9a-fA-F]+" },
       },
-      required: ["processooor", "scope", "data"],
+      required: ["processooor", "data"],
     },
     publicSignals: {
       type: "array",
@@ -41,8 +40,9 @@ const relayRequestSchema: JSONSchemaType<RelayRequestBody> = {
       },
       required: ["pi_a", "pi_b", "pi_c"],
     },
+    scope: { type: "string" },
   },
-  required: ["withdrawal", "proof", "publicSignals"],
+  required: ["withdrawal", "proof", "publicSignals", "scope"],
 } as const;
 
 export const validateRelayRequestBody = ajv.compile(relayRequestSchema);

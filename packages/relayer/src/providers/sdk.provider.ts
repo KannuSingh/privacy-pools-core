@@ -10,6 +10,7 @@ import {
   Withdrawal,
   WithdrawalProof,
   SDKError,
+  type Hash,
 } from "@defi-wonderland/privacy-pool-core-sdk";
 import { Address } from "viem";
 import {
@@ -74,8 +75,8 @@ export class SdkProvider implements SdkProviderInterface {
    * @param {Withdrawal} withdrawal - The withdrawal object.
    * @returns {string} - The calculated context.
    */
-  calculateContext(withdrawal: Withdrawal): string {
-    return calculateContext(withdrawal);
+  calculateContext(withdrawal: Withdrawal, scope: bigint): string {
+    return calculateContext(withdrawal, scope as Hash);
   }
 
   /**

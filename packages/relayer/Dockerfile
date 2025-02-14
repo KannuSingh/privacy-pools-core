@@ -1,17 +1,14 @@
-FROM node:23 AS sdk-builder
-WORKDIR /build
-COPY ./package.json ./yarn.lock ./tsconfig.base.json .
-COPY ./packages/sdk/package.json  ./packages/sdk/tsconfig.build.json ./packages/sdk/
-RUN yarn install
-COPY ./packages/sdk/configs/ ./packages/sdk/configs/
-COPY ./packages/sdk/src/ ./packages/sdk/src/
-RUN cd ./packages/sdk && yarn install && yarn build
+FROM node:23
 
-FROM sdk-builder AS final
-COPY ./packages/relayer/package.json ./packages/relayer/tsconfig.build.json ./packages/relayer/
+WORKDIR /build
+RUN yarn global add typescript
+
+# Copy package files
+COPY package.json .npmrc tsconfig.build.json config.json ./
 RUN yarn install
-COPY ./packages/relayer/src/ ./packages/relayer/src/
-RUN cd ./packages/relayer && yarn install && yarn build
-WORKDIR packages/relayer
-EXPOSE 3000:3000
-ENTRYPOINT ["node", "./dist/src/index.js"]
+
+COPY src/ ./src/
+RUN yarn build
+
+EXPOSE 3000
+CMD ["node", "dist/src/index.js"]

@@ -121,19 +121,19 @@ describe("PrivacyPoolRelayer", () => {
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
           processooor: ENTRYPOINT_ADDRESS_TEST,
-          scope: 0x5c0fen, // correct == 0n
           data: dataCorrect,
         },
         proof: {
           proof: "" as WithdrawalProof,
           publicSignals: PUBLIC_SIGNALS_TEST,
         },
+        scope: BigInt(0x5c0fen), // correct == 0n
       };
       await expect(() =>
         service.validateWithdrawal(withdrawalPayload),
       ).rejects.toThrowError(
         WithdrawalValidationError.contextMismatch(
-          'Context mismatch: expected "1f9bd92c080e8d7b883a75bf2da8e2832a8041e320facaf301ca87abc544e5db", got "85bb30f63789e69035080816ae268a74e87b221245153876134a3f39e04b799".',
+          'Context mismatch: expected "2ccc7ebae3d6e0489846523cad0cef023986027fc089dc4ce57f9ed644c5f185", got "85bb30f63789e69035080816ae268a74e87b221245153876134a3f39e04b799".',
         ),
       );
     });
@@ -141,16 +141,18 @@ describe("PrivacyPoolRelayer", () => {
     it("raises withdrawn value too small", async () => {
       const publicSignals = [...PUBLIC_SIGNALS_TEST];
       publicSignals[2] = 100n;
+      publicSignals[7] =
+        10793626036679745516481859563284572555060983750341001924900435534433131367129n;
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
           processooor: ENTRYPOINT_ADDRESS_TEST,
-          scope: 0n,
           data: dataCorrect,
         },
         proof: {
           proof: "" as WithdrawalProof,
           publicSignals,
         },
+        scope: 0n,
       };
 
       vi.spyOn(Config, "WITHDRAW_AMOUNTS", "get").mockReturnValue({
@@ -175,16 +177,20 @@ describe("PrivacyPoolRelayer", () => {
     });
 
     it("validates with no issues", async () => {
+      const publicSignals = PUBLIC_SIGNALS_TEST;
+      publicSignals[7] =
+        10793626036679745516481859563284572555060983750341001924900435534433131367129n;
+
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
           processooor: ENTRYPOINT_ADDRESS_TEST,
-          scope: 0n,
           data: dataCorrect,
         },
         proof: {
           proof: "" as WithdrawalProof,
-          publicSignals: PUBLIC_SIGNALS_TEST,
+          publicSignals: publicSignals,
         },
+        scope: 0n,
       };
       vi.spyOn(Config, "WITHDRAW_AMOUNTS", "get").mockReturnValue({
         [ASSET_ADDRESS_TEST]: 50n,
@@ -205,14 +211,15 @@ describe("PrivacyPoolRelayer", () => {
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
           processooor: ENTRYPOINT_ADDRESS_TEST,
-          scope: 0n,
           data: dataCorrect,
         },
         proof: {
           proof: "" as WithdrawalProof,
           publicSignals: PUBLIC_SIGNALS_TEST,
         },
+        scope: 0n,
       };
+
       const dbMock = createDbMock();
       const sdkProviderMock = createSdkProviderMock();
 
@@ -243,13 +250,13 @@ describe("PrivacyPoolRelayer", () => {
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
           processooor: ENTRYPOINT_ADDRESS_TEST,
-          scope: 0n,
           data: dataCorrect,
         },
         proof: {
           proof: "" as WithdrawalProof,
           publicSignals: PUBLIC_SIGNALS_TEST,
         },
+        scope: 0n,
       };
 
       it("when verification fails", async () => {

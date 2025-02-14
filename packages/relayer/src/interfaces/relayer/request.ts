@@ -40,8 +40,6 @@ export interface WithdrawPublicSignals {
 export interface WithdrawalRelayerPayload {
   /** Relayer address (0xAdDrEsS) */
   processooor: string;
-  /** Relayer scope (bigint as string) */
-  scope: string;
   /** Transaction data (hex encoded) */
   data: string;
 }
@@ -56,6 +54,8 @@ export interface RelayRequestBody {
   publicSignals: string[];
   /** Proof details */
   proof: ProofRelayerPayload;
+  /** Pool scope */
+  scope: string;
 }
 
 /**
@@ -64,6 +64,7 @@ export interface RelayRequestBody {
 export interface WithdrawalPayload {
   readonly proof: WithdrawalProof;
   readonly withdrawal: Withdrawal;
+  readonly scope: bigint;
 }
 
 /**

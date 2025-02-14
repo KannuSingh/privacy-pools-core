@@ -1,4 +1,3 @@
-import { Hash } from "@defi-wonderland/privacy-pool-core-sdk";
 import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
 import { ValidationError } from "../../exceptions/base.exception.js";
@@ -22,9 +21,9 @@ function relayRequestBodyToWithdrawalPayload(
 ): WithdrawalPayload {
   const proof = { ...body.proof, protocol: "groth16", curve: "bn128" };
   const publicSignals = body.publicSignals;
+  const scope = BigInt(body.scope);
   const withdrawal = {
     processooor: getAddress(body.withdrawal.processooor),
-    scope: BigInt(body.withdrawal.scope) as Hash,
     data: body.withdrawal.data as `0x{string}`,
   };
   const wp = {
@@ -33,6 +32,7 @@ function relayRequestBodyToWithdrawalPayload(
       publicSignals,
     },
     withdrawal,
+    scope,
   };
   return wp;
 }

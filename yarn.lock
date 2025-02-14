@@ -351,6 +351,17 @@
     solc-typed-ast "18.1.6"
     yargs "17.7.2"
 
+"@defi-wonderland/privacy-pool-core-sdk@0.0.0-6d725b16":
+  version "0.0.0-6d725b16"
+  resolved "https://npm.pkg.github.com/download/@defi-wonderland/privacy-pool-core-sdk/0.0.0-6d725b16/8d562f2c1126716a45cb74159670372239d3b977#8d562f2c1126716a45cb74159670372239d3b977"
+  integrity sha512-BZwBzEM+40zthjjZZ/b6+niKEn57NKyGR8PnhYbIsy1TuKYKjtDhGUbpWA9rJFF+kN3pAILzatlYWy38MTH26Q==
+  dependencies:
+    "@types/snarkjs" "0.7.9"
+    "@zk-kit/lean-imt" "2.2.2"
+    maci-crypto "2.5.0"
+    snarkjs "0.7.5"
+    viem "2.22.14"
+
 "@esbuild/aix-ppc64@0.24.2":
   version "0.24.2"
   resolved "https://registry.yarnpkg.com/@esbuild/aix-ppc64/-/aix-ppc64-0.24.2.tgz#38848d3e25afe842a7943643cbcd387cc6e13461"
