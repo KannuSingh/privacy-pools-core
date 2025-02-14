@@ -15,7 +15,6 @@ PrivacyPool::deposit
 │   │   │   ├── It increments global nonce
 │   │   │   ├── It computes label as keccak of scope and nonce
 │   │   │   ├── It maps label to depositor address
-│   │   │   ├── It sets ragequit cooldown period
 │   │   │   ├── It computes commitment hash correctly
 │   │   │   ├── It inserts commitment in merkle tree
 │   │   │   ├── It handles asset transfer
@@ -34,14 +33,17 @@ PrivacyPool::withdraw
 │   ├── Given valid proof
 │   │   ├── Given known state root
 │   │   │   ├── Given latest ASP root
-│   │   │   │   ├── When withdrawing nonzero amount
-│   │   │   │   │   ├── It verifies proof with verifier
-│   │   │   │   │   ├── It spends nullifier hash
-│   │   │   │   │   ├── It inserts new commitment
-│   │   │   │   │   ├── It transfers value to processooor
-│   │   │   │   │   └── It emits Withdrawn event
-│   │   │   │   └── When nullifier already spent
-│   │   │   │       └── It reverts with NullifierAlreadySpent
+│   │   │   │   ├── Given valid tree depths
+│   │   │   │   │   ├── When withdrawing nonzero amount
+│   │   │   │   │   │   ├── It verifies proof with verifier
+│   │   │   │   │   │   ├── It spends nullifier hash
+│   │   │   │   │   │   ├── It inserts new commitment
+│   │   │   │   │   │   ├── It transfers value to processooor
+│   │   │   │   │   │   └── It emits Withdrawn event
+│   │   │   │   │   └── When nullifier already spent
+│   │   │   │   │       └── It reverts with NullifierAlreadySpent
+│   │   │   │   └── When tree depths exceed maximum
+│   │   │   │       └── It reverts with InvalidTreeDepth
 │   │   │   └── When ASP root is outdated
 │   │   │       └── It reverts with IncorrectASPRoot
 │   │   └── When state root unknown
@@ -49,7 +51,7 @@ PrivacyPool::withdraw
 │   └── When proof context mismatches
 │       └── It reverts with ContextMismatch
 └── When caller is not processooor
-    └── It reverts with InvalidProcesooor
+    └── It reverts with InvalidProcessooor
 
 PrivacyPool::ragequit
 ├── Given caller is original depositor

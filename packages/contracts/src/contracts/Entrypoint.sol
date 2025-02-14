@@ -22,7 +22,6 @@ import {ReentrancyGuardUpgradeable} from '@oz-upgradeable/utils/ReentrancyGuardU
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
 import {IERC20} from '@oz/interfaces/IERC20.sol';
-import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
 import {Constants} from './lib/Constants.sol';
 import {ProofLib} from './lib/ProofLib.sol';
@@ -69,12 +68,15 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     if (_owner == address(0)) revert ZeroAddress();
     if (_postman == address(0)) revert ZeroAddress();
 
-    // Initialize upgradeable contractcs
+    // Initialize upgradeable contracts
+    __UUPSUpgradeable_init();
     __ReentrancyGuard_init();
     __AccessControl_init();
 
     // Initialize roles
     _setRoleAdmin(DEFAULT_ADMIN_ROLE, _OWNER_ROLE);
+    _setRoleAdmin(_OWNER_ROLE, _OWNER_ROLE); // Owner can manage owner role
+    _setRoleAdmin(_ASP_POSTMAN, _OWNER_ROLE); // Owner can manage postman role
 
     _grantRole(_OWNER_ROLE, _owner);
     _grantRole(_ASP_POSTMAN, _postman);
@@ -102,13 +104,17 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
-  function deposit(uint256 _precommitment) external payable returns (uint256 _commitment) {
+  function deposit(uint256 _precommitment) external payable nonReentrant returns (uint256 _commitment) {
     // Handle deposit as native asset
     _commitment = _handleDeposit(IERC20(Constants.NATIVE_ASSET), msg.value, _precommitment);
   }
 
   /// @inheritdoc IEntrypoint
-  function deposit(IERC20 _asset, uint256 _value, uint256 _precommitment) external returns (uint256 _commitment) {
+  function deposit(
+    IERC20 _asset,
+    uint256 _value,
+    uint256 _precommitment
+  ) external nonReentrant returns (uint256 _commitment) {
     // Pull funds from user
     _asset.safeTransferFrom(msg.sender, address(this), _value);
     // Handle deposit as ERC20
@@ -122,7 +128,8 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   /// @inheritdoc IEntrypoint
   function relay(
     IPrivacyPool.Withdrawal calldata _withdrawal,
-    ProofLib.WithdrawProof calldata _proof
+    ProofLib.WithdrawProof calldata _proof,
+    uint256 _scope
   ) external nonReentrant {
     // Check withdrawn amount is non-zero
     if (_proof.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
@@ -130,7 +137,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     if (_withdrawal.processooor != address(this)) revert InvalidProcessooor();
 
     // Fetch pool by scope
-    IPrivacyPool _pool = scopeToPool[_withdrawal.scope];
+    IPrivacyPool _pool = scopeToPool[_scope];
     if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Store pool asset
@@ -140,8 +147,8 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     // Process withdrawal
     _pool.withdraw(_withdrawal, _proof);
 
-    // Decode fee data
-    FeeData memory _data = abi.decode(_withdrawal.data, (FeeData));
+    // Decode relay data
+    RelayData memory _data = abi.decode(_withdrawal.data, (RelayData));
     uint256 _withdrawnAmount = _proof.withdrawnValue();
 
     // Deduct fees
@@ -170,25 +177,25 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _minimumDepositAmount,
     uint256 _vettingFeeBPS
   ) external onlyRole(_OWNER_ROLE) {
-    // Sanity check values
+    // Sanity check addresses
     if (address(_asset) == address(0)) revert ZeroAddress();
     if (address(_pool) == address(0)) revert ZeroAddress();
-    // Vetting fee can't be greater than 100%
-    if (_vettingFeeBPS > 10_000) revert InvalidFeeBPS();
 
     // Fetch pool configuration
     AssetConfig storage _config = assetConfig[_asset];
     if (address(_config.pool) != address(0)) revert AssetPoolAlreadyRegistered();
 
-    // Fetch pool scope
+    // Fetch pool scope and validate asset
     uint256 _scope = _pool.SCOPE();
     if (address(scopeToPool[_scope]) != address(0)) revert ScopePoolAlreadyRegistered();
+    if (_asset != IERC20(_pool.ASSET())) revert AssetMismatch();
 
     // Store pool configuration
     scopeToPool[_scope] = _pool;
     _config.pool = _pool;
-    _config.minimumDepositAmount = _minimumDepositAmount;
-    _config.vettingFeeBPS = _vettingFeeBPS;
+
+    // Update pool configuration with validation
+    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS);
 
     // If asset is an ERC20, approve pool to spend
     if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), type(uint256).max);
@@ -221,16 +228,12 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _minimumDepositAmount,
     uint256 _vettingFeeBPS
   ) external onlyRole(_OWNER_ROLE) {
-    // Check fee is less than 100%
-    if (_vettingFeeBPS > 10_000) revert InvalidFeeBPS();
-
     // Fetch pool configuration
     AssetConfig storage _config = assetConfig[_asset];
     if (address(_config.pool) == address(0)) revert PoolNotFound();
 
-    // Update asset configuration
-    _config.minimumDepositAmount = _minimumDepositAmount;
-    _config.vettingFeeBPS = _vettingFeeBPS;
+    // Update pool configuration with validation
+    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS);
 
     emit PoolConfigurationUpdated(_config.pool, _asset, _minimumDepositAmount, _vettingFeeBPS);
   }
@@ -274,7 +277,14 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
                             RECEIVE
   //////////////////////////////////////////////////////////////*/
 
-  receive() external payable {}
+  /**
+   * @notice Needed to receive native asset from a pool when withdrawing
+   * @dev Only accepts native asset from the local native asset pool
+   */
+  receive() external payable {
+    address _nativePool = address(assetConfig[IERC20(Constants.NATIVE_ASSET)].pool);
+    if (msg.sender != _nativePool) revert NativeAssetNotAccepted();
+  }
 
   /*///////////////////////////////////////////////////////////////
                         INTERNAL METHODS 
@@ -347,5 +357,24 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    */
   function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
     _afterFees = _amount - (_amount * _feeBPS / 10_000);
+  }
+
+  /**
+   * @notice Sets pool configuration parameters with validation
+   * @dev Validates and sets minimum deposit amount and vetting fee
+   * @param _config The pool configuration to update
+   * @param _minimumDepositAmount The new minimum deposit amount
+   * @param _vettingFeeBPS The new vetting fee in basis points
+   */
+  function _setPoolConfiguration(
+    AssetConfig storage _config,
+    uint256 _minimumDepositAmount,
+    uint256 _vettingFeeBPS
+  ) internal {
+    // Check fee is less than 100%
+    if (_vettingFeeBPS >= 10_000) revert InvalidFeeBPS();
+
+    _config.minimumDepositAmount = _minimumDepositAmount;
+    _config.vettingFeeBPS = _vettingFeeBPS;
   }
 }

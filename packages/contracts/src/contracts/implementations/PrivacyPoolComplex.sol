@@ -18,9 +18,11 @@ https://defi.sucks/
 
 import {IERC20, SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 
+import {Constants} from 'contracts/lib/Constants.sol';
+
 import {IPrivacyPoolComplex} from 'interfaces/IPrivacyPool.sol';
 
-import {PrivacyPool} from '../PrivacyPool.sol';
+import {PrivacyPool} from 'contracts/PrivacyPool.sol';
 
 /**
  * @title PrivacyPoolComplex
@@ -35,7 +37,9 @@ contract PrivacyPoolComplex is PrivacyPool, IPrivacyPoolComplex {
     address _withdrawalVerifier,
     address _ragequitVerifier,
     address _asset
-  ) PrivacyPool(_entrypoint, _withdrawalVerifier, _ragequitVerifier, _asset) {}
+  ) PrivacyPool(_entrypoint, _withdrawalVerifier, _ragequitVerifier, _asset) {
+    if (_asset == Constants.NATIVE_ASSET) revert NativeAssetNotSupported();
+  }
 
   /**
    * @notice Handle pulling an ERC20 asset

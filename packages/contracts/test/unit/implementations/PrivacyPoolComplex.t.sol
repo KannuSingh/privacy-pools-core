@@ -6,6 +6,7 @@ import {Test} from 'forge-std/Test.sol';
 
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+import {IState} from 'interfaces/IState.sol';
 
 import {Constants} from 'test/helper/Constants.sol';
 
@@ -76,7 +77,7 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
   ) external {
     vm.assume(
       _entrypoint != address(0) && _withdrawalVerifier != address(0) && _ragequitVerifier != address(0)
-        && _asset != address(0)
+        && _asset != address(0) && _asset != Constants.NATIVE_ASSET
     );
 
     _pool = new ComplexPoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, _asset);
@@ -104,14 +105,30 @@ contract UnitConstructor is UnitPrivacyPoolComplex {
     address _ragequitVerifier,
     address _asset
   ) external {
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new ComplexPoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier, _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new ComplexPoolForTest(_entrypoint, address(0), _ragequitVerifier, _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new ComplexPoolForTest(_entrypoint, _withdrawalVerifier, address(0), _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new ComplexPoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, address(0));
+  }
+
+  /**
+   * @notice Test that constructor reverts when native asset is used
+   */
+  function test_ConstructorWhenAssetIsNative(
+    address _entrypoint,
+    address _withdrawalVerifier,
+    address _ragequitVerifier
+  ) external {
+    vm.assume(_entrypoint != address(0));
+    vm.assume(_withdrawalVerifier != address(0));
+    vm.assume(_ragequitVerifier != address(0));
+
+    vm.expectRevert(IPrivacyPoolComplex.NativeAssetNotSupported.selector);
+    new ComplexPoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, Constants.NATIVE_ASSET);
   }
 }
 

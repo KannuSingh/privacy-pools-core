@@ -1,9 +1,8 @@
-PrivacyPool::constructor
+PrivacyPoolSimple::constructor
 ├── Given valid addresses
-│   ├── It sets asset address
+│   ├── It sets asset address to native asset
 │   ├── It computes scope from chain id and asset
-│   ├── It initializes base state contract
-│   └── It enables deposits by default
+│   └── It initializes base state contract
 └── When any address is zero
     └── It reverts with ZeroAddress
 
@@ -16,4 +15,4 @@ PrivacyPoolSimple::_pull
 PrivacyPoolSimple::_push
 ├── It sends _amount of native asset to _recipient
 └── When the transfer fails
-    └── It reverts with FailedToSendETH
+    └── It reverts with FailedToSendNativeAsset

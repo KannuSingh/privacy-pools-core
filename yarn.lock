@@ -758,15 +758,15 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-5.0.2.tgz#3e5321a2ecdd0b206064356798c21225b6ec7105"
   integrity sha512-0MmkHSHiW2NRFiT9/r5Lu4eJq5UJ4/tzlOgYXNAIj/ONkQTVnz22pLxDvp4C4uZ9he7ZFvGn3Driptn1/iU7tQ==
 
-"@openzeppelin/contracts@^5.1.0":
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.2.0.tgz#bd020694218202b811b0ea3eec07277814c658da"
-  integrity sha512-bxjNie5z89W1Ea0NZLZluFh8PrFNn9DH8DQlujEok2yjsOlraUPKID5p1Wk3qdNbf6XkQ1Os2RvfiHrrXLHWKA==
+"@openzeppelin/contracts@5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.1.0.tgz#4e61162f2a2bf414c4e10c45eca98ce5f1aadbd4"
+  integrity sha512-p1ULhl7BXzjjbha5aqst+QMLY+4/LCWADXOCsmLHRM77AqiPjnd9vvUN9sosUfhL9JGKpZ0TjEGxgvnizmWGSA==
 
-"@openzeppelin/foundry-upgrades@^0.3.6":
-  version "0.3.8"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/foundry-upgrades/-/foundry-upgrades-0.3.8.tgz#134227b824b17b426c89bc0de6f7905c521dccff"
-  integrity sha512-K3EscnnoRudDzG/359cAR9niivnuFILUoSQQcaBjXvyZUuH/DXIM3Cia9Ni8xJVyvi13hvUFUVD+2suB+dT54w==
+"@openzeppelin/foundry-upgrades@0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/foundry-upgrades/-/foundry-upgrades-0.3.6.tgz#bba9249e206c053326802742ced05596f2ea6ccb"
+  integrity sha512-qIRYAw/Kh9AjxAr4kVuTwqLtJkkamRB65ZEJJQBlFADbMJyNQgCX4XPOh3MUqIGgYl4YtG/GzhZAkCedxfv0SQ==
 
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
@@ -1500,7 +1500,7 @@
     buffer "6.0.3"
     poseidon-lite "0.3.0"
 
-"@zk-kit/lean-imt.sol@^2.0.0":
+"@zk-kit/lean-imt.sol@2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@zk-kit/lean-imt.sol/-/lean-imt.sol-2.0.0.tgz#4b0aee47854b5844455f9361396062139416e12b"
   integrity sha512-e9pAm+IXveLPy7b1h05ipIo6U44vp8g/2E+Ocx3PIloMu7lgTXFkIeZj/qZ/iLgEMsF74T0dsg7aVIT0B0nsDA==
@@ -3074,9 +3074,9 @@ foreground-child@^3.1.0:
     cross-spawn "^7.0.0"
     signal-exit "^4.0.1"
 
-"forge-std@github:foundry-rs/forge-std#1.9.2":
-  version "1.9.2"
-  resolved "https://codeload.github.com/foundry-rs/forge-std/tar.gz/1714bee72e286e73f76e320d110e0eaf5c4e649d"
+"forge-std@github:foundry-rs/forge-std#1.9.6":
+  version "1.9.6"
+  resolved "https://codeload.github.com/foundry-rs/forge-std/tar.gz/3b20d60d14b343ee4f908cb8079495c07f5e8981"
 
 form-data@^4.0.0:
   version "4.0.1"

@@ -4,6 +4,8 @@ Entrypoint::constructor
 
 Entrypoint::initialize
 ├── Given valid owner and postman
+│   ├── It initializes upgradeable contracts
+│   ├── It initializes roles
 │   ├── It grants owner role
 │   └── It grants postman role
 └── When already initialized
@@ -24,45 +26,55 @@ Entrypoint::updateRoot
     └── It reverts with AccessControlUnauthorizedAccount
 
 Entrypoint::deposit (ETH)
-├── Given pool exists
-│   ├── Given value meets minimum
-│   │   ├── It deducts correct fees
-│   │   ├── It forwards ETH to pool
-│   │   ├── It maintains contract balance
-│   │   └── It emits Deposited event
-│   └── When value below minimum
-│       └── It reverts with MinimumDepositAmount
-└── When pool not found
-    └── It reverts with PoolNotFound
+├── Given no reentrant call
+│   ├── Given pool exists
+│   │   ├── Given value meets minimum
+│   │   │   ├── It deducts correct fees
+│   │   │   ├── It forwards ETH to pool
+│   │   │   ├── It maintains contract balance
+│   │   │   └── It emits Deposited event
+│   │   └── When value below minimum
+│   │       └── It reverts with MinimumDepositAmount
+│   └── When pool not found
+│       └── It reverts with PoolNotFound
+└── When reentrant call
+    └── It reverts
 
 Entrypoint::deposit (ERC20)
-├── Given pool exists
-│   ├── Given value meets minimum
-│   │   ├── It transfers tokens from sender
-│   │   ├── It deducts correct fees
-│   │   ├── It deposits to pool
-│   │   └── It emits Deposited event
-│   └── When value below minimum
-│       └── It reverts with MinimumDepositAmount
-└── When pool not found
-    └── It reverts with PoolNotFound
+├── Given no reentrant call
+│   ├── Given pool exists
+│   │   ├── Given value meets minimum
+│   │   │   ├── It transfers tokens from sender
+│   │   │   ├── It deducts correct fees
+│   │   │   ├── It deposits to pool
+│   │   │   └── It emits Deposited event
+│   │   └── When value below minimum
+│   │       └── It reverts with MinimumDepositAmount
+│   └── When pool not found
+│       └── It reverts with PoolNotFound
+└── When reentrant call
+    └── It reverts
 
 Entrypoint::relay
-├── Given pool exists
-│   ├── Given valid processooor
-│   │   ├── Given valid withdrawal and proof
-│   │   │   ├── It processes withdrawal
-│   │   │   ├── It transfers correct amounts
-│   │   │   ├── It maintains pool balance
-│   │   │   └── It emits WithdrawalRelayed event
-│   │   ├── When withdrawal amount is zero
-│   │   │   └── It reverts with InvalidWithdrawalAmount
-│   │   └── When pool state is invalid
-│   │       └── It reverts with InvalidPoolState
-│   └── When invalid processooor
-│       └── It reverts with InvalidProcessooor
-└── When pool not found
-    └── It reverts with PoolNotFound
+├── Given no reentrant call
+│   ├── Given pool exists
+│   │   ├── Given valid processooor
+│   │   │   ├── Given valid withdrawal and proof
+│   │   │   │   ├── Given withdrawal amount is not zero
+│   │   │   │   │   ├── It processes withdrawal
+│   │   │   │   │   ├── It transfers correct amounts
+│   │   │   │   │   ├── It maintains pool balance
+│   │   │   │   │   └── It emits WithdrawalRelayed event
+│   │   │   │   └── When withdrawal amount is zero
+│   │   │   │       └── It reverts with InvalidWithdrawalAmount
+│   │   │   └── When pool state is invalid
+│   │   │       └── It reverts with InvalidPoolState
+│   │   └── When invalid processooor
+│   │       └── It reverts with InvalidProcessooor
+│   └── When pool not found
+│       └── It reverts with PoolNotFound
+└── When reentrant call
+    └── It reverts
 
 Entrypoint::registerPool
 ├── Given caller has owner role
@@ -93,9 +105,12 @@ Entrypoint::removePool
 Entrypoint::updatePoolConfiguration
 ├── Given caller has owner role
 │   ├── Given valid pool and configuration
-│   │   ├── It updates minimum deposit amount
-│   │   ├── It updates fee basis points
-│   │   └── It emits PoolConfigurationUpdated event
+│   │   ├── Given fee BPS less than 100%
+│   │   │   ├── It updates minimum deposit amount
+│   │   │   ├── It updates fee basis points
+│   │   │   └── It emits PoolConfigurationUpdated event
+│   │   └── When fee BPS is 100% or greater
+│   │       └── It reverts with InvalidFeeBPS
 │   └── When pool not found
 │       └── It reverts with PoolNotFound
 └── When caller lacks owner role
@@ -113,18 +128,21 @@ Entrypoint::windDownPool
 
 Entrypoint::withdrawFees
 ├── Given caller has owner role
-│   ├── Given asset is ETH
-│   │   ├── When ETH balance exists
-│   │   │   ├── It transfers full balance
-│   │   │   └── It emits FeesWithdrawn event
-│   │   └── When ETH transfer fails
-│   │       └── It reverts with ETHTransferFailed
-│   └── Given asset is ERC20
-│       ├── When token balance exists
-│       │   ├── It transfers full balance
-│       │   └── It emits FeesWithdrawn event
-│       └── When token transfer fails
-│           └── It reverts
+│   ├── Given no reentrant call
+│   │   ├── Given asset is native asset
+│   │   │   ├── When balance exists
+│   │   │   │   ├── It transfers full balance
+│   │   │   │   └── It emits FeesWithdrawn event
+│   │   │   └── When transfer fails
+│   │   │       └── It reverts with NativeAssetTransferFailed
+│   │   └── Given asset is ERC20
+│   │       ├── When token balance exists
+│   │       │   ├── It transfers full balance
+│   │       │   └── It emits FeesWithdrawn event
+│   │       └── When token transfer fails
+│   │           └── It reverts
+│   └── When reentrant call
+│       └── It reverts
 └── When caller lacks owner role
     └── It reverts with AccessControlUnauthorizedAccount
 

@@ -11,37 +11,6 @@ import {IVerifier} from 'interfaces/IVerifier.sol';
  */
 interface IState {
   /*///////////////////////////////////////////////////////////////
-                               ENUMS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Enum representing statuses of a nullifier
-   */
-  enum NullifierStatus {
-    NONE,
-    SPENT, // Nullifier is spent
-    RAGEQUIT_PENDING, // Nullifier is being ragequitted
-    RAGEQUIT_FINALIZED // Nullifier has been ragequitted
-
-  }
-
-  /*///////////////////////////////////////////////////////////////
-                              STRUCTS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Struct for the deposit data
-   * @param depositor The address of the depositor
-   * @param amount The deposited amount
-   * @param whenRagequitteable The end of the ragequit cooldown period
-   */
-  struct Deposit {
-    address depositor;
-    uint256 amount;
-    uint256 whenRagequitteable;
-  }
-
-  /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
 
@@ -77,21 +46,49 @@ interface IState {
    */
   error NotYetRagequitteable();
 
+  /**
+   * @notice Thrown when the max tree depth is reached and no more commitments can be inserted
+   */
+  error MaxTreeDepthReached();
+
+  /**
+   * @notice Thrown when trying to set a state variable as address zero
+   */
+  error ZeroAddress();
+
   /*///////////////////////////////////////////////////////////////
                               VIEWS 
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Returns the version of the protocol
-   * @return _version The version string
+   * @notice Returns the pool unique identifier
+   * @return _scope The scope id
    */
-  function VERSION() external view returns (string memory _version);
+  function SCOPE() external view returns (uint256 _scope);
+
+  /**
+   * @notice Returns the pool asset
+   * @return _asset The asset address
+   */
+  function ASSET() external view returns (address _asset);
 
   /**
    * @notice Returns the root history size for root caching
    * @return _size The amount of valid roots to store
    */
   function ROOT_HISTORY_SIZE() external view returns (uint32 _size);
+
+  /**
+   * @notice Returns the maximum depth of the state tree
+   * @dev Merkle tree depth must be capped at a fixed maximum because zero-knowledge circuits
+   * compile to R1CS (Rank-1 Constraint System) constraints that must be determined at compile time.
+   * R1CS cannot handle dynamic loops or recursion - all computation paths must be fully "unrolled"
+   * into a fixed number of constraints. Since each level of the Merkle tree requires its own set
+   * of constraints for hashing and path verification, we need to set a maximum depth that determines
+   * the total constraint size of the circuit.
+   * @return _maxDepth The max depth
+   */
+  function MAX_TREE_DEPTH() external view returns (uint32 _maxDepth);
 
   /**
    * @notice Returns the configured Entrypoint contract
@@ -165,11 +162,6 @@ interface IState {
    * @notice Returns the original depositor that generated a label
    * @param _label The label
    * @return _depositor The original depositor
-   * @return _amount The amount of deposit
-   * @return _whenRagequitteable The timestamp on which the user can initiate the ragequit
    */
-  function deposits(uint256 _label)
-    external
-    view
-    returns (address _depositor, uint256 _amount, uint256 _whenRagequitteable);
+  function depositors(uint256 _label) external view returns (address _depositor);
 }

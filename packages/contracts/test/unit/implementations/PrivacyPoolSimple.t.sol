@@ -6,6 +6,7 @@ import {Test} from 'forge-std/Test.sol';
 import {Constants} from 'test/helper/Constants.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+import {IState} from 'interfaces/IState.sol';
 
 /**
  * @notice Test contract for the PrivacyPoolSimple
@@ -96,13 +97,13 @@ contract UnitConstructor is UnitPrivacyPoolSimple {
     address _withdrawalVerifier,
     address _ragequitVerifier
   ) external {
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new SimplePoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new SimplePoolForTest(_entrypoint, address(0), _ragequitVerifier);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new SimplePoolForTest(_entrypoint, _withdrawalVerifier, address(0));
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new SimplePoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier);
   }
 }

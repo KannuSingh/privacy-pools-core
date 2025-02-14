@@ -28,12 +28,12 @@ interface IEntrypoint {
   }
 
   /**
-   * @notice Struct for the relay fee data
+   * @notice Struct for the relay data
    * @param recipient The recipient of the funds withdrawn from the pool
    * @param feeRecipient The recipient of the fee
    * @param relayfeeBPS The relay fee in basis points
    */
-  struct FeeData {
+  struct RelayData {
     address recipient;
     address feeRecipient;
     uint256 relayFeeBPS;
@@ -199,6 +199,16 @@ interface IEntrypoint {
    */
   error NoRootsAvailable();
 
+  /**
+   * @notice Thrown when trying to register a pool with an asset that doesn't match the pool's asset
+   */
+  error AssetMismatch();
+
+  /**
+   * @notice Thrown when trying to send native asset to the Entrypoint
+   */
+  error NativeAssetNotAccepted();
+
   /*//////////////////////////////////////////////////////////////
                                 LOGIC
   //////////////////////////////////////////////////////////////*/
@@ -237,8 +247,13 @@ interface IEntrypoint {
    * @notice Process a withdrawal
    * @param _withdrawal The `Withdrawal` struct
    * @param _proof The `WithdrawProof` struct containing the withdarawal proof signals
+   * @param _scope The Pool scope to withdraw from
    */
-  function relay(IPrivacyPool.Withdrawal calldata _withdrawal, ProofLib.WithdrawProof calldata _proof) external;
+  function relay(
+    IPrivacyPool.Withdrawal calldata _withdrawal,
+    ProofLib.WithdrawProof calldata _proof,
+    uint256 _scope
+  ) external;
 
   /**
    * @notice Register a Privacy Pool in the registry

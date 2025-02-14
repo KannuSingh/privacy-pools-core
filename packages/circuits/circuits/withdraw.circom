@@ -21,7 +21,7 @@ template Withdraw(maxTreeDepth) {
   signal input stateTreeDepth;                   // Current state tree depth
   signal input ASPRoot;                          // Latest ASP root
   signal input ASPTreeDepth;                     // Current ASP tree depth
-  signal input context;                          // keccak256(scope, Withdrawal)
+  signal input context;                          // keccak256(IPrivacyPool.Withdrawal, scope)
 
   //////////////////// END OF PUBLIC SIGNALS ////////////////////
 

@@ -57,8 +57,8 @@ contract PoolForTest is PrivacyPool {
   }
 
   function mockDeposit(address _depositor, uint256 _label) external {
-    deposits[_label] = Deposit(_depositor, 1, block.timestamp + 1 weeks);
-    deposits[_label] = Deposit(_depositor, 1, block.timestamp + 1 weeks);
+    depositors[_label] = _depositor;
+    depositors[_label] = _depositor;
   }
 
   function mockNullifierStatus(uint256 _nullifierHash, bool _spent) external {
@@ -71,6 +71,18 @@ contract PoolForTest is PrivacyPool {
 
   function insertLeaf(uint256 _leaf) external returns (uint256 _root) {
     _root = _merkleTree._insert(_leaf);
+  }
+
+  function mockTreeDepth(uint256 _depth) external {
+    _merkleTree.depth = _depth;
+  }
+
+  function mockTreeSize(uint256 _size) external {
+    _merkleTree.size = _size;
+  }
+
+  function mockCurrentRoot(uint256 _root) external {
+    _merkleTree.sideNodes[_merkleTree.depth] = _root;
   }
 }
 
@@ -106,12 +118,25 @@ contract UnitPrivacyPool is Test {
   }
 
   modifier givenValidProof(IPrivacyPool.Withdrawal memory _w, ProofLib.WithdrawProof memory _p) {
-    _p.pubSignals[2] = bound(_p.pubSignals[2], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
-    _p.pubSignals[3] = bound(_p.pubSignals[3], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
-    _p.pubSignals[5] = bound(_p.pubSignals[5], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
-    _p.pubSignals[1] = bound(_p.pubSignals[6], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
-    _p.pubSignals[0] = bound(_p.pubSignals[7], 1, Constants.SNARK_SCALAR_FIELD - 1);
+    // New commitment hash
+    _p.pubSignals[0] = bound(_p.pubSignals[0], 1, Constants.SNARK_SCALAR_FIELD - 1);
 
+    // Existing nullifier hash
+    _p.pubSignals[1] = bound(_p.pubSignals[1], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+
+    // Withdrawn value
+    _p.pubSignals[2] = bound(_p.pubSignals[2], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+
+    // State root
+    _p.pubSignals[3] = bound(_p.pubSignals[3], 1, type(uint256).max) % Constants.SNARK_SCALAR_FIELD;
+
+    // State tree depth
+    _p.pubSignals[4] = bound(_p.pubSignals[4], 1, 32);
+
+    // ASP tree depth
+    _p.pubSignals[6] = bound(_p.pubSignals[6], 1, 32);
+
+    // Context
     _p.pubSignals[7] = uint256(keccak256(abi.encode(_w, _scope))) % Constants.SNARK_SCALAR_FIELD;
 
     _;
@@ -230,13 +255,13 @@ contract UnitConstructor is UnitPrivacyPool {
     address _ragequitVerifier,
     address _asset
   ) external {
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new PoolForTest(address(0), _withdrawalVerifier, _ragequitVerifier, _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new PoolForTest(_entrypoint, address(0), _ragequitVerifier, _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new PoolForTest(_entrypoint, _withdrawalVerifier, address(0), _asset);
-    vm.expectRevert(IPrivacyPool.ZeroAddress.selector);
+    vm.expectRevert(IState.ZeroAddress.selector);
     new PoolForTest(_entrypoint, _withdrawalVerifier, _ragequitVerifier, address(0));
   }
 }
@@ -275,9 +300,8 @@ contract UnitDeposit is UnitPrivacyPool {
     _pool.deposit(_depositor, _amount, _precommitmentHash);
 
     // Verify deposit was recorded correctly
-    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
+    address _retrievedDepositor = _pool.depositors(_label);
     assertEq(_retrievedDepositor, _depositor);
-    assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
   }
 
@@ -312,9 +336,8 @@ contract UnitDeposit is UnitPrivacyPool {
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
-    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
+    address _retrievedDepositor = _pool.depositors(_label);
     assertEq(_retrievedDepositor, _depositor);
-    assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
   }
 
@@ -342,9 +365,8 @@ contract UnitDeposit is UnitPrivacyPool {
     emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
-    (address _retrievedDepositor, uint256 _retrievedAmount,) = _pool.deposits(_label);
+    address _retrievedDepositor = _pool.depositors(_label);
     assertEq(_retrievedDepositor, _depositor);
-    assertEq(_retrievedAmount, _amount);
     assertEq(_pool.nonce(), _nonce + 1);
   }
 
@@ -396,6 +418,27 @@ contract UnitDeposit is UnitPrivacyPool {
     vm.prank(_caller);
     _pool.deposit(_depositor, _amount, _precommitmentHash);
   }
+
+  /**
+   * @notice Test that deposit reverts when max tree depth is reached
+   */
+  function test_DepositWhenMaxTreeDepthReached(
+    address _depositor,
+    uint256 _amount,
+    uint256 _precommitmentHash
+  ) external givenCallerIsEntrypoint givenPoolIsActive {
+    vm.assume(_depositor != address(0));
+    vm.assume(_amount > 0);
+    vm.assume(_precommitmentHash != 0);
+
+    // Mock tree at max capacity
+    _pool.mockTreeDepth(32);
+    _pool.mockTreeSize(2 ** 32);
+
+    // Attempt deposit that would exceed max depth
+    vm.expectRevert(IState.MaxTreeDepthReached.selector);
+    _pool.deposit(_depositor, _amount, _precommitmentHash);
+  }
 }
 
 /**
@@ -431,6 +474,32 @@ contract UnitWithdraw is UnitPrivacyPool {
     _pool.withdraw(_w, _p);
 
     assertTrue(_pool.nullifierHashes(_p.existingNullifierHash()), 'Nullifier should be spent');
+  }
+
+  function test_WithdrawWhenTreeIsFull(
+    IPrivacyPool.Withdrawal memory _w,
+    ProofLib.WithdrawProof memory _p
+  )
+    external
+    givenCallerIsProcessooor(_w.processooor)
+    givenValidProof(_w, _p)
+    givenKnownStateRoot(_p.stateRoot())
+    givenLatestASPRoot(_p.ASPRoot())
+  {
+    // Tree is full
+    _pool.mockTreeSize(2 ** 32);
+    _pool.mockTreeDepth(32);
+
+    _mockAndExpect(
+      _WITHDRAWAL_VERIFIER,
+      abi.encodeWithSignature(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[8])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+      ),
+      abi.encode(true)
+    );
+
+    vm.expectRevert(IState.MaxTreeDepthReached.selector);
+    _pool.withdraw(_w, _p);
   }
 
   function test_WithdrawWhenWithdrawingNullifierAlreadySpent(
@@ -519,8 +588,28 @@ contract UnitWithdraw is UnitPrivacyPool {
     vm.assume(_caller != _w.processooor);
 
     // Expect revert due to invalid processooor
-    vm.expectRevert(IPrivacyPool.InvalidProcesooor.selector);
+    vm.expectRevert(IPrivacyPool.InvalidProcessooor.selector);
     vm.prank(_caller);
+    _pool.withdraw(_w, _p);
+  }
+
+  /**
+   * @notice Test that withdraw reverts when tree depths are invalid
+   */
+  function test_WithdrawWhenTreeDepthsInvalid(
+    IPrivacyPool.Withdrawal memory _w,
+    ProofLib.WithdrawProof memory _p
+  ) external givenCallerIsProcessooor(_w.processooor) givenValidProof(_w, _p) {
+    // Set the state tree depth
+    _p.pubSignals[4] = 33;
+    vm.expectRevert(IPrivacyPool.InvalidTreeDepth.selector);
+    _pool.withdraw(_w, _p);
+
+    // Test ASP tree depth > MAX_TREE_DEPTH
+    _p.pubSignals[4] = 32; // Reset to valid depth
+    _p.pubSignals[6] = 33;
+
+    vm.expectRevert(IPrivacyPool.InvalidTreeDepth.selector);
     _pool.withdraw(_w, _p);
   }
 }
@@ -663,5 +752,34 @@ contract UnitWindDown is UnitPrivacyPool {
     vm.expectRevert(IState.OnlyEntrypoint.selector);
     vm.prank(_caller);
     _pool.windDown();
+  }
+}
+
+/**
+ * @notice Unit tests for the state view methods
+ */
+contract UnitStateViews is UnitPrivacyPool {
+  /**
+   * @notice Test for getting the current state root
+   */
+  function test_currentRoot(uint256 _root) external {
+    _pool.mockCurrentRoot(_root);
+    assertEq(_pool.currentRoot(), _root);
+  }
+
+  /**
+   * @notice Test for getting the current tree depth
+   */
+  function test_currentTreeDepth(uint256 _depth) external {
+    _pool.mockTreeDepth(_depth);
+    assertEq(_pool.currentTreeDepth(), _depth);
+  }
+
+  /**
+   * @notice Test for getting the current tree size
+   */
+  function test_currentTreeSize(uint256 _size) external {
+    _pool.mockTreeSize(_size);
+    assertEq(_pool.currentTreeSize(), _size);
   }
 }

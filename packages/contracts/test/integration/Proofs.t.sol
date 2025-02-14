@@ -27,8 +27,7 @@ contract IntegrationProofs is IntegrationBase {
     vm.prank(_POSTMAN);
     _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
 
-    _withdrawal =
-      IPrivacyPool.Withdrawal({processooor: _BOB, scope: _ethPool.SCOPE(), data: abi.encode(_BOB, address(0), 0)});
+    _withdrawal = IPrivacyPool.Withdrawal({processooor: _BOB, data: abi.encode(_BOB, address(0), 0)});
 
     _context = uint256(keccak256(abi.encode(_withdrawal, _ethPool.SCOPE()))) % SNARK_SCALAR_FIELD;
   }

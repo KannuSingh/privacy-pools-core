@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 /**
  * @title ProofLib
  * @notice Facilitates accessing the public signals of a Groth16 proof.
+ * @custom:semver 0.1.0
  */
 library ProofLib {
   /*///////////////////////////////////////////////////////////////
@@ -34,16 +35,11 @@ library ProofLib {
   }
 
   /**
-   * @notice Semantic version of the library
-   */
-  string public constant VERSION = '0.1.0';
-
-  /**
    * @notice Retrieves the new commitment hash from the proof's public signals
    * @param _p The proof containing the public signals
    * @return The hash of the new commitment being created
    */
-  function newCommitmentHash(WithdrawProof memory _p) public pure returns (uint256) {
+  function newCommitmentHash(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[0];
   }
 
@@ -52,7 +48,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The hash of the nullifier being spent in this withdrawal
    */
-  function existingNullifierHash(WithdrawProof memory _p) public pure returns (uint256) {
+  function existingNullifierHash(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[1];
   }
 
@@ -61,7 +57,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The amount being withdrawn from Privacy Pool
    */
-  function withdrawnValue(WithdrawProof memory _p) public pure returns (uint256) {
+  function withdrawnValue(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[2];
   }
 
@@ -70,7 +66,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The root of the state tree at time of proof generation
    */
-  function stateRoot(WithdrawProof memory _p) public pure returns (uint256) {
+  function stateRoot(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[3];
   }
 
@@ -79,7 +75,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The depth of the state tree at time of proof generation
    */
-  function stateTreeDepth(WithdrawProof memory _p) public pure returns (uint256) {
+  function stateTreeDepth(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[4];
   }
 
@@ -88,7 +84,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The latest root of the ASP tree at time of proof generation
    */
-  function ASPRoot(WithdrawProof memory _p) public pure returns (uint256) {
+  function ASPRoot(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[5];
   }
 
@@ -97,7 +93,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The depth of the ASP tree at time of proof generation
    */
-  function ASPTreeDepth(WithdrawProof memory _p) public pure returns (uint256) {
+  function ASPTreeDepth(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[6];
   }
 
@@ -106,7 +102,7 @@ library ProofLib {
    * @param _p The proof containing the public signals
    * @return The context value binding the proof to specific withdrawal data
    */
-  function context(WithdrawProof memory _p) public pure returns (uint256) {
+  function context(WithdrawProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[7];
   }
 
@@ -139,7 +135,7 @@ library ProofLib {
    * @param _p The ragequit proof containing the public signals
    * @return The new commitment hash
    */
-  function commitmentHash(RagequitProof memory _p) public pure returns (uint256) {
+  function commitmentHash(RagequitProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[0];
   }
 
@@ -148,7 +144,7 @@ library ProofLib {
    * @param _p The ragequit proof containing the public signals
    * @return The precommitment hash
    */
-  function precommitmentHash(RagequitProof memory _p) public pure returns (uint256) {
+  function precommitmentHash(RagequitProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[1];
   }
 
@@ -157,7 +153,7 @@ library ProofLib {
    * @param _p The ragequit proof containing the public signals
    * @return The nullifier hash
    */
-  function nullifierHash(RagequitProof memory _p) public pure returns (uint256) {
+  function nullifierHash(RagequitProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[2];
   }
 
@@ -166,7 +162,7 @@ library ProofLib {
    * @param _p The ragequit proof containing the public signals
    * @return The commitment value
    */
-  function value(RagequitProof memory _p) public pure returns (uint256) {
+  function value(RagequitProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[3];
   }
 
@@ -175,7 +171,7 @@ library ProofLib {
    * @param _p The ragequit proof containing the public signals
    * @return The commitment label
    */
-  function label(RagequitProof memory _p) public pure returns (uint256) {
+  function label(RagequitProof memory _p) internal pure returns (uint256) {
     return _p.pubSignals[4];
   }
 }

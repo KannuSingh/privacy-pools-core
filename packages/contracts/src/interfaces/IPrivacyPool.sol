@@ -17,12 +17,10 @@ interface IPrivacyPool is IState {
    * @notice Struct for the withdrawal request
    * @dev The integrity of this data is ensured by the `context` signal in the proof
    * @param processooor The allowed address to process the withdrawal
-   * @param scope The unique pool identifier
    * @param data Encoded arbitrary data used by the Entrypoint
    */
   struct Withdrawal {
     address processooor;
-    uint256 scope;
     bytes data;
   }
 
@@ -80,7 +78,12 @@ interface IPrivacyPool is IState {
   /**
    * @notice Thrown when calling `withdraw` while not being the allowed processooor
    */
-  error InvalidProcesooor();
+  error InvalidProcessooor();
+
+  /**
+   * @notice Thrown when calling `withdraw` with a ASP or state tree depth greater or equal than the max tree depth
+   */
+  error InvalidTreeDepth();
 
   /**
    * @notice Thrown when providing an invalid scope for this pool
@@ -106,11 +109,6 @@ interface IPrivacyPool is IState {
    * @notice Thrown when trying to ragequit while not being the original depositor
    */
   error OnlyOriginalDepositor();
-
-  /**
-   * @notice Thrown when trying to set a state variable as address zero
-   */
-  error ZeroAddress();
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
@@ -150,22 +148,6 @@ interface IPrivacyPool is IState {
    * @dev Only callable by the Entrypoint
    */
   function windDown() external;
-
-  /*///////////////////////////////////////////////////////////////
-                              VIEWS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Returns the pool unique identifier
-   * @return _scope The scope id
-   */
-  function SCOPE() external view returns (uint256 _scope);
-
-  /**
-   * @notice Returns the pool asset
-   * @return _asset The asset address
-   */
-  function ASSET() external view returns (address _asset);
 }
 
 /**
@@ -201,4 +183,9 @@ interface IPrivacyPoolComplex is IPrivacyPool {
    * @notice Thrown when sending sending any amount of native asset
    */
   error NativeAssetNotAccepted();
+
+  /**
+   * @notice Thrown when trying to set up a complex pool with the native asset
+   */
+  error NativeAssetNotSupported();
 }

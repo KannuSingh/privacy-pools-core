@@ -35,23 +35,20 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   using ProofLib for ProofLib.WithdrawProof;
   using ProofLib for ProofLib.RagequitProof;
 
-  /// @inheritdoc IPrivacyPool
-  uint256 public immutable SCOPE;
-
-  /// @inheritdoc IPrivacyPool
-  address public immutable ASSET;
-
   /**
    * @notice Does a series of sanity checks on the proof public signals
    */
   modifier validWithdrawal(Withdrawal memory _withdrawal, ProofLib.WithdrawProof memory _proof) {
     // Check caller is the allowed processooor
-    if (msg.sender != _withdrawal.processooor) revert InvalidProcesooor();
+    if (msg.sender != _withdrawal.processooor) revert InvalidProcessooor();
 
     // Check the context matches to ensure its integrity
     if (_proof.context() != uint256(keccak256(abi.encode(_withdrawal, SCOPE))) % Constants.SNARK_SCALAR_FIELD) {
       revert ContextMismatch();
     }
+
+    // Check the tree depth signals are less than the max tree depth
+    if (_proof.stateTreeDepth() > MAX_TREE_DEPTH || _proof.ASPTreeDepth() > MAX_TREE_DEPTH) revert InvalidTreeDepth();
 
     // Check the state root is known
     if (!_isKnownRoot(_proof.stateRoot())) revert UnknownStateRoot();
@@ -73,18 +70,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     address _withdrawalVerifier,
     address _ragequitVerifier,
     address _asset
-  ) State(_entrypoint, _withdrawalVerifier, _ragequitVerifier) {
-    // Sanitize initial addresses
-    if (_asset == address(0)) revert ZeroAddress();
-    if (_entrypoint == address(0)) revert ZeroAddress();
-    if (_ragequitVerifier == address(0)) revert ZeroAddress();
-    if (_withdrawalVerifier == address(0)) revert ZeroAddress();
-
-    // Store asset address
-    ASSET = _asset;
-    // Compute SCOPE
-    SCOPE = uint256(keccak256(abi.encodePacked(address(this), block.chainid, _asset))) % Constants.SNARK_SCALAR_FIELD;
-  }
+  ) State(_asset, _entrypoint, _withdrawalVerifier, _ragequitVerifier) {}
 
   /*///////////////////////////////////////////////////////////////
                              USER METHODS 
@@ -101,8 +87,8 @@ abstract contract PrivacyPool is State, IPrivacyPool {
 
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce))) % Constants.SNARK_SCALAR_FIELD;
-    // Store depositor and ragequit cooldown
-    deposits[_label] = Deposit(_depositor, _value, block.timestamp + 1 weeks);
+    // Store depositor
+    depositors[_label] = _depositor;
 
     // Compute commitment hash
     _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
@@ -142,7 +128,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
   function ragequit(ProofLib.RagequitProof memory _proof) external {
     // Check if caller is original depositor
     uint256 _label = _proof.label();
-    if (deposits[_label].depositor != msg.sender) revert OnlyOriginalDepositor();
+    if (depositors[_label] != msg.sender) revert OnlyOriginalDepositor();
 
     // Verify proof with Groth16 verifier
     if (!RAGEQUIT_VERIFIER.verifyProof(_proof.pA, _proof.pB, _proof.pC, _proof.pubSignals)) revert InvalidProof();
@@ -150,7 +136,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Check commitment exists in state
     if (!_isInState(_proof.commitmentHash())) revert InvalidCommitment();
 
-    // Mark nullifier hash as pending for ragequit
+    // Mark existing commitment nullifier as spent
     _spend(_proof.nullifierHash());
 
     // Transfer out funds to ragequitter

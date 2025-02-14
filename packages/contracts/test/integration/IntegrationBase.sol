@@ -235,10 +235,8 @@ contract IntegrationBase is Test {
     assertEq(_balance(address(_pool), _params.asset), _poolInitialBalance + _commitment.value, 'Pool balance mismatch');
 
     // Check deposit stored values
-    (address _depositor, uint256 _value, uint256 _cooldownExpiry) = _pool.deposits(_commitment.label);
+    address _depositor = _pool.depositors(_commitment.label);
     assertEq(_depositor, _params.depositor, 'Incorrect depositor');
-    assertEq(_value, _commitment.value, 'Incorrect deposit value');
-    assertEq(_cooldownExpiry, block.timestamp + 1 weeks, 'Incorrect deposit cooldown expiry');
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -250,8 +248,7 @@ contract IntegrationBase is Test {
     IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
 
     // Build `Withdrawal` object for direct withdrawal
-    IPrivacyPool.Withdrawal memory _withdrawal =
-      IPrivacyPool.Withdrawal({processooor: _params.recipient, scope: _pool.SCOPE(), data: ''});
+    IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({processooor: _params.recipient, data: ''});
 
     // Withdraw
     _commitment = _withdraw(_params.recipient, _pool, _withdrawal, _params, true);
@@ -264,7 +261,6 @@ contract IntegrationBase is Test {
     // Build `Withdrawal` object for relayed withdrawal
     IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({
       processooor: address(_entrypoint),
-      scope: _pool.SCOPE(),
       data: abi.encode(_params.recipient, _RELAYER, _VETTING_FEE_BPS)
     });
 
@@ -311,13 +307,15 @@ contract IntegrationBase is Test {
       })
     );
 
+    uint256 _scope = _pool.SCOPE();
+
     // Process withdrawal
     vm.prank(_caller);
     if (_params.revertReason != NONE) vm.expectRevert(_params.revertReason);
     if (_direct) {
       _pool.withdraw(_withdrawal, _proof);
     } else {
-      _entrypoint.relay(_withdrawal, _proof);
+      _entrypoint.relay(_withdrawal, _proof, _scope);
     }
 
     if (_params.revertReason == NONE) {
