@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-import { ethers } from "ethers";
 import {
   PrivacyPoolSDK,
   Circuits,
   getCommitment,
 } from "@defi-wonderland/privacy-pool-core-sdk";
-import { encodeAbiParameters } from "viem";
+import { encodeAbiParameters, decodeAbiParameters } from "viem";
 
 function padSiblings(siblings, treeDepth) {
   const paddedSiblings = [...siblings];
@@ -60,13 +59,13 @@ async function main() {
     const circuits = new Circuits();
     const sdk = new PrivacyPoolSDK(circuits);
 
-    const abiCoder = new ethers.AbiCoder();
-    const stateMerkleProof = abiCoder.decode(
-      ["uint256", "uint256", "uint256[]"],
+    const stateMerkleProof = decodeAbiParameters(
+      [{ type: "uint256" }, { type: "uint256" }, { type: "uint256[]" }],
       stateMerkleProofHex,
     );
-    const aspMerkleProof = abiCoder.decode(
-      ["uint256", "uint256", "uint256[]"],
+
+    const aspMerkleProof = decodeAbiParameters(
+      [{ type: "uint256" }, { type: "uint256" }, { type: "uint256[]" }],
       aspMerkleProofHex,
     );
 

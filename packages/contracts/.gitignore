@@ -23,6 +23,7 @@ crytic-export
 
 # Echidna corpus
 test/invariants/fuzz/echidna_coverage
+*/**/corpus
 
 # Coverage files
 lcov.info

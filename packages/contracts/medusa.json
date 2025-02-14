@@ -6,14 +6,19 @@
 		"testLimit": 0,
 		"shrinkLimit": 5000,
 		"callSequenceLength": 100,
-		"corpusDirectory": "",
+		"corpusDirectory": "test/invariants/fuzz/corpus",
 		"coverageEnabled": true,
 		"coverageFormats": [
 			"html",
 			"lcov"
 		],
 		"targetContracts": ["FuzzTest"],
-		"predeployedContracts": {},
+		"predeployedContracts": {
+			"Constants": "0xf01",
+			"ProofLib": "0xf02",
+			"PoseidonT3": "0xf03",
+			"PoseidonT4": "0xf04"
+		},
 		"targetContractsBalances": [],
 		"constructorArgs": {},
 		"deployerAddress": "0x30000",
@@ -38,7 +43,7 @@
 				"panicCodeConfig": {
 					"failOnCompilerInsertedPanic": false,
 					"failOnAssertion": true,
-					"failOnArithmeticUnderflow": false,
+					"failOnArithmeticUnderflow": true,
 					"failOnDivideByZero": false,
 					"failOnEnumTypeConversionOutOfBounds": false,
 					"failOnIncorrectStorageAccess": false,
@@ -78,7 +83,10 @@
 			"target": "test/invariants/fuzz/FuzzTest.t.sol",
 			"solcVersion": "",
 			"exportDirectory": "",
-			"args": []
+			"args": [
+				"--foundry-compile-all",
+				"--compile-libraries=(Constants,0xf01),(ProofLib,0xf02),(PoseidonT3,0xf03),(PoseidonT4,0xf04)"
+			]
 		}
 	},
 	"logging": {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { ethers } from "ethers";
+import { encodeAbiParameters } from "viem";
 import { generateMerkleProof } from "@defi-wonderland/privacy-pool-core-sdk";
 
 // Function to temporarily redirect stdout
@@ -41,15 +41,18 @@ async function main() {
     const proof = await silentGenerateProof();
     proof.index = Object.is(proof.index, NaN) ? 0 : proof.index;
 
-    const abiCoder = new ethers.AbiCoder();
-    const encodedProof = abiCoder.encode(
-      ["uint256", "uint256", "uint256[]"],
+    const encodedProof = encodeAbiParameters(
+      [
+        { name: "root", type: "uint256" },
+        { name: "index", type: "uint256" },
+        { name: "siblings", type: "uint256[]" },
+      ],
       [proof.root, proof.index, proof.siblings],
     );
 
     process.stdout.write(encodedProof);
     process.exit(0);
-  } catch {
+  } catch (e) {
     // Exit silently on any error
     process.exit(1);
   }
