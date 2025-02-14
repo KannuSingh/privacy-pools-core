@@ -162,10 +162,13 @@ contract UnitEntrypoint is Test {
     _afterFees = _amount - (_amount * _feeBPS) / 10_000;
   }
 
-  function _assumeFuzzable(address _address) internal pure {
+  function _assumeFuzzable(address _address) internal view {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
     assumeNotPrecompile(_address);
+    vm.assume(_address != address(_entrypoint));
+    vm.assume(_address != _impl);
+    vm.assume(_address != address(10));
   }
 }
 
@@ -277,6 +280,7 @@ contract UnitDeposit is UnitEntrypoint {
     )
   {
     _assumeFuzzable(_depositor);
+    vm.assume(_depositor != address(_entrypoint));
 
     (IPrivacyPool _pool, uint256 _minDeposit, uint256 _vettingFeeBPS) = _entrypoint.assetConfig(IERC20(_ETH));
     // Can't be too big, otherwise overflows
@@ -444,8 +448,6 @@ contract UnitRelay is UnitEntrypoint {
     _assumeFuzzable(_params.feeRecipient);
 
     vm.assume(_params.recipient != _params.feeRecipient);
-    vm.assume(_params.recipient != address(_entrypoint));
-    vm.assume(_params.feeRecipient != address(_entrypoint));
 
     // Configure withdrawal parameters within valid bounds
     _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
@@ -523,13 +525,7 @@ contract UnitRelay is UnitEntrypoint {
     _assumeFuzzable(_params.recipient);
     _assumeFuzzable(_params.feeRecipient);
 
-    // NOTE: somehow, the PointEvaluation address is not filtered
-    vm.assume(_params.recipient != address(10));
-    vm.assume(_params.feeRecipient != address(10));
-
     vm.assume(_params.recipient != _params.feeRecipient);
-    vm.assume(_params.recipient != address(_entrypoint));
-    vm.assume(_params.feeRecipient != address(_entrypoint));
     vm.assume(_params.amount != 0);
 
     // Configure ETH pool and parameters
@@ -600,11 +596,6 @@ contract UnitRelay is UnitEntrypoint {
     // Setup test with valid recipients and amount
     _assumeFuzzable(_params.recipient);
     _assumeFuzzable(_params.feeRecipient);
-
-    // NOTE: somehow, the PointEvaluation address is not filtered
-    vm.assume(_params.recipient != address(10));
-    vm.assume(_params.feeRecipient != address(10));
-
     vm.assume(_params.amount != 0);
 
     // Configure ETH pool with faulty behavior
@@ -1067,9 +1058,6 @@ contract UnitWithdrawFees is UnitEntrypoint {
   function test_WithdrawFeesWhenETHBalanceExists(uint256 _balance, address _recipient) external givenCallerHasOwnerRole {
     // Setup test with valid recipient and non-zero balance
     _assumeFuzzable(_recipient);
-    vm.assume(_recipient != address(10));
-    vm.assume(_recipient != address(_entrypoint));
-    vm.assume(_recipient != address(_impl));
     vm.assume(_balance != 0);
     vm.deal(address(_entrypoint), _balance);
 
@@ -1101,9 +1089,6 @@ contract UnitWithdrawFees is UnitEntrypoint {
   function test_WithdrawFeesWhenETHTransferFails(uint256 _balance, address _recipient) external givenCallerHasOwnerRole {
     // Setup test with valid recipient and non-zero balance
     _assumeFuzzable(_recipient);
-    vm.assume(_recipient != (address(10)));
-    vm.assume(_recipient != address(_entrypoint));
-    vm.assume(_recipient != _impl);
     vm.assume(_balance != 0);
     vm.deal(address(_entrypoint), _balance);
 
@@ -1259,6 +1244,8 @@ contract UnitAccessControl is UnitEntrypoint {
    * @notice Test that the OWNER_ROLE can manage other roles
    */
   function test_ownerRole(address _notOwner, address _account) public {
+    vm.assume(_notOwner != _OWNER);
+
     // Not owner can't manager OWNER_ROLE
     vm.expectRevert(
       abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, _notOwner, OWNER_ROLE)
@@ -1326,6 +1313,8 @@ contract UnitAccessControl is UnitEntrypoint {
    * @notice Test that the DEFAULT_ADMIN_ROLE can't manage other roles
    */
   function test_defaultAdminRole(address _defaultAdmin, address _account) public {
+    vm.assume(_defaultAdmin != _OWNER);
+
     vm.prank(_OWNER);
     _entrypoint.grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
 
@@ -1372,11 +1361,7 @@ contract UnitReentrancy is UnitEntrypoint {
     ////////////////////////////////////////// RELAY SETUP : IGNORE ////////////////////////////////////////
     _assumeFuzzable(_params.recipient);
     _assumeFuzzable(_params.feeRecipient);
-    vm.assume(_params.recipient != address(10));
-    vm.assume(_params.feeRecipient != address(10));
     vm.assume(_params.recipient != _params.feeRecipient);
-    vm.assume(_params.recipient != address(_entrypoint));
-    vm.assume(_params.feeRecipient != address(_entrypoint));
     vm.assume(_params.amount != 0);
     _params.asset = _ETH;
     _params.pool = address(new PrivacyPoolETHForTest());

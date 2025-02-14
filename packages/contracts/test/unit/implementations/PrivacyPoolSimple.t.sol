@@ -152,7 +152,8 @@ contract UnitPush is UnitPrivacyPoolSimple {
    */
   function test_Push(address _recipient, uint256 _amount) external {
     // Setup test with valid amount and non-precompile recipient
-    vm.assume(_amount > 0);
+    // Bounding to avoid balance overflow
+    _amount = _bound(_amount, 0, type(uint128).max);
     vm.assume(_recipient > address(10) && _recipient.code.length == 0);
 
     // Setup initial state and record balances
