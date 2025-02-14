@@ -6,6 +6,7 @@
   "license": "MIT",
   "author": "Wonderland",
   "scripts": {
+    "assignrole:sepolia": "bash -c 'source .env && forge script script/Entrypoint.s.sol:AssignRole --account $SEPOLIA_DEPLOYER_NAME --rpc-url $SEPOLIA_RPC -vv $0'",
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",

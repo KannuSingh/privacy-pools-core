@@ -56,11 +56,16 @@ contract RegisterPool is Script {
   }
 }
 
+/**
+ * @notice Script to update an ASP root.
+ */
 contract UpdateRoot is Script {
   // @notice The deployed Entrypoint
   Entrypoint public entrypoint;
 
+  // @notice Placeholder IPFS hash
   bytes32 public IPFS_HASH = keccak256('ipfs_hash');
+  // @notice New computed root
   uint256 public newRoot;
 
   function setUp() public {
@@ -68,10 +73,11 @@ contract UpdateRoot is Script {
     entrypoint = Entrypoint(payable(vm.envAddress('ENTRYPOINT_ADDRESS')));
 
     // Build merkle tree and compute root
-    newRoot = computeMerkleRoot();
+    newRoot = _computeMerkleRoot();
   }
 
-  function computeMerkleRoot() internal returns (uint256) {
+  // @notice Compute merkle root using LeanIMT lib
+  function _computeMerkleRoot() internal returns (uint256) {
     string[] memory runCommand = new string[](2);
     runCommand[0] = 'node';
     runCommand[1] = 'script/utils/tree.mjs';
@@ -85,8 +91,51 @@ contract UpdateRoot is Script {
   function run() public {
     vm.startBroadcast();
 
-    // Register pool
+    // Update root
     entrypoint.updateRoot(newRoot, IPFS_HASH);
+
+    vm.stopBroadcast();
+  }
+}
+
+/**
+ * @notice Script to assign a role in the Entrypoint.
+ */
+contract AssignRole is Script {
+  // @notice Owner role
+  bytes32 internal constant _OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
+  // @notice Postman role
+  bytes32 internal constant _ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
+
+  // @notice The deployed Entrypoint
+  Entrypoint public entrypoint;
+
+  // @notice Account to assign the role to
+  address internal _account;
+  // @notice Role to assign
+  bytes32 internal _role;
+
+  error InvalidRoleID();
+
+  function setUp() public {
+    // Read the Entrypoint address from environment
+    entrypoint = Entrypoint(payable(vm.envAddress('ENTRYPOINT_ADDRESS')));
+
+    // Ask the user for the account to assign the role to
+    _account = vm.parseAddress(vm.prompt('Enter account'));
+
+    // Ask the user for the role to assign
+    uint256 _roleId = vm.parseUint(vm.prompt('Select role [owner: 0, postman: 1]'));
+    if (_roleId > 1) revert InvalidRoleID();
+    _role = _roleId == 0 ? _OWNER_ROLE : _ASP_POSTMAN;
+  }
+
+  // @dev Must be called with the `--account` flag which acts as the caller
+  function run() public {
+    vm.startBroadcast();
+
+    // Grant role to account
+    entrypoint.grantRole(_role, _account);
 
     vm.stopBroadcast();
   }
