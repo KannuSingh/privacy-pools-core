@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "A simple note relayer",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Wonderland",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -29,11 +29,11 @@
     "lint:fix": "eslint \"{src,test}/**/*.{js,ts,json}\" --fix",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
-    "docker:build": "docker-compose build",
+    "docker:build": "cd ../circuits && yarn present && cd ../relayer && docker-compose build --no-cache",
     "docker:run": "docker-compose up"
   },
   "dependencies": {
-    "@defi-wonderland/privacy-pool-core-sdk": "0.0.0-febd6b85",
+    "@defi-wonderland/privacy-pool-core-sdk": "0.0.0-bc6bbf37",
     "ajv": "8.17.1",
     "body-parser": "1.20.3",
     "express": "4.21.2",

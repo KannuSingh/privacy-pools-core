@@ -119,3 +119,6 @@ tmp.ptau
 # ignore auto generated test circuits
 circuits/test
 ptau
+
+# artifacts
+artifacts/**

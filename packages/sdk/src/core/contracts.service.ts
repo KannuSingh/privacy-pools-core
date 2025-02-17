@@ -185,7 +185,7 @@ export class ContractInteractionsService implements ContractInteractions {
         address: this.entrypointAddress,
         abi: [...(IEntrypointABI as Abi), ...(IPrivacyPoolABI as Abi)],
         functionName: "relay",
-        account: this.account.address as Address,
+        account: this.account,
         args: [withdrawal, formattedProof, scope],
       });
 

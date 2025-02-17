@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Circom circuits for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Wonderland",
   "scripts": {
     "compile": "npx ts-node ./src/index.ts",

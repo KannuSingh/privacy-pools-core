@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Typescript SDK for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Wonderland",
   "type": "module",
   "main": "./dist/node/index.mjs",
@@ -57,6 +57,7 @@
     "@zk-kit/lean-imt": "2.2.2",
     "maci-crypto": "2.5.0",
     "snarkjs": "0.7.5",
+    "typescript": "^5.7.3",
     "viem": "2.22.14"
   },
   "devDependencies": {

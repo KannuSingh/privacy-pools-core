@@ -6,7 +6,7 @@
     "type": "git",
     "url": "git+https://github.com/defi-wonderland/privacy-pool-core.git"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Wonderland",
   "private": true,
   "workspaces": [

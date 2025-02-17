@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Solidity smart contracts for the Privacy Pool protocol",
   "repository": "https://github.com/defi-wonderland/privacy-pool-core",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Wonderland",
   "scripts": {
     "assignrole:sepolia": "bash -c 'source .env && forge script script/Entrypoint.s.sol:AssignRole --account $SEPOLIA_DEPLOYER_NAME --rpc-url $SEPOLIA_RPC -vv $0'",
@@ -23,7 +23,7 @@
     "test:symbolic": "echo 'update this yarn script when symbolic testing is implemented'",
     "test:unit": "forge test --match-contract Unit -vvv",
     "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit",
-    "updateroot:sepolia": "bash -c 'source .env && forge script script/Entrypoint.s.sol:UpdateRoot --ffi --account $SEPOLIA_DEPLOYER_NAME --rpc-url $SEPOLIA_RPC -vv $0'"
+    "updateroot:sepolia": "bash -c 'source .env && forge script script/Entrypoint.s.sol:UpdateRoot --ffi --account $SEPOLIA_POSTMAN --rpc-url $SEPOLIA_RPC -vv $0'"
   },
   "lint-staged": {
     "*.{js,css,md,ts,sol}": "forge fmt",
@@ -31,7 +31,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/privacy-pool-core-sdk": "^0.0.0-febd6b85",
+    "@defi-wonderland/privacy-pool-core-sdk": "^0.0.0-bc6bbf37",
     "@openzeppelin/contracts": "5.1.0",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@openzeppelin/foundry-upgrades": "0.3.6",
