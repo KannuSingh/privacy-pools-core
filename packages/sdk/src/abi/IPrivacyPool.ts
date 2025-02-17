@@ -3,7 +3,7 @@ export const IPrivacyPoolABI = [
     type: "function",
     name: "ASSET",
     inputs: [],
-    outputs: [{ name: "_asset", type: "address", internalType: "address" }],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
     stateMutability: "view",
   },
   {
@@ -12,7 +12,7 @@ export const IPrivacyPoolABI = [
     inputs: [],
     outputs: [
       {
-        name: "_entrypoint",
+        name: "",
         type: "address",
         internalType: "contract IEntrypoint",
       },
@@ -21,14 +21,17 @@ export const IPrivacyPoolABI = [
   },
   {
     type: "function",
+    name: "MAX_TREE_DEPTH",
+    inputs: [],
+    outputs: [{ name: "", type: "uint32", internalType: "uint32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "RAGEQUIT_VERIFIER",
     inputs: [],
     outputs: [
-      {
-        name: "_verifier",
-        type: "address",
-        internalType: "contract IVerifier",
-      },
+      { name: "", type: "address", internalType: "contract IVerifier" },
     ],
     stateMutability: "view",
   },
@@ -36,21 +39,14 @@ export const IPrivacyPoolABI = [
     type: "function",
     name: "ROOT_HISTORY_SIZE",
     inputs: [],
-    outputs: [{ name: "_size", type: "uint32", internalType: "uint32" }],
+    outputs: [{ name: "", type: "uint32", internalType: "uint32" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "SCOPE",
     inputs: [],
-    outputs: [{ name: "_scope", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "VERSION",
-    inputs: [],
-    outputs: [{ name: "_version", type: "string", internalType: "string" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -58,26 +54,43 @@ export const IPrivacyPoolABI = [
     name: "WITHDRAWAL_VERIFIER",
     inputs: [],
     outputs: [
-      {
-        name: "_verifier",
-        type: "address",
-        internalType: "contract IVerifier",
-      },
+      { name: "", type: "address", internalType: "contract IVerifier" },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "currentRoot",
+    inputs: [],
+    outputs: [{ name: "_root", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "currentRootIndex",
     inputs: [],
-    outputs: [{ name: "_index", type: "uint32", internalType: "uint32" }],
+    outputs: [{ name: "", type: "uint32", internalType: "uint32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "currentTreeDepth",
+    inputs: [],
+    outputs: [{ name: "_depth", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "currentTreeSize",
+    inputs: [],
+    outputs: [{ name: "_size", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "dead",
     inputs: [],
-    outputs: [{ name: "_dead", type: "bool", internalType: "bool" }],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
     stateMutability: "view",
   },
   {
@@ -86,7 +99,11 @@ export const IPrivacyPoolABI = [
     inputs: [
       { name: "_depositor", type: "address", internalType: "address" },
       { name: "_value", type: "uint256", internalType: "uint256" },
-      { name: "_precommitment", type: "uint256", internalType: "uint256" },
+      {
+        name: "_precommitmentHash",
+        type: "uint256",
+        internalType: "uint256",
+      },
     ],
     outputs: [
       { name: "_commitment", type: "uint256", internalType: "uint256" },
@@ -95,12 +112,10 @@ export const IPrivacyPoolABI = [
   },
   {
     type: "function",
-    name: "deposits",
+    name: "depositors",
     inputs: [{ name: "_label", type: "uint256", internalType: "uint256" }],
     outputs: [
-      { name: "_depositor", type: "address", internalType: "address" },
-      { name: "_amount", type: "uint256", internalType: "uint256" },
-      { name: "_whenRagequitteable", type: "uint256", internalType: "uint256" },
+      { name: "_depositooor", type: "address", internalType: "address" },
     ],
     stateMutability: "view",
   },
@@ -108,14 +123,18 @@ export const IPrivacyPoolABI = [
     type: "function",
     name: "nonce",
     inputs: [],
-    outputs: [{ name: "_nonce", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "nullifierHashes",
     inputs: [
-      { name: "_nullifierHash", type: "uint256", internalType: "uint256" },
+      {
+        name: "_nullifierHash",
+        type: "uint256",
+        internalType: "uint256",
+      },
     ],
     outputs: [{ name: "_spent", type: "bool", internalType: "bool" }],
     stateMutability: "view",
@@ -125,13 +144,25 @@ export const IPrivacyPoolABI = [
     name: "ragequit",
     inputs: [
       {
-        name: "_p",
+        name: "_proof",
         type: "tuple",
         internalType: "struct ProofLib.RagequitProof",
         components: [
-          { name: "pA", type: "uint256[2]", internalType: "uint256[2]" },
-          { name: "pB", type: "uint256[2][2]", internalType: "uint256[2][2]" },
-          { name: "pC", type: "uint256[2]", internalType: "uint256[2]" },
+          {
+            name: "pA",
+            type: "uint256[2]",
+            internalType: "uint256[2]",
+          },
+          {
+            name: "pB",
+            type: "uint256[2][2]",
+            internalType: "uint256[2][2]",
+          },
+          {
+            name: "pC",
+            type: "uint256[2]",
+            internalType: "uint256[2]",
+          },
           {
             name: "pubSignals",
             type: "uint256[5]",
@@ -162,23 +193,38 @@ export const IPrivacyPoolABI = [
     name: "withdraw",
     inputs: [
       {
-        name: "_w",
+        name: "_withdrawal",
         type: "tuple",
         internalType: "struct IPrivacyPool.Withdrawal",
         components: [
-          { name: "processooor", type: "address", internalType: "address" },
-          { name: "scope", type: "uint256", internalType: "uint256" },
+          {
+            name: "processooor",
+            type: "address",
+            internalType: "address",
+          },
           { name: "data", type: "bytes", internalType: "bytes" },
         ],
       },
       {
-        name: "_p",
+        name: "_proof",
         type: "tuple",
         internalType: "struct ProofLib.WithdrawProof",
         components: [
-          { name: "pA", type: "uint256[2]", internalType: "uint256[2]" },
-          { name: "pB", type: "uint256[2][2]", internalType: "uint256[2][2]" },
-          { name: "pC", type: "uint256[2]", internalType: "uint256[2]" },
+          {
+            name: "pA",
+            type: "uint256[2]",
+            internalType: "uint256[2]",
+          },
+          {
+            name: "pB",
+            type: "uint256[2][2]",
+            internalType: "uint256[2][2]",
+          },
+          {
+            name: "pC",
+            type: "uint256[2]",
+            internalType: "uint256[2]",
+          },
           {
             name: "pubSignals",
             type: "uint256[8]",
@@ -318,8 +364,17 @@ export const IPrivacyPoolABI = [
   { type: "error", name: "ContextMismatch", inputs: [] },
   { type: "error", name: "IncorrectASPRoot", inputs: [] },
   { type: "error", name: "InvalidCommitment", inputs: [] },
-  { type: "error", name: "InvalidProcesooor", inputs: [] },
+  { type: "error", name: "InvalidProcessooor", inputs: [] },
   { type: "error", name: "InvalidProof", inputs: [] },
+  { type: "error", name: "InvalidTreeDepth", inputs: [] },
+  { type: "error", name: "LeafAlreadyExists", inputs: [] },
+  { type: "error", name: "LeafCannotBeZero", inputs: [] },
+  {
+    type: "error",
+    name: "LeafGreaterThanSnarkScalarField",
+    inputs: [],
+  },
+  { type: "error", name: "MaxTreeDepthReached", inputs: [] },
   { type: "error", name: "NotYetRagequitteable", inputs: [] },
   { type: "error", name: "NullifierAlreadySpent", inputs: [] },
   { type: "error", name: "OnlyEntrypoint", inputs: [] },

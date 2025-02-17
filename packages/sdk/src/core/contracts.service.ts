@@ -176,6 +176,7 @@ export class ContractInteractionsService implements ContractInteractions {
   async relay(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
+    scope: Hash,
   ): Promise<TransactionResponse> {
     try {
       const formattedProof = this.formatProof(withdrawalProof);
@@ -185,7 +186,7 @@ export class ContractInteractionsService implements ContractInteractions {
         abi: [...(IEntrypointABI as Abi), ...(IPrivacyPoolABI as Abi)],
         functionName: "relay",
         account: this.account.address as Address,
-        args: [withdrawal, formattedProof],
+        args: [withdrawal, formattedProof, scope],
       });
 
       return await this.executeTransaction(request);

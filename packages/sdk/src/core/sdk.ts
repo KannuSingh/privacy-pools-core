@@ -25,13 +25,12 @@ export class PrivacyPoolSDK {
     entrypointAddress: Address,
     privateKey: Hex,
   ): ContractInteractionsService {
-    const contractInteractionsService = new ContractInteractionsService(
+    return new ContractInteractionsService(
       rpcUrl,
       chain,
       entrypointAddress,
       privateKey,
     );
-    return contractInteractionsService;
   }
 
   /**
@@ -76,11 +75,7 @@ export class PrivacyPoolSDK {
     commitment: Commitment,
     input: WithdrawalProofInput,
   ): Promise<WithdrawalProof> {
-    const withdrawalProof = await this.withdrawalService.proveWithdrawal(
-      commitment,
-      input,
-    );
-    return withdrawalProof;
+    return await this.withdrawalService.proveWithdrawal(commitment, input);
   }
 
   /**

@@ -351,10 +351,10 @@
     solc-typed-ast "18.1.6"
     yargs "17.7.2"
 
-"@defi-wonderland/privacy-pool-core-sdk@0.0.0-6d725b16", "@defi-wonderland/privacy-pool-core-sdk@^0.0.0-6d725b16":
-  version "0.0.0-6d725b16"
-  resolved "https://npm.pkg.github.com/download/@defi-wonderland/privacy-pool-core-sdk/0.0.0-6d725b16/8d562f2c1126716a45cb74159670372239d3b977#8d562f2c1126716a45cb74159670372239d3b977"
-  integrity sha512-BZwBzEM+40zthjjZZ/b6+niKEn57NKyGR8PnhYbIsy1TuKYKjtDhGUbpWA9rJFF+kN3pAILzatlYWy38MTH26Q==
+"@defi-wonderland/privacy-pool-core-sdk@0.0.0-febd6b85", "@defi-wonderland/privacy-pool-core-sdk@^0.0.0-febd6b85":
+  version "0.0.0-febd6b85"
+  resolved "https://npm.pkg.github.com/download/@defi-wonderland/privacy-pool-core-sdk/0.0.0-febd6b85/a93a34744093ead2257dd8f078faccd25d050234#a93a34744093ead2257dd8f078faccd25d050234"
+  integrity sha512-aIdlOm/vrt87/TxZ/GywI1obFKLBaPc/cTmuV9lFSd1tGQb3BafgNYrryCCcmrLAlNxZ8p88xHDJVywxW0mJhA==
   dependencies:
     "@types/snarkjs" "0.7.9"
     "@zk-kit/lean-imt" "2.2.2"

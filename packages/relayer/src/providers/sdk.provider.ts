@@ -66,6 +66,7 @@ export class SdkProvider implements SdkProviderInterface {
     return this.contracts.relay(
       withdrawalPayload.withdrawal,
       withdrawalPayload.proof,
+      withdrawalPayload.scope as Hash,
     );
   }
 

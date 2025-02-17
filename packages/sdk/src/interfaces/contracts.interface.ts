@@ -35,6 +35,7 @@ export interface ContractInteractions {
   relay(
     withdrawal: Withdrawal,
     withdrawalProof: WithdrawalProof,
+    scope: Hash,
   ): Promise<TransactionResponse>;
 
   ragequit(
