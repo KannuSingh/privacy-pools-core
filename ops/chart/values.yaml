@@ -14,9 +14,7 @@ ingress:
 verbosity: WARN
 
 # Shared environment variables
-environment:
-- name: PORT
-  value: "8080"
+environment: []
 
 projectId: oxbow-406621
 namespace: default
