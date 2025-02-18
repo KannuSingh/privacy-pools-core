@@ -6,7 +6,8 @@ on:
       - "packages/relayer/**"
       - ".github/workflows/relayer.yml"
   push:
-    branches: [main, dev, setup-pipeline]
+    branches: [main, dev]
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -63,7 +64,6 @@ jobs:
       - name: Run tests with coverage
         run: yarn test:cov
   push-staging:
-    if: github.ref == 'refs/heads/setup-pipeline'
     name: Push Image to Staging
     runs-on: ubuntu-latest
     permissions: 
@@ -103,7 +103,6 @@ jobs:
             us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT }}/privacy-pools-core/staging/relayer:${{ github.sha }}
             us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT }}/privacy-pools-core/staging/relayer:latest
   deploy-staging:
-    if: github.ref == 'refs/heads/setup-pipeline'
     name: Deploy to Staging 
     runs-on: ubuntu-latest
     needs: [push-staging]
