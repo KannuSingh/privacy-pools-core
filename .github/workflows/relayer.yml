@@ -134,4 +134,5 @@ jobs:
       - name: 'Get cluster credentials'
         run: 'gcloud container clusters get-credentials ${{ vars.CLUSTER_NAME }} --region ${{ vars.REGION }}'
       - name: 'Deploy'
+        working-directory: ./
         run: 'helm upgrade --install ${{ vars.SERVICE_NAME }}-relayer ./ops/chart --set version=${{ github.sha }} --values ./ops/chart/values.testnet.yaml --values ./ops/chart/values.testnet.relayer.yaml'
