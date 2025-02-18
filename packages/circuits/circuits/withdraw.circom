@@ -91,18 +91,24 @@ template Withdraw(maxTreeDepth) {
   withdrawnValueRangeCheck.in <== withdrawnValue;
   _ <== withdrawnValueRangeCheck.out;
 
-  // 6. Compute new commitment
+  // 6. Check existing and new nullifier don't match
+  component nullifierEqualityCheck = IsEqual();
+  nullifierEqualityCheck.in[0] <== existingNullifier; 
+  nullifierEqualityCheck.in[1] <== newNullifier; 
+  nullifierEqualityCheck.out === 0;
+
+  // 7. Compute new commitment
   component newCommitmentHasher = CommitmentHasher();
   newCommitmentHasher.value <== remainingValue;
   newCommitmentHasher.label <== label;
   newCommitmentHasher.nullifier <== newNullifier;
   newCommitmentHasher.secret <== newSecret;
 
-  // 7. Output new commitment hash
+  // 8. Output new commitment hash
   newCommitmentHash <== newCommitmentHasher.commitment;
   _ <== newCommitmentHasher.precommitmentHash;
   _ <== newCommitmentHasher.nullifierHash;
 
-  // 8. Square context for integrity
+  // 9. Square context for integrity
   signal contextSquared <== context * context;
 }
