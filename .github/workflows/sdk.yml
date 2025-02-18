@@ -27,11 +27,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup .npmrc file
-        run: |
-          echo "@defi-wonderland:registry=https://npm.pkg.github.com" > .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.PKG_REGISTRY_TOKEN }}" >> .npmrc
-
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
 
