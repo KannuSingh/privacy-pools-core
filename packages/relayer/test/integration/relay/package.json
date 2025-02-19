@@ -2,7 +2,7 @@
   "name": "api-test",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "dependencies": {
     "viem": "2.22.14"
@@ -12,7 +12,7 @@
     "main": "node dist/main.js"
   },
   "devDependencies": {
-    "@defi-wonderland/privacy-pool-core-sdk": "0.1.0",
+    "@0xbow/privacy-pools-core-sdk": "0.1.5",
     "@types/node": "^22.13.0",
     "typescript": "5.5.4"
   }
