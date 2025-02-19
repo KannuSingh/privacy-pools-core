@@ -7,7 +7,7 @@ import {IEntrypoint} from 'interfaces/IEntrypoint.sol';
 
 contract HandlersEntrypoint is Setup {
   function handler_deposit(uint256 _amount) public {
-    _amount = clampLt(_amount, type(uint256).max / FEE_DENOMINATOR);
+    _amount = clampLt(_amount, type(uint128).max / FEE_DENOMINATOR);
 
     uint256 _poolBalanceBefore = token.balanceOf(address(tokenPool));
     uint256 _entrypointBalanceBefore = token.balanceOf(address(entrypoint));
