@@ -14,7 +14,7 @@ ingress:
 verbosity: WARN
 
 # Shared environment variables
-environment: []
+environment: 
 
 projectId: oxbow-406621
 namespace: default
