@@ -20,7 +20,7 @@ async function main() {
     file: "withdraw",
     template: "Withdraw",
     params: [32],
-    pubs: ["withdrawnValue", "stateRoot", "stateTreeDepth", "ASPRoot", "ASPTreeDepth", "context"],
+    pubs: ["withdrawnValue", "stateRoot", "ASPRoot", "context"],
   });
 
   // artifacts output at `build/merkleTree` directory
@@ -28,7 +28,7 @@ async function main() {
     file: "merkleTree",
     template: "LeanIMTInclusionProof",
     params: [32],
-    pubs: ["leaf", "leafIndex", "siblings", "actualDepth"],
+    pubs: ["leaf", "leafIndex", "siblings"],
   });
 }
 

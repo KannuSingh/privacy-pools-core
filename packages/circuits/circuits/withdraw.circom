@@ -18,9 +18,7 @@ template Withdraw(maxTreeDepth) {
 
   // Signals for merkle tree inclusion proofs
   signal input stateRoot;                        // A known state root
-  signal input stateTreeDepth;                   // Current state tree depth
   signal input ASPRoot;                          // Latest ASP root
-  signal input ASPTreeDepth;                     // Current ASP tree depth
   signal input context;                          // keccak256(IPrivacyPool.Withdrawal, scope) % SNARK_SCALAR_FIELD
 
   //////////////////// END OF PUBLIC SIGNALS ////////////////////
@@ -68,7 +66,6 @@ template Withdraw(maxTreeDepth) {
   stateRootChecker.leaf <== existingCommitment;
   stateRootChecker.leafIndex <== stateIndex;
   stateRootChecker.siblings <== stateSiblings;
-  stateRootChecker.actualDepth <== stateTreeDepth;
 
   stateRoot === stateRootChecker.out;
 
@@ -77,7 +74,6 @@ template Withdraw(maxTreeDepth) {
   ASPRootChecker.leaf <== label;
   ASPRootChecker.leafIndex <== ASPIndex;
   ASPRootChecker.siblings <== ASPSiblings;
-  ASPRootChecker.actualDepth <== ASPTreeDepth;
 
   ASPRoot === ASPRootChecker.out;
 
