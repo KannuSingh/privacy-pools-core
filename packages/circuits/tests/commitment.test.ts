@@ -4,10 +4,7 @@ import { poseidon } from "../../../node_modules/maci-crypto/build/ts/hashing.js"
 import { parseEther, hexToBigInt, getAddress } from "viem";
 
 describe("CommitmentHasher Circuit", () => {
-  let circuit: WitnessTester<
-    ["value", "label", "nullifier", "secret"],
-    ["commitment", "precommitmentHash", "nullifierHash"]
-  >;
+  let circuit: WitnessTester<["value", "label", "nullifier", "secret"], ["commitment", "nullifierHash"]>;
 
   const depositor = getAddress("0x9F2db792a6F2dAdf25D894cEd791080950bDE56f");
   const NONCE = BigInt(1);
@@ -29,7 +26,7 @@ describe("CommitmentHasher Circuit", () => {
       secret: randomBigInt(),
     };
 
-    const [commitmentHash, precommitmentHash, nullifierHash] = hashCommitment(input);
+    const [commitmentHash, nullifierHash] = hashCommitment(input);
 
     await circuit.expectPass(
       {
@@ -38,7 +35,7 @@ describe("CommitmentHasher Circuit", () => {
         nullifier: input.nullifier,
         secret: input.secret,
       },
-      { commitment: commitmentHash, precommitmentHash, nullifierHash },
+      { commitment: commitmentHash, nullifierHash },
     );
   });
 
@@ -59,7 +56,7 @@ describe("CommitmentHasher Circuit", () => {
       secret: randomBigInt(),
     };
 
-    const [commitmentHash, precommitmentHash, nullifierHash] = hashCommitment(childInput);
+    const [commitmentHash, nullifierHash] = hashCommitment(childInput);
 
     await circuit.expectPass(
       {
@@ -68,7 +65,7 @@ describe("CommitmentHasher Circuit", () => {
         nullifier: childInput.nullifier,
         secret: childInput.secret,
       },
-      { commitment: commitmentHash, precommitmentHash, nullifierHash },
+      { commitment: commitmentHash, nullifierHash },
     );
   });
 
@@ -81,7 +78,7 @@ describe("CommitmentHasher Circuit", () => {
         secret: BigInt(0),
       };
 
-      const [commitmentHash, precommitmentHash, nullifierHash] = hashCommitment(input);
+      const [commitmentHash, nullifierHash] = hashCommitment(input);
 
       await circuit.expectPass(
         {
@@ -90,7 +87,7 @@ describe("CommitmentHasher Circuit", () => {
           nullifier: input.nullifier,
           secret: input.secret,
         },
-        { commitment: commitmentHash, precommitmentHash, nullifierHash },
+        { commitment: commitmentHash, nullifierHash },
       );
     });
 
@@ -105,7 +102,7 @@ describe("CommitmentHasher Circuit", () => {
         secret: P - BigInt(1),
       };
 
-      const [commitmentHash, precommitmentHash, nullifierHash] = hashCommitment(input);
+      const [commitmentHash, nullifierHash] = hashCommitment(input);
 
       await circuit.expectPass(
         {
@@ -114,7 +111,7 @@ describe("CommitmentHasher Circuit", () => {
           nullifier: input.nullifier,
           secret: input.secret,
         },
-        { commitment: commitmentHash, precommitmentHash, nullifierHash },
+        { commitment: commitmentHash, nullifierHash },
       );
     });
 
@@ -128,8 +125,8 @@ describe("CommitmentHasher Circuit", () => {
 
       const modified = { ...base, value: parseEther("2"), label: randomBigInt(), secret: randomBigInt() };
 
-      const [_, __, nullifierHash1] = hashCommitment(base);
-      const [___, ____, nullifierHash2] = hashCommitment(modified);
+      const [_, nullifierHash1] = hashCommitment(base);
+      const [___, nullifierHash2] = hashCommitment(modified);
 
       if (nullifierHash1 != nullifierHash2) {
         throw new Error("Nullifier hashes don't match");
@@ -166,16 +163,12 @@ describe("CommitmentHasher Circuit", () => {
         secret: randomBigInt(),
       };
 
-      const [hash1, pre1, null1] = hashCommitment(input);
-      const [hash2, pre2, null2] = hashCommitment(input);
-      const [hash3, pre3, null3] = hashCommitment(input);
+      const [hash1, null1] = hashCommitment(input);
+      const [hash2, null2] = hashCommitment(input);
+      const [hash3, null3] = hashCommitment(input);
 
       if (hash1 != hash2 || hash2 != hash3) {
         throw new Error("Commitment hashes don't match");
-      }
-
-      if (pre1 != pre2 || pre2 != pre3) {
-        throw new Error("Precommitment hashes don't match");
       }
 
       if (null1 != null2 || null2 != null3) {

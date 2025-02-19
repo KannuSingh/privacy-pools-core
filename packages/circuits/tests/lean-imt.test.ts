@@ -49,8 +49,33 @@ describe("LeanIMTInclusionProof Circuit", () => {
           siblings: padSiblings(stateProof.siblings, maxDepth),
           actualDepth: tree.depth,
         },
-        { out: tree.root }
+        { out: tree.root },
       );
+    }
+  });
+
+  it("Should fail when passing a tree depth greater than the max depth", async () => {
+    const LEAVES = 16;
+
+    let leavesIndexes = [];
+
+    // insert leaves
+    for (let i = 0; i < LEAVES; ++i) {
+      let leafValue = randomBigInt();
+      tree!.insert(leafValue);
+
+      leavesIndexes.push(tree.indexOf(leafValue));
+    }
+
+    for (let i = 0; i < LEAVES; ++i) {
+      let stateProof = tree.generateProof(i);
+
+      await circuit.expectFail({
+        leaf: stateProof.leaf,
+        leafIndex: stateProof.index,
+        siblings: padSiblings(stateProof.siblings, maxDepth),
+        actualDepth: maxDepth + 1,
+      });
     }
   });
 });

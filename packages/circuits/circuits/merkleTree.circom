@@ -23,14 +23,12 @@ template LeanIMTInclusionProof(maxDepth) {
     signal input leafIndex;          // The index of the leaf in the tree
     signal input siblings[maxDepth]; // The sibling values along the path to the root
     signal input actualDepth;        // Current tree depth (unused as |siblings| <= actualDepth)
-    _ <== actualDepth;               // Silence unused signal warning
 
     signal output out;               // The computed root value
 
     /////////////////// INTERNAL SIGNALS ///////////////////
 
     signal nodes[maxDepth + 1];      // Array to store computed node values at each level
-    // signal intermediateRoots[maxDepth + 1]; // Array to store intermediate root values
     signal indices[maxDepth];        // Array to store path indices for each level
 
     ////////////////// COMPONENT SIGNALS //////////////////
@@ -41,6 +39,12 @@ template LeanIMTInclusionProof(maxDepth) {
     component poseidons[maxDepth];
 
     /////////////////////// LOGIC ///////////////////////
+
+    // Check provided depth is valid according to the max depth 
+    component depthCheck = LessEqThan(6);
+    depthCheck.in[0] <== actualDepth;
+    depthCheck.in[1] <== maxDepth;
+    depthCheck.out === 1;
 
     // Convert leaf index to binary path
     component indexToPath = Num2Bits(maxDepth);
@@ -58,7 +62,7 @@ template LeanIMTInclusionProof(maxDepth) {
         hashInCorrectOrder[i].c <== childrenToSort;
         hashInCorrectOrder[i].s <== indices[i];
 
-        // hash the nodes
+        // Hash the nodes
         poseidons[i] = Poseidon(2);
         poseidons[i].inputs <== hashInCorrectOrder[i].out;
 
