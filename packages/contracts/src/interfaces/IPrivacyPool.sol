@@ -86,6 +86,11 @@ interface IPrivacyPool is IState {
   error InvalidTreeDepth();
 
   /**
+   * @notice Thrown when trying to deposit an amount higher than 2**128
+   */
+  error InvalidDepositValue();
+
+  /**
    * @notice Thrown when providing an invalid scope for this pool
    */
   error ScopeMismatch();
