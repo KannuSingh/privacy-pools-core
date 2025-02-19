@@ -23,8 +23,8 @@ spec:
   type: {{ .service.type }}
   ports:
     - port: {{ .service.port }}
-      targetPort: {{ .targetPort }}
-      protocol: {{ .protocol }}
+      targetPort: {{ .service.targetPort }}
+      protocol: {{ .service..protocol }}
       name: http
   selector:
     app.kubernetes.io/name: {{ $serviceName }}
