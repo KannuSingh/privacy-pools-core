@@ -372,7 +372,7 @@ contract UnitDeposit is UnitPrivacyPool {
   }
 
   /**
-   * @notice Test for the deposit function when depositing zero value
+   * @notice Test for the deposit function when depositing a value greater than 2**128 
    */
   function test_DepositWhenDepositingReallyBigValue(
     address _depositor,
