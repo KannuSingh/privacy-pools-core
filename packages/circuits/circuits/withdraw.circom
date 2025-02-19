@@ -62,7 +62,6 @@ template Withdraw(maxTreeDepth) {
 
   // 2. Output existing nullifier hash
   existingNullifierHash <== existingCommitmentHasher.nullifierHash;
-  _ <== existingCommitmentHasher.precommitmentHash;
 
   // 3. Verify existing commitment is in state tree
   component stateRootChecker = LeanIMTInclusionProof(maxTreeDepth);
@@ -106,7 +105,6 @@ template Withdraw(maxTreeDepth) {
 
   // 8. Output new commitment hash
   newCommitmentHash <== newCommitmentHasher.commitment;
-  _ <== newCommitmentHasher.precommitmentHash;
   _ <== newCommitmentHasher.nullifierHash;
 
   // 9. Square context for integrity
