@@ -14,11 +14,11 @@ export const circomkit = new Circomkit({
   include: ["../../node_modules/circomlib/circuits", "../../node_modules/maci-circuits/circom"],
 });
 
-export function hashCommitment(input: Commitment): [bigint, bigint, bigint] {
+export function hashCommitment(input: Commitment): [bigint, bigint] {
   const precommitment = poseidon([BigInt(input.nullifier), BigInt(input.secret)]);
   const nullifierHash = poseidon([BigInt(input.nullifier)]);
   const commitmentHash = poseidon([BigInt(input.value), BigInt(input.label), precommitment]);
-  return [commitmentHash, precommitment, nullifierHash];
+  return [commitmentHash, nullifierHash];
 }
 
 export function randomBigInt(): bigint {

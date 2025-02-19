@@ -24,7 +24,7 @@ describe("Withdraw Circuit", () => {
       "stateSiblings",
       "stateIndex",
       "ASPSiblings",
-      "ASPIndex"
+      "ASPIndex",
     ],
     ["newCommitmentHash", "existingNullifierHash"]
   >;
@@ -43,7 +43,7 @@ describe("Withdraw Circuit", () => {
   };
 
   // Get deposit commitment hash
-  const [depositHash, , depositNullifierHash] = hashCommitment(deposit);
+  const [depositHash, depositNullifierHash] = hashCommitment(deposit);
 
   // Using Poseidon for hashing the tree nodes
   const hash = (a: bigint, b: bigint) => poseidon([a, b]);
@@ -119,7 +119,7 @@ describe("Withdraw Circuit", () => {
       {
         newCommitmentHash: commitmentHash,
         existingNullifierHash: depositNullifierHash,
-      }
+      },
     );
   });
 
@@ -146,7 +146,7 @@ describe("Withdraw Circuit", () => {
     };
 
     // Hash first withdrawal commitment
-    const [firstChildCommitmentHash, , firstChildNullifierHash] = hashCommitment(firstChild);
+    const [firstChildCommitmentHash, firstChildNullifierHash] = hashCommitment(firstChild);
 
     // Generate merkle proofs to spend deposit
     let stateProof = stateTree.generateProof(2);
@@ -175,7 +175,7 @@ describe("Withdraw Circuit", () => {
       {
         newCommitmentHash: firstChildCommitmentHash,
         existingNullifierHash: depositNullifierHash,
-      }
+      },
     );
 
     // Insert the new child commitment in the state tree
@@ -190,7 +190,7 @@ describe("Withdraw Circuit", () => {
     };
 
     // Hash the second child commitment
-    const [secondChildComitmentHash, ,] = hashCommitment(secondChild);
+    const [secondChildComitmentHash] = hashCommitment(secondChild);
 
     // Regenerate state merkle proof
     let newStateProof = stateTree.generateProof(3);
@@ -218,7 +218,7 @@ describe("Withdraw Circuit", () => {
       {
         newCommitmentHash: secondChildComitmentHash,
         existingNullifierHash: firstChildNullifierHash,
-      }
+      },
     );
   });
 
@@ -246,7 +246,7 @@ describe("Withdraw Circuit", () => {
     };
 
     // Hash new commitment of zero value
-    const [commitmentHash, ,] = hashCommitment(fullWithdrawal);
+    const [commitmentHash] = hashCommitment(fullWithdrawal);
 
     // generate merkle proofs
     let stateProof = stateTree.generateProof(1);
@@ -275,7 +275,7 @@ describe("Withdraw Circuit", () => {
       {
         newCommitmentHash: commitmentHash,
         existingNullifierHash: depositNullifierHash,
-      }
+      },
     );
   });
 
@@ -423,7 +423,7 @@ describe("Withdraw Circuit", () => {
       {
         newCommitmentHash: firstWithdrawalHash,
         existingNullifierHash: depositNullifierHash,
-      }
+      },
     );
 
     // Insert new commitment in tree
@@ -458,6 +458,98 @@ describe("Withdraw Circuit", () => {
       existingSecret: firstWithdrawal.secret,
       newNullifier: secondWithdrawal.nullifier,
       newSecret: secondWithdrawal.secret,
+      stateSiblings: padSiblings(stateProof.siblings, maxTreeDepth),
+      stateIndex: stateProof.index,
+      ASPSiblings: padSiblings(ASPProof.siblings, maxTreeDepth),
+      ASPIndex: ASPProof.index,
+    });
+  });
+
+  it("Withdrawal should fail if reusing a nullifier", async () => {
+    // Insert deposit commitment in state tree
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(depositHash);
+
+    // Insert deposit label in ASP tree (deposit is now validated)
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(LABEL);
+
+    // Withrdaw 1 ETH from deposit
+    const withdrawal = {
+      value: parseEther("4"), // New value after withdrawal
+      label: LABEL,
+      nullifier: deposit.nullifier, // Reusing same nullifier as deposit commitment
+      secret: randomBigInt(),
+    };
+
+    // Generate merkle proofs for commitment and label
+    let stateProof = stateTree.generateProof(3);
+    let ASPProof = ASPTree.generateProof(3);
+
+    // Fail to withdraw because using the same nullifier
+    await circuit.expectFail({
+      withdrawnValue: parseEther("1"),
+      stateRoot: stateProof.root,
+      stateTreeDepth: stateTree.depth,
+      ASPRoot: ASPProof.root,
+      ASPTreeDepth: ASPTree.depth,
+      context: randomBigInt(),
+      label: LABEL,
+      existingValue: deposit.value,
+      existingNullifier: deposit.nullifier,
+      existingSecret: deposit.secret,
+      newNullifier: withdrawal.nullifier,
+      newSecret: withdrawal.secret,
+      stateSiblings: padSiblings(stateProof.siblings, maxTreeDepth),
+      stateIndex: stateProof.index,
+      ASPSiblings: padSiblings(ASPProof.siblings, maxTreeDepth),
+      ASPIndex: ASPProof.index,
+    });
+  });
+
+  it("Withdrawal should fail if passing an invalid tree depth", async () => {
+    // Insert deposit commitment in state tree
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(randomBigInt());
+    stateTree!.insert(depositHash);
+
+    // Insert deposit label in ASP tree (deposit is now validated)
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(randomBigInt());
+    ASPTree!.insert(LABEL);
+
+    // Withrdaw 1 ETH from deposit
+    const withdrawal = {
+      value: parseEther("4"), // New value after withdrawal
+      label: LABEL,
+      nullifier: randomBigInt(),
+      secret: randomBigInt(),
+    };
+
+    // Generate merkle proofs for commitment and label
+    let stateProof = stateTree.generateProof(3);
+    let ASPProof = ASPTree.generateProof(3);
+
+    // Fail to withdraw because using the same nullifier
+    await circuit.expectFail({
+      withdrawnValue: parseEther("1"),
+      stateRoot: stateProof.root,
+      stateTreeDepth: 33,
+      ASPRoot: ASPProof.root,
+      ASPTreeDepth: ASPTree.depth,
+      context: randomBigInt(),
+      label: LABEL,
+      existingValue: deposit.value,
+      existingNullifier: deposit.nullifier,
+      existingSecret: deposit.secret,
+      newNullifier: withdrawal.nullifier,
+      newSecret: withdrawal.secret,
       stateSiblings: padSiblings(stateProof.siblings, maxTreeDepth),
       stateIndex: stateProof.index,
       ASPSiblings: padSiblings(ASPProof.siblings, maxTreeDepth),
