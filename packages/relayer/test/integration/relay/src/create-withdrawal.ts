@@ -10,29 +10,28 @@ import {
   Withdrawal,
   WithdrawalProof,
   WithdrawalProofInput,
+  Hash,
 } from "@0xbow/privacy-pools-core-sdk";
-import { Address, defineChain, Hex } from "viem";
+import { defineChain } from "viem";
 import { localhost } from "viem/chains";
+import {
+  ENTRYPOINT_ADDRESS,
+  LOCAL_ANVIL_RPC,
+  PRIVATE_KEY,
+} from "./constants.js";
 
 /*
-TestToken deployed at: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
-Withdrawal Verifier deployed at: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
-Ragequit Verifier deployed at: 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
-Entrypoint deployed at: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
-ETH Pool deployed at: 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6
-TST Pool deployed at: 0x610178dA211FEF7D417bC0e6FeD39F05609AD788
+  TestToken deployed at: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+  Withdrawal Verifier deployed at: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+  Ragequit Verifier deployed at: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
+  Entrypoint deployed at: 0x0165878A594ca255338adfa4d48449f69242Eb8F
+  ETH Pool deployed at: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+  TST Pool deployed at: 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
 */
-
-const LOCAL_ANVIL_RPC = "http://127.0.0.1:8545";
-const ENTRYPOINT_ADDRESS: Address =
-  "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853";
-// const PRIVACY_POOL_ADDRESS: Address = "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6";
-const PRIVATE_KEY: Hex =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 const anvilChain = defineChain({ ...localhost, id: 31337 });
 
-const sdk = new PrivacyPoolSDK(new Circuits());
+const sdk = new PrivacyPoolSDK(new Circuits({ browser: false }));
 
 const contracts = sdk.createContractInstance(
   LOCAL_ANVIL_RPC,
@@ -53,14 +52,17 @@ export async function deposit() {
   return contracts.depositETH(existingValue, precommitment.hash);
 }
 
-export async function proveWithdrawal(w: Withdrawal): Promise<WithdrawalProof> {
+export async function proveWithdrawal(
+  w: Withdrawal,
+  scope: bigint,
+): Promise<WithdrawalProof> {
   try {
     console.log("🚀 Initializing PrivacyPoolSDK...");
 
     // **Retrieve On-Chain Scope**
     console.log(
       "🔹 Retrieved Scope from Withdrawal:",
-      `0x${w.scope.toString(16)}`,
+      `0x${scope.toString(16)}`,
     );
 
     // **Load Valid Input Values**
@@ -123,7 +125,7 @@ export async function proveWithdrawal(w: Withdrawal): Promise<WithdrawalProof> {
     // console.log("✅ ASP Merkle Proof:", aspMerkleProof);
 
     // **Correctly Compute Context Hash**
-    const computedContext = calculateContext(w);
+    const computedContext = calculateContext(w, scope as Hash);
     console.log("🔹 Computed Context:", computedContext.toString());
 
     // **Create Withdrawal Proof Input**

@@ -35,7 +35,7 @@ export class SdkProvider implements SdkProviderInterface {
    * Initializes a new instance of the SDK provider.
    */
   constructor() {
-    this.sdk = new PrivacyPoolSDK(new Circuits());
+    this.sdk = new PrivacyPoolSDK(new Circuits({ browser: false }));
     this.contracts = this.sdk.createContractInstance(
       PROVIDER_URL,
       CHAIN,
