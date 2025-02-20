@@ -13,7 +13,7 @@
         "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9": 100,
     },
     "allowed_domains": [
-        "your-domain.com",
-        "another-domain.com"
+        "http://your-domain.com",
+        "http://another-domain.com"
     ]
 }
