@@ -25,7 +25,7 @@ describe("PrivacyPoolSDK", () => {
   let sdk: PrivacyPoolSDK;
 
   beforeEach(() => {
-    circuits = new CircuitsMock();
+    circuits = new CircuitsMock({ browser: false });
     sdk = new PrivacyPoolSDK(circuits);
   });
 
@@ -82,7 +82,7 @@ describe("PrivacyPoolSDK", () => {
           proof: {} as snarkjs.Groth16Proof,
           publicSignals: [],
         }),
-      ).rejects.toThrow(ProofError);
+      ).rejects.toThrowError(ProofError);
     });
 
     it("should return true for a valid commitment proof", async () => {
