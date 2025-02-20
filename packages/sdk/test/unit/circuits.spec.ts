@@ -54,32 +54,32 @@ describe("Circuits", () => {
       expect(circuits.introspectBinaries).toStrictEqual(binariesMock);
     });
 
-    it("_downloadCircuitArtifacts raises FetchArtifact if _fetchVersionedArtifact throws", () => {
+    it("_downloadCircuitArtifacts raises FetchArtifact if _fetchVersionedArtifact throws", async () => {
       const fetchVersionedSpy = vi
         .spyOn(circuits, "_fetchVersionedArtifact")
         .mockRejectedValue(fetchArtifactError);
-      expect(
+      await expect(
         async () =>
           await circuits._downloadCircuitArtifacts(CircuitName.Withdraw),
       ).rejects.toThrowError(FetchArtifact);
       expect(fetchVersionedSpy).toHaveBeenCalled();
     });
 
-    it("downloadArtifacts raises FetchArtifact if _downloadCircuitArtifacts throws", () => {
+    it("downloadArtifacts raises FetchArtifact if _downloadCircuitArtifacts throws", async () => {
       const downloadCircuitArtifactsSpy = vi
         .spyOn(circuits, "_downloadCircuitArtifacts")
         .mockRejectedValue(fetchArtifactError);
-      expect(
+      await expect(
         async () => await circuits.downloadArtifacts("latest"),
       ).rejects.toThrowError(FetchArtifact);
       expect(downloadCircuitArtifactsSpy).toHaveBeenCalled();
     });
 
-    it("initArtifacts raises FetchArtifact", () => {
+    it("initArtifacts raises FetchArtifact", async () => {
       const downloadArtifactsSpy = vi
         .spyOn(circuits, "downloadArtifacts")
         .mockRejectedValue(fetchArtifactError);
-      expect(
+      await expect(
         async () => await circuits.initArtifacts("latest"),
       ).rejects.toThrowError(FetchArtifact);
       expect(downloadArtifactsSpy).toHaveBeenCalled();
@@ -87,15 +87,15 @@ describe("Circuits", () => {
       expect(downloadArtifactsSpy).toHaveBeenCalledWith("latest");
     });
 
-    it("_handleInitialization raises CircuitInitialization error when something happens", () => {
+    it("_handleInitialization raises CircuitInitialization error when something happens", async () => {
       vi.spyOn(circuits, "initArtifacts").mockRejectedValue(fetchArtifactError);
-      expect(
+      await expect(
         async () => await circuits._handleInitialization("latest"),
       ).rejects.toThrowError(CircuitInitialization);
       vi.spyOn(circuits, "initArtifacts").mockRejectedValue(
         new Error("DifferentError"),
       );
-      expect(
+      await expect(
         async () => await circuits._handleInitialization("latest"),
       ).rejects.toThrowError(CircuitInitialization);
     });
