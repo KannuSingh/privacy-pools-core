@@ -55,6 +55,7 @@ const configSchema = z
     chain: zChain,
     sqlite_db_path: z.string().transform((p) => path.resolve(p)),
     withdraw_amounts: zWithdrawAmounts,
+    allowed_domains: z.array(z.string().url()),
   })
   .strict()
   .readonly();
@@ -83,3 +84,4 @@ export const FEE_BPS = config.fee_bps;
 export const SQLITE_DB_PATH = config.sqlite_db_path;
 export const WITHDRAW_AMOUNTS = config.withdraw_amounts;
 export const CHAIN = config.chain;
+export const ALLOWED_DOMAINS = config.allowed_domains;
