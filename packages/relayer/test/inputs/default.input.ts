@@ -31,4 +31,5 @@ export const testingConfig = {
     [ASSET_ADDRESS_TEST]: 200,
   },
   CHAIN: "",
+  ALLOWED_DOMAINS: ["http://localhost:3000"],
 };
