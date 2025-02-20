@@ -1,11 +1,13 @@
 import bodyParser from "body-parser";
 import express, { NextFunction, Request, Response } from "express";
+import cors from "cors";
 import {
   errorHandlerMiddleware,
   marshalResponseMiddleware,
   notFoundMiddleware,
 } from "./middlewares/index.js";
 import { relayerRouter } from "./routes/index.js";
+import { ALLOWED_DOMAINS } from "./config.js";
 
 // Initialize the express app
 const app = express();
@@ -13,7 +15,20 @@ const app = express();
 // Middleware functions
 const parseJsonMiddleware = bodyParser.json();
 
+// CORS config
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    if (!origin || ALLOWED_DOMAINS.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+};
+
+
 // Apply middleware and routes
+app.use(cors(corsOptions));
 app.use(parseJsonMiddleware);
 app.use(marshalResponseMiddleware);
 
