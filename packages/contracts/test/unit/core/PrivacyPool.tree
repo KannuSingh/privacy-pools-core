@@ -21,8 +21,10 @@ PrivacyPool::deposit
 │   │   │   └── It emits Deposited event
 │   │   ├── When depositing zero value
 │   │   │   └── It processes deposit normally
-│   │   └── When commitment exists in tree
-│   │       └── It reverts with LeafAlreadyExists
+│   │   ├── When commitment exists in tree
+│   │   │   └── It reverts with LeafAlreadyExists
+│   │   └── When deposit value is greater than 2**128
+│   │       └── It reverts with InvalidDepositValue 
 │   └── When pool is dead
 │       └── It reverts with PoolIsDead
 └── When caller is not entrypoint

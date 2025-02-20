@@ -281,8 +281,9 @@ contract UnitDeposit is UnitPrivacyPool {
     // Setup test with valid parameters
     _assumeFuzzable(_depositor);
     vm.assume(_depositor != address(0));
-    vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
+    vm.assume(_amount > 0);
+    _amount = _bound(_amount, 1, type(uint128).max - 1);
 
     // Calculate expected values for deposit
     uint256 _nonce = _pool.nonce();
@@ -315,9 +316,9 @@ contract UnitDeposit is UnitPrivacyPool {
     uint256 _existingCommitment
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
-    vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
     vm.assume(_existingCommitment != 0);
+    _amount = _bound(_amount, 1, type(uint128).max - 1);
 
     _existingCommitment = bound(_existingCommitment, 1, Constants.SNARK_SCALAR_FIELD - 1);
 
@@ -371,6 +372,22 @@ contract UnitDeposit is UnitPrivacyPool {
   }
 
   /**
+   * @notice Test for the deposit function when depositing a value greater than 2**128
+   */
+  function test_DepositWhenDepositingReallyBigValue(
+    address _depositor,
+    uint256 _precommitmentHash,
+    uint256 _amount
+  ) external givenCallerIsEntrypoint givenPoolIsActive {
+    vm.assume(_depositor != address(0));
+    vm.assume(_precommitmentHash != 0);
+    _amount = _bound(_amount, type(uint128).max, type(uint256).max);
+
+    vm.expectRevert(IPrivacyPool.InvalidDepositValue.selector);
+    _pool.deposit(_depositor, _amount, _precommitmentHash);
+  }
+
+  /**
    * @notice Test for the deposit function when commitment already exists in the tree
    */
   function test_DepositWhenCommitmentExistsInTree(
@@ -379,8 +396,8 @@ contract UnitDeposit is UnitPrivacyPool {
     uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
-    vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
+    _amount = _bound(_amount, 1, type(uint128).max - 1);
 
     uint256 _nonce = _pool.nonce();
     uint256 _label = uint256(keccak256(abi.encodePacked(_scope, _nonce + 1)));
@@ -428,8 +445,8 @@ contract UnitDeposit is UnitPrivacyPool {
     uint256 _precommitmentHash
   ) external givenCallerIsEntrypoint givenPoolIsActive {
     vm.assume(_depositor != address(0));
-    vm.assume(_amount > 0);
     vm.assume(_precommitmentHash != 0);
+    _amount = _bound(_amount, 1, type(uint128).max - 1);
 
     // Mock tree at max capacity
     _pool.mockTreeDepth(32);

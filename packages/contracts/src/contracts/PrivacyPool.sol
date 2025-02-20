@@ -85,6 +85,8 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Check deposits are enabled
     if (dead) revert PoolIsDead();
 
+    if (_value >= type(uint128).max) revert InvalidDepositValue();
+
     // Compute label
     uint256 _label = uint256(keccak256(abi.encodePacked(SCOPE, ++nonce))) % Constants.SNARK_SCALAR_FIELD;
     // Store depositor

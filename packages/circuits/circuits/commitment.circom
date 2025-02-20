@@ -16,7 +16,6 @@ template CommitmentHasher() {
   signal input secret;             // Secret of commitment
 
   signal output commitment;        // Commitment hash
-  signal output precommitmentHash; // Precommitment hash
   signal output nullifierHash;     // Nullifier hash
 
   ///////////////////// END OF SIGNALS /////////////////////
@@ -38,6 +37,5 @@ template CommitmentHasher() {
 
   // 4. Populate output signals
   commitment <== commitmentHasher.out;
-  precommitmentHash <== precommitmentHasher.out;
   nullifierHash <== nullifierHasher.out;
 }
