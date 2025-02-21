@@ -13,9 +13,12 @@ export interface Commitment {
   label: Hash;
   nullifier: Secret;
   secret: Secret;
+  blockNumber: bigint;
+  txHash: Hash;
 }
 
 export interface PrivacyPoolAccount {
+  mnemonic: string;
   masterKeys: [Secret, Secret];
   poolAccounts: Map<bigint, PoolAccount[]>;
 }
@@ -25,4 +28,4 @@ export interface PoolInfo {
   address: Address;
   scope: Hash;
   deploymentBlock: bigint;
-} 
+}
