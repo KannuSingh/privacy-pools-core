@@ -295,7 +295,7 @@ contract UnitDeposit is UnitPrivacyPool {
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     // Execute deposit operation
     _pool.deposit(_depositor, _amount, _precommitmentHash);
@@ -334,7 +334,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
     address _retrievedDepositor = _pool.depositors(_label);
@@ -363,7 +363,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
     address _retrievedDepositor = _pool.depositors(_label);

@@ -34,9 +34,11 @@ interface IPrivacyPool is IState {
    * @param _commitment The commitment hash
    * @param _label The deposit generated label
    * @param _value The deposited amount
-   * @param _merkleRoot The updated merkle root
+   * @param _precommitmentHash The deposit precommitment hash
    */
-  event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _merkleRoot);
+  event Deposited(
+    address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _precommitmentHash
+  );
 
   /**
    * @notice Emitted when processing a withdrawal
@@ -194,3 +196,4 @@ interface IPrivacyPoolComplex is IPrivacyPool {
    */
   error NativeAssetNotSupported();
 }
+

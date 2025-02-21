@@ -101,7 +101,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     // Pull funds from caller
     _pull(msg.sender, _value);
 
-    emit Deposited(_depositor, _commitment, _label, _value, _updatedRoot);
+    emit Deposited(_depositor, _commitment, _label, _value, _precommitmentHash);
   }
 
   /// @inheritdoc IPrivacyPool
