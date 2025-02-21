@@ -1,50 +1,19 @@
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
-import { Hash, Secret } from "../types/index.js";
+import { Hash, Secret } from "../types/commitment.js";
 import { Hex } from "viem";
 import { generatePrivateKey } from "viem/accounts";
+import { DataService } from "./data.service.js";
+import { Commitment, PoolAccount, PoolInfo, PrivacyPoolAccount } from "../types/account.js";
+import { PoolEvents } from "../types/events.js";
 
-interface DepositEvent {
-  depositor: string;
-  value: bigint;
-  commitment: Hash;
-  label: Hash;
-  precommitment: Hash;
-}
-
-interface WithdrawalEvent {
-  withdrawn: bigint;
-  spentNullifier: Hash;
-  newCommitment: Hash;
-}
-
-interface PoolAccount {
-  label: Hash;
-  deposit: Commitment;
-  children: Commitment[];
-}
-
-interface Commitment {
-  hash: Hash;
-  value: bigint;
-  label: Hash;
-  nullifier: bigint;
-  secret: bigint;
-}
-
-interface PrivacyPoolAccount {
-  masterKeys: [Secret, Secret];
-  poolAccounts: Map<bigint, PoolAccount[]>;
-}
-
-/**
- * Service responsible for handling commitment-related operations.
- * All hash operations use Poseidon for ZK-friendly hashing.
- */
 export class AccountService {
   private account: PrivacyPoolAccount;
-  private dataProvider?: any;
 
-  constructor(account?: PrivacyPoolAccount, seed?: Hex) {
+  constructor(
+    private readonly dataService: DataService,
+    account?: PrivacyPoolAccount,
+    seed?: Hex
+  ) {
     this.account = account || this._initializeAccount(seed);
   }
 
@@ -90,30 +59,15 @@ export class AccountService {
     return poseidon([nullifier, secret]) as Hash;
   }
 
-  private async _getEventsByScope(
-    _: Hash[],
-  ): Promise<
-    Map<bigint, { deposits: DepositEvent[]; withdrawals: WithdrawalEvent[] }>
-  > {
-    let mappedScopes: Map<
-      bigint,
-      { deposits: DepositEvent[]; withdrawals: WithdrawalEvent[] }
-    > = new Map();
-
-    return mappedScopes;
-  }
-
   private _log(sub: string, message: string): void {
     console.log(`${new Date().toISOString()} [Account::${sub}] ${message}`);
   }
 
-  public getSpendableCommitments(
-    privacyPoolAccount: PrivacyPoolAccount,
-  ): Map<bigint, Commitment[]> {
+  public getSpendableCommitments(): Map<bigint, Commitment[]> {
     const result = new Map<bigint, Commitment[]>();
 
     // Iterate through each scope and its pool accounts
-    for (const [scope, accounts] of privacyPoolAccount.poolAccounts.entries()) {
+    for (const [scope, accounts] of this.account.poolAccounts.entries()) {
       const nonZeroCommitments: Commitment[] = [];
 
       // Process each pool account in the current scope
@@ -138,38 +92,202 @@ export class AccountService {
     return result;
   }
 
-  public async retrieveHistory(scopes: Hash[]): Promise<void> {
-    this._log("Recovery", "Fetching events for provided scopes");
-    let mappedScopes = await this._getEventsByScope(scopes);
-    this._log("Recovery", `Fetched events for ${mappedScopes.size} scopes`);
+  /**
+   * Creates nullifier and secret for a new deposit
+   * @param scope The scope of the pool to deposit into
+   * @returns The nullifier, secret, and precommitment for the deposit
+   */
+  public createDepositSecrets(scope: Hash): { 
+    nullifier: Secret; 
+    secret: Secret;
+    precommitment: Hash;
+  } {
+    // Find the next available index for this scope
+    const accounts = this.account.poolAccounts.get(scope);
+    const index = BigInt(accounts?.length || 0);
 
-    // Discover pool accounts (deposits)
-    for (const scope of scopes) {
+    const nullifier = this._genDepositNullifier(scope, index);
+    const secret = this._genDepositSecret(scope, index);
+    const precommitment = this._hashPrecommitment(nullifier, secret);
+
+    return { nullifier, secret, precommitment };
+  }
+
+  /**
+   * Creates nullifier and secret for spending a commitment
+   * @param commitment The commitment to spend
+   * @returns The nullifier and secret for the new commitment
+   */
+  public createWithdrawalSecrets(commitment: Commitment): { nullifier: Secret; secret: Secret } {
+    // Find the account with this label
+    let index: bigint | undefined;
+    
+    for (const accounts of this.account.poolAccounts.values()) {
+      const account = accounts.find(acc => acc.label === commitment.label);
+      if (account) {
+        // Use the next index after the last withdrawal
+        index = BigInt(account.children.length);
+        break;
+      }
+    }
+    
+    if (index === undefined) {
+      throw new Error(`No account found for commitment with label ${commitment.label}`);
+    }
+
+    const nullifier = this._genWithdrawalNullifier(commitment.label, index);
+    const secret = this._genWithdrawalSecret(commitment.label, index);
+
+    return { nullifier, secret };
+  }
+
+  /**
+   * Adds a new commitment to the account after spending
+   * @param parentCommitment The commitment that was spent
+   * @param value The remaining value after spending
+   * @param nullifier The nullifier used for spending
+   * @param secret The secret used for spending
+   * @returns The new commitment
+   */
+  public addCommitment(
+    parentCommitment: Commitment,
+    value: bigint,
+    nullifier: Secret,
+    secret: Secret
+  ): Commitment {
+    // Find the account for this commitment
+    let foundAccount: PoolAccount | undefined;
+    let foundScope: bigint | undefined;
+
+    for (const [scope, accounts] of this.account.poolAccounts.entries()) {
+      foundAccount = accounts.find(account => {
+        // Check if this is the parent commitment
+        if (account.deposit.hash === parentCommitment.hash) return true;
+        // Check children
+        return account.children.some(child => child.hash === parentCommitment.hash);
+      });
+
+      if (foundAccount) {
+        foundScope = scope;
+        break;
+      }
+    }
+
+    if (!foundAccount || !foundScope) {
+      throw new Error(`No account found for commitment ${parentCommitment.hash}`);
+    }
+
+    // Create the precommitment
+    const precommitment = this._hashPrecommitment(nullifier, secret);
+
+    // Create the new commitment
+    const newCommitment: Commitment = {
+      hash: this._hashCommitment(value, parentCommitment.label, precommitment),
+      value,
+      label: parentCommitment.label,
+      nullifier,
+      secret,
+    };
+
+    // Add to children
+    foundAccount.children.push(newCommitment);
+
+    this._log(
+      "Commitment",
+      `Added new commitment with value ${value} to account with label ${parentCommitment.label}`,
+    );
+
+    return newCommitment;
+  }
+
+  public async retrieveHistory(pools: PoolInfo[]): Promise<void> {
+    this._log("Recovery", `Fetching events for ${pools.length} pools`);
+
+    // Initialize pool accounts for each scope
+    for (const pool of pools) {
+      if (!this.account.poolAccounts.has(pool.scope)) {
+        this.account.poolAccounts.set(pool.scope, []);
+      }
+    }
+
+    // Process pools in parallel
+    await Promise.all(pools.map(async (pool) => {
       this._log(
         "Recovery",
-        `Starting discovery of Pool Accounts for scope ${scope}`,
+        `Processing pool ${pool.address} on chain ${pool.chainId} from block ${pool.deploymentBlock}`,
       );
+
+      // First, get only deposit events
+      const deposits = await this.dataService.getDeposits(pool.chainId, {
+        fromBlock: pool.deploymentBlock
+      });
+
+      this._log(
+        "Recovery",
+        `Found ${deposits.length} deposits for pool ${pool.address}`,
+      );
+
+      // Create a map for faster deposit lookups
+      const depositMap = new Map<Hash, typeof deposits[0]>();
+      for (const deposit of deposits) {
+        depositMap.set(deposit.precommitment, deposit);
+      }
+
+      // Find all deposits for this pool
+      const foundDeposits: Array<{
+        index: bigint;
+        nullifier: Secret;
+        secret: Secret;
+        deposit: typeof deposits[0];
+      }> = [];
+
+      // Try indices until we don't find any more deposits
       let index = BigInt(0);
+      let firstDepositBlock: bigint | undefined;
 
-      // Loop starting at index 0
       while (true) {
-        // Compute deposit precommitment
-        let nullifier = this._genDepositNullifier(scope, index);
-        let secret = this._genDepositSecret(scope, index);
-        let precommitment = this._hashPrecommitment(nullifier, secret);
+        const nullifier = this._genDepositNullifier(pool.scope, index);
+        const secret = this._genDepositSecret(pool.scope, index);
+        const precommitment = this._hashPrecommitment(nullifier, secret);
 
-        // Find Deposit with that precommiemtn
-        let deposit = mappedScopes
-          .get(scope)!
-          .deposits.find((deposit) => deposit.precommitment == precommitment);
-
-        // If not found, break loop.
+        const deposit = depositMap.get(precommitment);
         if (!deposit) break;
 
-        this._log("Recovery", `Found Pool Account with index ${index}`);
+        // Track the first deposit block
+        if (!firstDepositBlock || deposit.blockNumber < firstDepositBlock) {
+          firstDepositBlock = deposit.blockNumber;
+        }
 
-        // If found, store as Pool Account and continue with next index.
-        this.account.poolAccounts.get(scope)!.push({
+        foundDeposits.push({ index, nullifier, secret, deposit });
+        index++;
+      }
+
+      if (foundDeposits.length === 0) {
+        this._log("Recovery", `No Pool Accounts were found for scope ${pool.scope}`);
+        return;
+      }
+
+      this._log("Recovery", `Found ${foundDeposits.length} deposits for pool ${pool.address}`);
+
+      // Get withdrawals only if we found deposits
+      const withdrawals = await this.dataService.getWithdrawals(pool.chainId, {
+        fromBlock: firstDepositBlock!
+      });
+
+      // Create a map for faster withdrawal lookups
+      const withdrawalMap = new Map<Hash, typeof withdrawals[0]>();
+      for (const withdrawal of withdrawals) {
+        withdrawalMap.set(withdrawal.spentNullifier, withdrawal);
+      }
+
+      this._log(
+        "Recovery",
+        `Found ${withdrawals.length} withdrawals for pool ${pool.address}`,
+      );
+
+      // Process each found deposit
+      const accounts = foundDeposits.map(({ nullifier, secret, deposit }) => {
+        const account: PoolAccount = {
           label: deposit.label,
           deposit: {
             hash: deposit.commitment,
@@ -179,75 +297,34 @@ export class AccountService {
             secret,
           },
           children: [],
-        });
+        };
 
-        ++index;
-      }
-
-      // Check if accounts were found.
-      let accounts = this.account.poolAccounts.get(scope);
-      if (!accounts) {
-        this._log("Recovery", `No Pool Accounts were found for scope ${scope}`);
-        return;
-      }
-
-      // For each account = deposit
-      for (const account of accounts) {
-        this._log(
-          "Recovery",
-          `Starting discovery of withdrawals for Pool Account ${account.label}`,
-        );
-        // Define starting index
-        let index = BigInt(0);
-        // Define starting parent = deposit
+        // Find all withdrawals for this account
+        let withdrawalIndex = BigInt(0);
         let parentCommitment = account.deposit;
 
-        // Start with index 0 (first withdrawal)
         while (true) {
-          // Compute child nullifier
-          let childNullifier = this._genWithdrawalNullifier(
+          const childNullifier = this._genWithdrawalNullifier(
             parentCommitment.label,
-            index,
+            withdrawalIndex,
           );
-          // Compute child nullifier hash
-          let nullifierHash = poseidon([childNullifier]);
+          const nullifierHash = poseidon([childNullifier]) as Hash;
 
-          // Find Withdrawal with this spent nullifier hash
-          let withdrawal = mappedScopes
-            .get(scope)!
-            .withdrawals.find(
-              (withdrawal) => withdrawal.spentNullifier == nullifierHash,
-            );
+          const withdrawal = withdrawalMap.get(nullifierHash);
+          if (!withdrawal) break;
 
-          // If not found, break.
-          if (!withdrawal) {
-            this._log(
-              "Recovery",
-              `No withdrawals found for Pool Account ${account.label}`,
-            );
-            break;
-          }
-
-          this._log(
-            "Recovery",
-            `Found withdrawal for ${withdrawal.withdrawn} value`,
-          );
-          // Compute child secret
-          let childSecret = this._genWithdrawalSecret(
+          const childSecret = this._genWithdrawalSecret(
             parentCommitment.label,
-            index,
+            withdrawalIndex,
           );
-          // Compute child precommitment
-          let childPrecommitment = this._hashPrecommitment(
+          const childPrecommitment = this._hashPrecommitment(
             childNullifier,
             childSecret,
           );
 
-          // Compute remaining value = previous commitment value - withdrawn value
           const remaining = parentCommitment.value - withdrawal.withdrawn;
-          // Hash child commitment
 
-          let commitment = {
+          const commitment = {
             hash: this._hashCommitment(
               remaining,
               parentCommitment.label,
@@ -259,14 +336,16 @@ export class AccountService {
             secret: childSecret,
           };
 
-          // Store child in account
           account.children.push(commitment);
-
-          // Increase index, update the intermediate parent and continue
-          ++index;
           parentCommitment = commitment;
+          withdrawalIndex++;
         }
-      }
-    }
+
+        return account;
+      });
+
+      // Store all accounts for this pool
+      this.account.poolAccounts.set(pool.scope, accounts);
+    }));
   }
 }
