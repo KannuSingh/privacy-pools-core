@@ -33,6 +33,7 @@ export interface ChainConfig {
   rpcUrl: string;
   privacyPoolAddress: Address;
   startBlock: bigint;
+  envioToken: string;
 }
 
 /**

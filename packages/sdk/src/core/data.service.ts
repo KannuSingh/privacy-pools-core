@@ -39,7 +39,7 @@ export class DataService {
     const query = presetQueryLogsOfEvent(
       config.privacyPoolAddress,
       // topic0 is keccak256("Deposited(address,uint256,uint256,uint256,uint256)")
-      "0x8c5261668696ce22758910d05bab8f186d6eb247ceac2af2e82c7dc17669b036",
+      "0xe3b53cd1a44fbf11535e145d80b8ef1ed6d57a73bf5daa7e939b6b01657d6549",
       Number(fromBlock),
       toBlock ? Number(toBlock) : undefined
     );
@@ -59,27 +59,37 @@ export class DataService {
     const res = await client.get(query);
 
     return res.data.logs.map(log => {
-      if (!log.topics || log.topics.length < 5) {
+      // Only depositor is indexed, so we expect 2 topics (topic0 + depositor)
+      if (!log.topics || log.topics.length < 2) {
         throw new Error(`Invalid deposit log: missing topics`);
       }
 
-      const topics = log.topics.map(t => {
-        if (!t) throw new Error("Invalid log: topic is null");
-        return BigInt(t);
-      });
+      // Get depositor from indexed parameter
+      const depositorTopic = log.topics[1];
+      if (!depositorTopic) {
+        throw new Error("Invalid deposit log: missing depositor topic");
+      }
+      const depositor = BigInt(depositorTopic);
 
-      const topicsSliced = topics.slice(1);
-      if (topicsSliced.length < 5) {
-        throw new Error("Invalid deposit log: not enough topics");
+      // Parse non-indexed parameters from data
+      if (!log.data) throw new Error("Invalid deposit log: missing data");
+      
+      // Remove '0x' and split into 32-byte chunks
+      const data = log.data.slice(2).match(/.{64}/g);
+      if (!data || data.length < 4) {
+        throw new Error("Invalid deposit log: insufficient data");
       }
 
-      const depositor = topicsSliced[0];
-      const commitment = topicsSliced[1];
-      const label = topicsSliced[2];
-      const value = topicsSliced[3];
-      const precommitment = topicsSliced[4];
+      const commitment = BigInt('0x' + data[0]);
+      const label = BigInt('0x' + data[1]);
+      const value = BigInt('0x' + data[2]);
+      // merkleRoot is data[3], not used
 
-      if (!depositor || !commitment || !label || !value || !precommitment || !log.blockNumber || !log.transactionHash) {
+      // NOTE: Precommitment field will be added to event in future update
+      // Using empty hash for now as placeholder
+      const precommitment = BigInt(0);
+
+      if (!depositor || !commitment || !label || !value || !log.blockNumber || !log.transactionHash) {
         throw new Error(`Invalid deposit log: missing required fields`);
       }
 
@@ -205,6 +215,8 @@ export class DataService {
         return "https://arbitrum.hypersync.xyz";
       case 10: // Optimism
         return "https://optimism.hypersync.xyz";
+      case 11155111: // Sepolia
+        return "https://sepolia.hypersync.xyz";
       default:
         throw new Error(`No Hypersync endpoint available for chain ID ${chainId}`);
     }
