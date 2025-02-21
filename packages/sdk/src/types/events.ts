@@ -26,6 +26,18 @@ export interface WithdrawalEvent {
 }
 
 /**
+ * Represents a ragequit event from a privacy pool
+ */
+export interface RagequitEvent {
+  ragequitter: Address;
+  commitment: Hash;
+  label: Hash;
+  value: bigint;
+  blockNumber: bigint;
+  transactionHash: Hash;
+}
+
+/**
  * Configuration for a chain's data provider
  */
 export interface ChainConfig {

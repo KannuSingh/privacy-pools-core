@@ -1,5 +1,5 @@
 import { HypersyncClient, presetQueryLogsOfEvent, Query } from "@envio-dev/hypersync-client";
-import { ChainConfig, DepositEvent, EventFilterOptions, WithdrawalEvent } from "../types/events.js";
+import { ChainConfig, DepositEvent, EventFilterOptions, WithdrawalEvent, RagequitEvent } from "../types/events.js";
 import { bigintToHash } from "../crypto.js";
 import { Hash } from "../types/commitment.js";
 
@@ -121,7 +121,7 @@ export class DataService {
     const query = presetQueryLogsOfEvent(
       config.privacyPoolAddress,
       // topic0 is keccak256("Withdrawn(address,uint256,uint256,uint256)")
-      "0x92ccf450a286a957af52509bc1c9939d1a6a481783e142e41e2499f0bb66ebc6",
+      "0x75e161b3e824b114fc1a33274bd7091918dd4e639cede50b78b15a4eea956a21",
       Number(fromBlock),
       toBlock ? Number(toBlock) : undefined
     );
@@ -129,24 +129,30 @@ export class DataService {
     const res = await client.get(query);
 
     return res.data.logs.map(log => {
-      if (!log.topics || log.topics.length < 4) {
+      // Expect 2 topics (topic0 + processor)
+      if (!log.topics || log.topics.length < 2) {
         throw new Error(`Invalid withdrawal log: missing topics`);
       }
 
-      const topics = log.topics.map(t => {
-        if (!t) throw new Error("Invalid log: topic is null");
-        return BigInt(t);
-      });
+      // Get processor from indexed parameter
+      const processorTopic = log.topics[1];
+      if (!processorTopic) {
+        throw new Error("Invalid withdrawal log: missing processor topic");
+      }
+      const processor = BigInt(processorTopic);
 
-      const topicsSliced = topics.slice(1);
-      if (topicsSliced.length < 4) {
-        throw new Error("Invalid withdrawal log: not enough topics");
+      // Parse non-indexed parameters from data
+      if (!log.data) throw new Error("Invalid withdrawal log: missing data");
+      
+      // Remove '0x' and split into 32-byte chunks
+      const data = log.data.slice(2).match(/.{64}/g);
+      if (!data || data.length < 3) {
+        throw new Error("Invalid withdrawal log: insufficient data");
       }
 
-      const processooor = topicsSliced[0];
-      const value = topicsSliced[1];
-      const spentNullifier = topicsSliced[2];
-      const newCommitment = topicsSliced[3];
+      const value = BigInt('0x' + data[0]);
+      const spentNullifier = BigInt('0x' + data[1]);
+      const newCommitment = BigInt('0x' + data[2]);
 
       if (!value || !spentNullifier || !newCommitment || !log.blockNumber || !log.transactionHash) {
         throw new Error(`Invalid withdrawal log: missing required fields`);
@@ -156,6 +162,70 @@ export class DataService {
         withdrawn: value,
         spentNullifier: bigintToHash(spentNullifier),
         newCommitment: bigintToHash(newCommitment),
+        blockNumber: BigInt(log.blockNumber),
+        transactionHash: log.transactionHash as unknown as Hash
+      };
+    });
+  }
+
+  /**
+   * Get ragequit events for a specific chain
+   * @param chainId Chain ID to fetch ragequits from
+   * @param options Event filter options
+   */
+  async getRagequits(chainId: number, options: EventFilterOptions = {}): Promise<RagequitEvent[]> {
+    const client = this.getClientForChain(chainId);
+    const config = this.getConfigForChain(chainId);
+
+    const fromBlock = options.fromBlock ?? config.startBlock;
+    const toBlock = options.toBlock ?? undefined;
+
+    // Create query for ragequit events
+    const query = presetQueryLogsOfEvent(
+      config.privacyPoolAddress,
+      // topic0 is keccak256("Ragequit(address,uint256,uint256,uint256)")
+      "0xd2b3e868ae101106371f2bd93abc8d5a4de488b9fe47ed122c23625aa7172f13",
+      Number(fromBlock),
+      toBlock ? Number(toBlock) : undefined
+    );
+
+    const res = await client.get(query);
+
+    return res.data.logs.map(log => {
+      // Only ragequitter is indexed, so we expect 2 topics (topic0 + ragequitter)
+      if (!log.topics || log.topics.length < 2) {
+        throw new Error(`Invalid ragequit log: missing topics`);
+      }
+
+      // Get ragequitter from indexed parameter
+      const ragequitterTopic = log.topics[1];
+      if (!ragequitterTopic) {
+        throw new Error("Invalid ragequit log: missing ragequitter topic");
+      }
+      const ragequitter = BigInt(ragequitterTopic);
+
+      // Parse non-indexed parameters from data
+      if (!log.data) throw new Error("Invalid ragequit log: missing data");
+      
+      // Remove '0x' and split into 32-byte chunks
+      const data = log.data.slice(2).match(/.{64}/g);
+      if (!data || data.length < 3) {
+        throw new Error("Invalid ragequit log: insufficient data");
+      }
+
+      const commitment = BigInt('0x' + data[0]);
+      const label = BigInt('0x' + data[1]);
+      const value = BigInt('0x' + data[2]);
+
+      if (!ragequitter || !commitment || !label || !value || !log.blockNumber || !log.transactionHash) {
+        throw new Error(`Invalid ragequit log: missing required fields`);
+      }
+
+      return {
+        ragequitter: `0x${ragequitter.toString(16).padStart(40, '0')}`,
+        commitment: bigintToHash(commitment),
+        label: bigintToHash(label),
+        value,
         blockNumber: BigInt(log.blockNumber),
         transactionHash: log.transactionHash as unknown as Hash
       };
