@@ -63,4 +63,4 @@ export interface EventFilterOptions {
 export interface PoolEvents {
   deposits: DepositEvent[];
   withdrawals: WithdrawalEvent[];
-} 
+}

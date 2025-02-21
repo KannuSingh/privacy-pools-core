@@ -1,5 +1,15 @@
-import { HypersyncClient, presetQueryLogsOfEvent, Query } from "@envio-dev/hypersync-client";
-import { ChainConfig, DepositEvent, EventFilterOptions, WithdrawalEvent, RagequitEvent } from "../types/events.js";
+import {
+  HypersyncClient,
+  presetQueryLogsOfEvent,
+  Query,
+} from "@envio-dev/hypersync-client";
+import {
+  ChainConfig,
+  DepositEvent,
+  EventFilterOptions,
+  WithdrawalEvent,
+  RagequitEvent,
+} from "../types/events.js";
 import { bigintToHash } from "../crypto.js";
 import { Hash } from "../types/commitment.js";
 
@@ -28,7 +38,10 @@ export class DataService {
    * @param chainId Chain ID to fetch deposits from
    * @param options Event filter options
    */
-  async getDeposits(chainId: number, options: EventFilterOptions = {}): Promise<DepositEvent[]> {
+  async getDeposits(
+    chainId: number,
+    options: EventFilterOptions = {},
+  ): Promise<DepositEvent[]> {
     const client = this.getClientForChain(chainId);
     const config = this.getConfigForChain(chainId);
 
@@ -41,7 +54,7 @@ export class DataService {
       // topic0 is keccak256("Deposited(address,uint256,uint256,uint256,uint256)")
       "0xe3b53cd1a44fbf11535e145d80b8ef1ed6d57a73bf5daa7e939b6b01657d6549",
       Number(fromBlock),
-      toBlock ? Number(toBlock) : undefined
+      toBlock ? Number(toBlock) : undefined,
     );
 
     // Add depositor filter if provided
@@ -49,16 +62,16 @@ export class DataService {
       const queryWithTopics = query as Query & { topics: (string | null)[] };
       const topic0 = queryWithTopics.topics[0];
       if (!topic0) throw new Error("Invalid query: missing topic0");
-      
+
       queryWithTopics.topics = [
         topic0,
-        `0x000000000000000000000000${options.depositor.slice(2)}`
+        `0x000000000000000000000000${options.depositor.slice(2)}`,
       ];
     }
 
     const res = await client.get(query);
 
-    return res.data.logs.map(log => {
+    return res.data.logs.map((log) => {
       // Only depositor is indexed, so we expect 2 topics (topic0 + depositor)
       if (!log.topics || log.topics.length < 2) {
         throw new Error(`Invalid deposit log: missing topics`);
@@ -73,34 +86,37 @@ export class DataService {
 
       // Parse non-indexed parameters from data
       if (!log.data) throw new Error("Invalid deposit log: missing data");
-      
+
       // Remove '0x' and split into 32-byte chunks
       const data = log.data.slice(2).match(/.{64}/g);
       if (!data || data.length < 4) {
         throw new Error("Invalid deposit log: insufficient data");
       }
 
-      const commitment = BigInt('0x' + data[0]);
-      const label = BigInt('0x' + data[1]);
-      const value = BigInt('0x' + data[2]);
-      // merkleRoot is data[3], not used
+      const commitment = BigInt("0x" + data[0]);
+      const label = BigInt("0x" + data[1]);
+      const value = BigInt("0x" + data[2]);
+      const precommitment = BigInt("0x" + data[3]);
 
-      // NOTE: Precommitment field will be added to event in future update
-      // Using empty hash for now as placeholder
-      const precommitment = BigInt(0);
-
-      if (!depositor || !commitment || !label || !value || !log.blockNumber || !log.transactionHash) {
+      if (
+        !depositor ||
+        !commitment ||
+        !label ||
+        !value ||
+        !log.blockNumber ||
+        !log.transactionHash
+      ) {
         throw new Error(`Invalid deposit log: missing required fields`);
       }
 
       return {
-        depositor: `0x${depositor.toString(16).padStart(40, '0')}`,
+        depositor: `0x${depositor.toString(16).padStart(40, "0")}`,
         commitment: bigintToHash(commitment),
         label: bigintToHash(label),
         value,
         precommitment: bigintToHash(precommitment),
         blockNumber: BigInt(log.blockNumber),
-        transactionHash: log.transactionHash as unknown as Hash
+        transactionHash: log.transactionHash as unknown as Hash,
       };
     });
   }
@@ -110,7 +126,10 @@ export class DataService {
    * @param chainId Chain ID to fetch withdrawals from
    * @param options Event filter options
    */
-  async getWithdrawals(chainId: number, options: EventFilterOptions = {}): Promise<WithdrawalEvent[]> {
+  async getWithdrawals(
+    chainId: number,
+    options: EventFilterOptions = {},
+  ): Promise<WithdrawalEvent[]> {
     const client = this.getClientForChain(chainId);
     const config = this.getConfigForChain(chainId);
 
@@ -123,12 +142,12 @@ export class DataService {
       // topic0 is keccak256("Withdrawn(address,uint256,uint256,uint256)")
       "0x75e161b3e824b114fc1a33274bd7091918dd4e639cede50b78b15a4eea956a21",
       Number(fromBlock),
-      toBlock ? Number(toBlock) : undefined
+      toBlock ? Number(toBlock) : undefined,
     );
 
     const res = await client.get(query);
 
-    return res.data.logs.map(log => {
+    return res.data.logs.map((log) => {
       // Expect 2 topics (topic0 + processor)
       if (!log.topics || log.topics.length < 2) {
         throw new Error(`Invalid withdrawal log: missing topics`);
@@ -143,18 +162,24 @@ export class DataService {
 
       // Parse non-indexed parameters from data
       if (!log.data) throw new Error("Invalid withdrawal log: missing data");
-      
+
       // Remove '0x' and split into 32-byte chunks
       const data = log.data.slice(2).match(/.{64}/g);
       if (!data || data.length < 3) {
         throw new Error("Invalid withdrawal log: insufficient data");
       }
 
-      const value = BigInt('0x' + data[0]);
-      const spentNullifier = BigInt('0x' + data[1]);
-      const newCommitment = BigInt('0x' + data[2]);
+      const value = BigInt("0x" + data[0]);
+      const spentNullifier = BigInt("0x" + data[1]);
+      const newCommitment = BigInt("0x" + data[2]);
 
-      if (!value || !spentNullifier || !newCommitment || !log.blockNumber || !log.transactionHash) {
+      if (
+        !value ||
+        !spentNullifier ||
+        !newCommitment ||
+        !log.blockNumber ||
+        !log.transactionHash
+      ) {
         throw new Error(`Invalid withdrawal log: missing required fields`);
       }
 
@@ -163,7 +188,7 @@ export class DataService {
         spentNullifier: bigintToHash(spentNullifier),
         newCommitment: bigintToHash(newCommitment),
         blockNumber: BigInt(log.blockNumber),
-        transactionHash: log.transactionHash as unknown as Hash
+        transactionHash: log.transactionHash as unknown as Hash,
       };
     });
   }
@@ -173,7 +198,10 @@ export class DataService {
    * @param chainId Chain ID to fetch ragequits from
    * @param options Event filter options
    */
-  async getRagequits(chainId: number, options: EventFilterOptions = {}): Promise<RagequitEvent[]> {
+  async getRagequits(
+    chainId: number,
+    options: EventFilterOptions = {},
+  ): Promise<RagequitEvent[]> {
     const client = this.getClientForChain(chainId);
     const config = this.getConfigForChain(chainId);
 
@@ -186,12 +214,12 @@ export class DataService {
       // topic0 is keccak256("Ragequit(address,uint256,uint256,uint256)")
       "0xd2b3e868ae101106371f2bd93abc8d5a4de488b9fe47ed122c23625aa7172f13",
       Number(fromBlock),
-      toBlock ? Number(toBlock) : undefined
+      toBlock ? Number(toBlock) : undefined,
     );
 
     const res = await client.get(query);
 
-    return res.data.logs.map(log => {
+    return res.data.logs.map((log) => {
       // Only ragequitter is indexed, so we expect 2 topics (topic0 + ragequitter)
       if (!log.topics || log.topics.length < 2) {
         throw new Error(`Invalid ragequit log: missing topics`);
@@ -206,28 +234,35 @@ export class DataService {
 
       // Parse non-indexed parameters from data
       if (!log.data) throw new Error("Invalid ragequit log: missing data");
-      
+
       // Remove '0x' and split into 32-byte chunks
       const data = log.data.slice(2).match(/.{64}/g);
       if (!data || data.length < 3) {
         throw new Error("Invalid ragequit log: insufficient data");
       }
 
-      const commitment = BigInt('0x' + data[0]);
-      const label = BigInt('0x' + data[1]);
-      const value = BigInt('0x' + data[2]);
+      const commitment = BigInt("0x" + data[0]);
+      const label = BigInt("0x" + data[1]);
+      const value = BigInt("0x" + data[2]);
 
-      if (!ragequitter || !commitment || !label || !value || !log.blockNumber || !log.transactionHash) {
+      if (
+        !ragequitter ||
+        !commitment ||
+        !label ||
+        !value ||
+        !log.blockNumber ||
+        !log.transactionHash
+      ) {
         throw new Error(`Invalid ragequit log: missing required fields`);
       }
 
       return {
-        ragequitter: `0x${ragequitter.toString(16).padStart(40, '0')}`,
+        ragequitter: `0x${ragequitter.toString(16).padStart(40, "0")}`,
         commitment: bigintToHash(commitment),
         label: bigintToHash(label),
         value,
         blockNumber: BigInt(log.blockNumber),
-        transactionHash: log.transactionHash as unknown as Hash
+        transactionHash: log.transactionHash as unknown as Hash,
       };
     });
   }
@@ -240,18 +275,18 @@ export class DataService {
   async getAllEvents(chainId: number, options: EventFilterOptions = {}) {
     const [deposits, withdrawals] = await Promise.all([
       this.getDeposits(chainId, options),
-      this.getWithdrawals(chainId, options)
+      this.getWithdrawals(chainId, options),
     ]);
 
     // Combine and sort events by block number
     const allEvents = [
-      ...deposits.map(d => ({ type: 'deposit' as const, ...d })),
-      ...withdrawals.map(w => ({ type: 'withdrawal' as const, ...w }))
+      ...deposits.map((d) => ({ type: "deposit" as const, ...d })),
+      ...withdrawals.map((w) => ({ type: "withdrawal" as const, ...w })),
     ].sort((a, b) => {
       const blockDiff = a.blockNumber - b.blockNumber;
       if (blockDiff === 0n) {
         // If same block, deposits come before withdrawals
-        return a.type === 'deposit' ? -1 : 1;
+        return a.type === "deposit" ? -1 : 1;
       }
       return Number(blockDiff);
     });
@@ -268,7 +303,7 @@ export class DataService {
   }
 
   private getConfigForChain(chainId: number): ChainConfig {
-    const config = this.chainConfigs.find(c => c.chainId === chainId);
+    const config = this.chainConfigs.find((c) => c.chainId === chainId);
     if (!config) {
       throw new Error(`No configuration found for chain ID ${chainId}`);
     }
@@ -288,7 +323,9 @@ export class DataService {
       case 11155111: // Sepolia
         return "https://sepolia.hypersync.xyz";
       default:
-        throw new Error(`No Hypersync endpoint available for chain ID ${chainId}`);
+        throw new Error(
+          `No Hypersync endpoint available for chain ID ${chainId}`,
+        );
     }
   }
 }
