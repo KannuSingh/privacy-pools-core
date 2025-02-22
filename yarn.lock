@@ -2,10 +2,22 @@
 # yarn lockfile v1
 
 
-"@0xbow/privacy-pools-core-sdk@0.1.5", "@0xbow/privacy-pools-core-sdk@^0.1.5":
+"@0xbow/privacy-pools-core-sdk@0.1.5":
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/@0xbow/privacy-pools-core-sdk/-/privacy-pools-core-sdk-0.1.5.tgz#a574a1ade5f886c7e2c1e5d4907959cdf68e9de5"
   integrity sha512-iWLyhvfV5z6MPB5EBXyVRtpytbn8GsMSFlKVgnJ2goPb089KNHfMzwvmcgqPh2P8+i6bgB+9bBCrxvgOnLncmA==
+  dependencies:
+    "@types/snarkjs" "0.7.9"
+    "@zk-kit/lean-imt" "2.2.2"
+    maci-crypto "2.5.0"
+    snarkjs "0.7.5"
+    typescript "^5.7.3"
+    viem "2.22.14"
+
+"@0xbow/privacy-pools-core-sdk@0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@0xbow/privacy-pools-core-sdk/-/privacy-pools-core-sdk-0.1.7.tgz#ba4d327c90f9356445ce024d9144a6ddcc506595"
+  integrity sha512-kDlpu0r06Q/Vm5ZEiK0fbCcDsuwyaC98tL36MvOfZ+LD6Gi4kFDWiVOWG2h1KmC/rLA/Fa1iaml1GgimqDK1gQ==
   dependencies:
     "@types/snarkjs" "0.7.9"
     "@zk-kit/lean-imt" "2.2.2"

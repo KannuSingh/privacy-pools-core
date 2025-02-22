@@ -56,7 +56,7 @@ async function main() {
   ] = process.argv.slice(2);
 
   try {
-    const circuits = new Circuits();
+    const circuits = new Circuits({ browser: false });
     const sdk = new PrivacyPoolSDK(circuits);
 
     const stateMerkleProof = decodeAbiParameters(
@@ -143,7 +143,8 @@ async function main() {
 
     process.stdout.write(encodedProof);
     process.exit(0);
-  } catch {
+  } catch (e) {
+    console.error(e);
     process.exit(1);
   }
 }
