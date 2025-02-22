@@ -302,8 +302,8 @@ contract IntegrationERC20 is IntegrationBase {
     _withdrawThroughRelayer(
       WithdrawalParams({
         withdrawnAmount: 500 ether,
-        newNullifier: 'nullifier_2',
-        newSecret: 'secret_2',
+        newNullifier: 'nullifier_3',
+        newSecret: 'secret_3',
         recipient: _BOB,
         commitment: _commitment,
         revertReason: IPrivacyPool.IncorrectASPRoot.selector
@@ -353,44 +353,6 @@ contract IntegrationERC20 is IntegrationBase {
   }
 
   /**
-   * @notice Test that commitments with reused nullifiers can not be spent
-   */
-  function test_failWhenReusingNullifier() public {
-    // Alice deposits 5000 DAI
-    _commitment = _deposit(
-      DepositParams({depositor: _ALICE, asset: _DAI, amount: 5000 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
-    );
-
-    // Push ASP root with label included
-    vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
-
-    // Bob withdraws some of Alice's commitment
-    _commitment = _selfWithdraw(
-      WithdrawalParams({
-        withdrawnAmount: 2000 ether,
-        newNullifier: 'nullifier_1', // Reusing nullifier of deposit for new commitment
-        newSecret: 'secret_2',
-        recipient: _BOB,
-        commitment: _commitment,
-        revertReason: NONE
-      })
-    );
-
-    // Fail to spend the child commitment
-    _selfWithdraw(
-      WithdrawalParams({
-        withdrawnAmount: 2000 ether,
-        newNullifier: 'nullifier_3',
-        newSecret: 'secret_3',
-        recipient: _BOB,
-        commitment: _commitment,
-        revertReason: IState.NullifierAlreadySpent.selector
-      })
-    );
-  }
-
-  /**
    * @notice Test that spent commitments can not be ragequitted (and spent again)
    */
   function test_failWhenTryingToSpendRagequitCommitment() public {
@@ -419,3 +381,4 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 }
+

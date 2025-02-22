@@ -165,7 +165,7 @@ contract HandlersEntrypoint is Setup {
      *        - [3] value: Value of the commitment being ragequit
      *        - [4] label: Label of commitment
      */
-    uint256[5] memory pubSignals = [_commitment, _precommitment, _nullifier, _value, _label];
+    uint256[4] memory pubSignals = [_commitment,  _nullifier, _value, _label];
 
     return ProofLib.RagequitProof({pA: _oneArray, pB: _twoArray, pC: _oneArray, pubSignals: pubSignals});
   }

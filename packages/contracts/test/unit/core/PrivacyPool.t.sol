@@ -647,7 +647,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );
@@ -687,7 +687,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(false)
     );
@@ -705,7 +705,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );
@@ -724,7 +724,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );
@@ -800,3 +800,4 @@ contract UnitStateViews is UnitPrivacyPool {
     assertEq(_pool.currentTreeSize(), _size);
   }
 }
+

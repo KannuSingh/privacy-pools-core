@@ -369,7 +369,7 @@ contract IntegrationBase is Test {
     _pool.ragequit(_proof);
 
     // Insert new commitment in mirrored state tree
-    assertTrue(_pool.nullifierHashes(_proof.pubSignals[2]), 'Existing nullifier hash must be spent');
+    assertTrue(_pool.nullifierHashes(_proof.pubSignals[1]), 'Existing nullifier hash must be spent');
 
     // Check balance changes
     assertEq(

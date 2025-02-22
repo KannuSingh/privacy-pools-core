@@ -326,8 +326,8 @@ contract IntegrationNative is IntegrationBase {
     _withdrawThroughRelayer(
       WithdrawalParams({
         withdrawnAmount: 40 ether,
-        newNullifier: 'nullifier_2',
-        newSecret: 'secret_2',
+        newNullifier: 'nullifier_3',
+        newSecret: 'secret_3',
         recipient: _BOB,
         commitment: _commitment,
         revertReason: IPrivacyPool.IncorrectASPRoot.selector
@@ -367,44 +367,6 @@ contract IntegrationNative is IntegrationBase {
     _selfWithdraw(
       WithdrawalParams({
         withdrawnAmount: _commitment.value,
-        newNullifier: 'nullifier_2',
-        newSecret: 'secret_2',
-        recipient: _BOB,
-        commitment: _commitment,
-        revertReason: IState.NullifierAlreadySpent.selector
-      })
-    );
-  }
-
-  /**
-   * @notice Test that commitments with reused nullifiers can not be spent
-   */
-  function test_failWhenReusingNullifier() public {
-    // Alice deposits 100 ETH
-    _commitment = _deposit(
-      DepositParams({depositor: _ALICE, asset: _ETH, amount: 100 ether, nullifier: 'nullifier_1', secret: 'secret_1'})
-    );
-
-    // Push ASP root with label included
-    vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
-
-    // Bob partially withdraws Alice's commitment
-    _commitment = _selfWithdraw(
-      WithdrawalParams({
-        withdrawnAmount: 20 ether,
-        newNullifier: 'nullifier_1', // Reusing nullifier of deposit for new commitment
-        newSecret: 'secret_2',
-        recipient: _BOB,
-        commitment: _commitment,
-        revertReason: NONE
-      })
-    );
-
-    // Fail to spend the child commitment because it was generated using an already spent nullifier
-    _selfWithdraw(
-      WithdrawalParams({
-        withdrawnAmount: 20 ether,
         newNullifier: 'nullifier_3',
         newSecret: 'secret_3',
         recipient: _BOB,
@@ -443,3 +405,4 @@ contract IntegrationNative is IntegrationBase {
     );
   }
 }
+

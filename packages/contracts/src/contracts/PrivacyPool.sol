@@ -96,7 +96,7 @@ abstract contract PrivacyPool is State, IPrivacyPool {
     _commitment = PoseidonT4.hash([_value, _label, _precommitmentHash]);
 
     // Insert commitment in state (revert if already present)
-    uint256 _updatedRoot = _insert(_commitment);
+    _insert(_commitment);
 
     // Pull funds from caller
     _pull(msg.sender, _value);
