@@ -1,4 +1,4 @@
-name: SDK / Canary Release
+name: SDK / Release
 
 on: workflow_dispatch
 
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 20.x
           cache: "yarn"
-          registry-url: "https://npm.pkg.github.com/"
+          registry-url: "https://registry.npmjs.org/"
 
       - name: Install dependencies
         run: yarn --frozen-lockfile --network-concurrency 1
@@ -38,11 +38,16 @@ jobs:
           bash ./scripts/copy_circuits.sh
         working-directory: packages/sdk
 
-      - name: Set canary version
-        run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
+      - name: Get current version and set new version
+        run: |
+          CURRENT_VERSION=$(npm view @0xbow/privacy-pools-core-sdk | grep latest | cut -d' ' -f2)
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          PATCH_VERSION=$((VERSION_PARTS[2] + 1))
+          NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          yarn version --new-version $NEW_VERSION --no-git-tag-version
 
       - name: Publish canary
-        # run: npm publish --access public --tag canary
-        run: npm publish --access restricted --tag canary
+        run: npm publish --access public --tag latest
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
