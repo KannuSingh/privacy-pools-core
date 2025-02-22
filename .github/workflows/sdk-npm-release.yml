@@ -1,4 +1,4 @@
-name: SDK / Canary Release
+name: SDK / Release
 
 on: workflow_dispatch
 
