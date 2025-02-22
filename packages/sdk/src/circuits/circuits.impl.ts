@@ -9,6 +9,12 @@ import {
   Version,
   VersionString,
 } from "./circuits.interface.js";
+import { importFetchVersionedArtifact } from "./fetchArtifacts.js";
+
+interface CircuitOptions {
+  baseUrl?: string;
+  browser?: boolean;
+}
 
 /**
  * Class representing circuit management and artifact handling.
@@ -39,6 +45,22 @@ export class Circuits implements CircuitsInterface {
    * @protected
    */
   protected baseUrl: string = import.meta.url;
+
+  protected readonly browser: boolean = true;
+
+  /**
+   * Constructor to initialize the Circuits class with an optional custom base URL.
+   * @param {string} [options.baseUrl] - The base URL for fetching circuit artifacts (optional).
+   * @param {boolean} [options.browser] - Controls how the circuits will be loaded, using either `fetch` if true or `fs` otherwise. Defaults to true.
+   */
+  constructor(options?: CircuitOptions) {
+    if (options?.baseUrl) {
+      this.baseUrl = options.baseUrl;
+    }
+    if (options?.browser !== undefined) {
+      this.browser = options.browser;
+    }
+  }
 
   /**
    * Determines whether the environment is a browser.
@@ -96,23 +118,10 @@ export class Circuits implements CircuitsInterface {
    */
   async _fetchVersionedArtifact(artifactPath: string): Promise<Uint8Array> {
     const artifactUrl = new URL(artifactPath, this.baseUrl);
-    if (this._browser()) {
-      const res = await fetch(artifactUrl);
-      if (res.status !== 200) {
-        throw new FetchArtifact(artifactUrl);
-      }
-      const aBuf = await res.arrayBuffer();
-      return new Uint8Array(aBuf);
-    } else {
-      try {
-        const fs = (await import("node:fs/promises")).default;
-        const buf = await fs.readFile(artifactUrl);
-        return new Uint8Array(buf);
-      } catch (error) {
-        console.error(error);
-        throw new FetchArtifact(artifactUrl);
-      }
-    }
+    const { fetchVersionedArtifact } = await importFetchVersionedArtifact(
+      this.browser,
+    );
+    return fetchVersionedArtifact(artifactUrl);
   }
 
   /**

@@ -38,7 +38,7 @@ describe("Circuits for browser", () => {
   });
 
   it("throws a FetchArtifact exception if artifact is not found at URI", async () => {
-    expect(async () => {
+    await expect(async () => {
       return await circuits._fetchVersionedArtifact(
         "artifacts/artifact_not_here.wasm",
       );
@@ -46,7 +46,7 @@ describe("Circuits for browser", () => {
   });
 
   it("loads artifact if correctly served", async () => {
-    expect(
+    await expect(
       circuits._fetchVersionedArtifact("artifacts/withdraw.wasm"),
     ).resolves.toBeInstanceOf(Uint8Array);
   });

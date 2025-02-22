@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@0xbow/privacy-pools-core-sdk@0.1.5":
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/@0xbow/privacy-pools-core-sdk/-/privacy-pools-core-sdk-0.1.5.tgz#a574a1ade5f886c7e2c1e5d4907959cdf68e9de5"
-  integrity sha512-iWLyhvfV5z6MPB5EBXyVRtpytbn8GsMSFlKVgnJ2goPb089KNHfMzwvmcgqPh2P8+i6bgB+9bBCrxvgOnLncmA==
+"@0xbow/privacy-pools-core-sdk@0.1.6":
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/@0xbow/privacy-pools-core-sdk/-/privacy-pools-core-sdk-0.1.6.tgz#08721c1fca458ceac273bbe1cd39457832fe41db"
+  integrity sha512-rMLgWBrthPP1mIxT4uV41Qau9K+9nCl7qfQaYMWBhkGT1Fo4+R9RpSbJQpg2akiOiKukkhHkQmc6cRehWukMrg==
   dependencies:
     "@types/snarkjs" "0.7.9"
     "@zk-kit/lean-imt" "2.2.2"
