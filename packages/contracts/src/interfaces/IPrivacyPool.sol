@@ -196,4 +196,3 @@ interface IPrivacyPoolComplex is IPrivacyPool {
    */
   error NativeAssetNotSupported();
 }
-

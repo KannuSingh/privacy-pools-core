@@ -165,4 +165,3 @@ library ProofLib {
     return _p.pubSignals[3];
   }
 }
-

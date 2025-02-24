@@ -800,4 +800,3 @@ contract UnitStateViews is UnitPrivacyPool {
     assertEq(_pool.currentTreeSize(), _size);
   }
 }
-

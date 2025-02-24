@@ -381,4 +381,3 @@ contract IntegrationERC20 is IntegrationBase {
     );
   }
 }
-

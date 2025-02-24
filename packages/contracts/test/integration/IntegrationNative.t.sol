@@ -405,4 +405,3 @@ contract IntegrationNative is IntegrationBase {
     );
   }
 }
-

@@ -151,7 +151,7 @@ contract IntegrationProofs is IntegrationBase {
         label: _commitment.label,
         existingValue: _commitment.value,
         existingNullifier: _commitment.nullifier,
-        existingSecret: _commitment.secret, 
+        existingSecret: _commitment.secret,
         newNullifier: _genSecretBySeed('nullifier_1'), // same nullifier as spending commitment
         newSecret: _genSecretBySeed('secret_2')
       })
