@@ -185,3 +185,25 @@ code:not([class^="language-"]) {
 .markdown code {
   font-size: 1.16rem; /* 18px for code */
 }
+
+
+.navbar__title {
+  font-size: 1.5rem;
+}
+
+.table-of-contents__link {
+  font-size: 1.2rem;
+}
+
+.toc-highlight {
+    font-size: 1.2rem;
+}
+
+.navbar__item {
+    font-size: 1.2rem;
+    line-height: 1rem;
+}
+
+.footer {
+  background: #1a1a1a;
+}
