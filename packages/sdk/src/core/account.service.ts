@@ -11,18 +11,20 @@ import {
 } from "../types/account.js";
 
 export class AccountService {
-  private account: PrivacyPoolAccount;
+  account: PrivacyPoolAccount;
 
   constructor(
     private readonly dataService: DataService,
     account?: PrivacyPoolAccount,
-    seed?: Hex,
+    mnemonic?: string,
   ) {
-    this.account = account || this._initializeAccount(seed);
+    this.account = account || this._initializeAccount(mnemonic);
   }
 
   private _initializeAccount(mnemonic?: string): PrivacyPoolAccount {
     mnemonic = mnemonic || generateMnemonic(english, 128);
+
+    console.log("mnemonic: ", mnemonic);
 
     let key1 = bytesToNumber(
       mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
@@ -108,14 +110,17 @@ export class AccountService {
    * @param scope The scope of the pool to deposit into
    * @returns The nullifier, secret, and precommitment for the deposit
    */
-  public createDepositSecrets(scope: Hash): {
+  public createDepositSecrets(
+    scope: Hash,
+    index?: bigint,
+  ): {
     nullifier: Secret;
     secret: Secret;
     precommitment: Hash;
   } {
     // Find the next available index for this scope
     const accounts = this.account.poolAccounts.get(scope);
-    const index = BigInt(accounts?.length || 0);
+    index = index || BigInt(accounts?.length || 0);
 
     const nullifier = this._genDepositNullifier(scope, index);
     const secret = this._genDepositSecret(scope, index);
@@ -158,6 +163,59 @@ export class AccountService {
   }
 
   /**
+   * Adds a new pool account after depositing
+   * @param scope The scope of the pool
+   * @param value The deposit value
+   * @param nullifier The nullifier used for the deposit
+   * @param secret The secret used for the deposit
+   * @param label The label for the commitment
+   * @param blockNumber The block number of the deposit
+   * @param txHash The transaction hash of the deposit
+   * @returns The new pool account
+   */
+  public addPoolAccount(
+    scope: Hash,
+    value: bigint,
+    nullifier: Secret,
+    secret: Secret,
+    label: Hash,
+    blockNumber: bigint,
+    txHash: Hash,
+  ): PoolAccount {
+    const precommitment = this._hashPrecommitment(nullifier, secret);
+    const commitment = this._hashCommitment(value, label, precommitment);
+
+    const newAccount: PoolAccount = {
+      label,
+      deposit: {
+        hash: commitment,
+        value,
+        label,
+        nullifier,
+        secret,
+        blockNumber,
+        txHash,
+      },
+      children: [],
+    };
+
+    // Initialize the array for this scope if it doesn't exist
+    if (!this.account.poolAccounts.has(scope)) {
+      this.account.poolAccounts.set(scope, []);
+    }
+
+    // Add the new account
+    this.account.poolAccounts.get(scope)!.push(newAccount);
+
+    this._log(
+      "Deposit",
+      `Added new pool account with value ${value} and label ${label}`,
+    );
+
+    return newAccount;
+  }
+
+  /**
    * Adds a new commitment to the account after spending
    * @param parentCommitment The commitment that was spent
    * @param value The remaining value after spending
@@ -165,7 +223,7 @@ export class AccountService {
    * @param secret The secret used for spending
    * @returns The new commitment
    */
-  public addCommitment(
+  public addWithdrawalCommitment(
     parentCommitment: Commitment,
     value: bigint,
     nullifier: Secret,
