@@ -210,7 +210,7 @@ contract IntegrationBase is Test {
     // Expect Pool event emission
     vm.expectEmit(address(_pool));
     emit IPrivacyPool.Deposited(
-      _params.depositor, _commitment.hash, _commitment.label, _commitment.value, _shadowMerkleTree._root()
+      _params.depositor, _commitment.hash, _commitment.label, _commitment.value, _commitment.precommitment
     );
 
     // Expect Entrypoint event emission
@@ -369,7 +369,7 @@ contract IntegrationBase is Test {
     _pool.ragequit(_proof);
 
     // Insert new commitment in mirrored state tree
-    assertTrue(_pool.nullifierHashes(_proof.pubSignals[2]), 'Existing nullifier hash must be spent');
+    assertTrue(_pool.nullifierHashes(_proof.pubSignals[1]), 'Existing nullifier hash must be spent');
 
     // Check balance changes
     assertEq(

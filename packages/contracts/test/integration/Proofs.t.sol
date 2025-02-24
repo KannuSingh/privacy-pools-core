@@ -140,6 +140,24 @@ contract IntegrationProofs is IntegrationBase {
     );
   }
 
+  function test_failToGenerateProof_whenReusingNullifier() public {
+    // Try to witdhraw with an invalid commitment value
+    vm.expectRevert(WithdrawalProofGenerationFailed.selector);
+    _generateWithdrawalProof(
+      WithdrawalProofParams({
+        existingCommitment: _commitment.hash,
+        withdrawnValue: _commitment.value,
+        context: _context,
+        label: _commitment.label,
+        existingValue: _commitment.value,
+        existingNullifier: _commitment.nullifier,
+        existingSecret: _commitment.secret,
+        newNullifier: _genSecretBySeed('nullifier_1'), // same nullifier as spending commitment
+        newSecret: _genSecretBySeed('secret_2')
+      })
+    );
+  }
+
   function test_failToWithdraw_whenPublicSignalMismatch() public {
     // Generate a valid proof
     ProofLib.WithdrawProof memory _proof = _generateWithdrawalProof(

@@ -295,7 +295,7 @@ contract UnitDeposit is UnitPrivacyPool {
     vm.expectEmit(address(_pool));
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     // Execute deposit operation
     _pool.deposit(_depositor, _amount, _precommitmentHash);
@@ -334,7 +334,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
     address _retrievedDepositor = _pool.depositors(_label);
@@ -363,7 +363,7 @@ contract UnitDeposit is UnitPrivacyPool {
     emit PoolForTest.Pulled(_ENTRYPOINT, _amount);
 
     vm.expectEmit(address(_pool));
-    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _newRoot);
+    emit IPrivacyPool.Deposited(_depositor, _commitment, _label, _amount, _precommitmentHash);
 
     _pool.deposit(_depositor, _amount, _precommitmentHash);
     address _retrievedDepositor = _pool.depositors(_label);
@@ -647,7 +647,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );
@@ -687,7 +687,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(false)
     );
@@ -705,7 +705,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );
@@ -724,7 +724,7 @@ contract UnitRagequit is UnitPrivacyPool {
     _mockAndExpect(
       _RAGEQUIT_VERIFIER,
       abi.encodeWithSignature(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[5])', _p.pA, _p.pB, _p.pC, _p.pubSignals
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])', _p.pA, _p.pB, _p.pC, _p.pubSignals
       ),
       abi.encode(true)
     );

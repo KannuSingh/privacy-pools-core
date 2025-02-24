@@ -33,6 +33,6 @@ interface IVerifier {
     uint256[2] memory _pA,
     uint256[2][2] memory _pB,
     uint256[2] memory _pC,
-    uint256[5] memory _pubSignals
+    uint256[4] memory _pubSignals
   ) external returns (bool _valid);
 }

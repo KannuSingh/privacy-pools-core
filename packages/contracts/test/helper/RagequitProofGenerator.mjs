@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-import {
-  PrivacyPoolSDK,
-  Circuits,
-} from "@0xbow/privacy-pools-core-sdk";
+import { PrivacyPoolSDK, Circuits } from "@0xbow/privacy-pools-core-sdk";
 import { encodeAbiParameters } from "viem";
 
 // Function to temporarily redirect stdout
@@ -34,7 +31,7 @@ async function main() {
   const [value, label, nullifier, secret] = process.argv.slice(2).map(BigInt);
 
   try {
-    const circuits = new Circuits();
+    const circuits = new Circuits({ browser: false });
     const privacyPoolSDK = new PrivacyPoolSDK(circuits);
 
     // Wrap the proveCommitment call with stdout redirection
@@ -58,10 +55,9 @@ async function main() {
       _pC: [BigInt(proof.pi_c[0]), BigInt(proof.pi_c[1])],
       _pubSignals: [
         publicSignals[0], // commitment hash
-        publicSignals[1], // precommitment hash
-        publicSignals[2], // nullifier hash
-        publicSignals[3], // value
-        publicSignals[4], // label
+        publicSignals[1], // nullifier hash
+        publicSignals[2], // value
+        publicSignals[3], // label
       ].map((x) => BigInt(x)),
     };
 
@@ -73,7 +69,7 @@ async function main() {
             { name: "_pA", type: "uint256[2]" },
             { name: "_pB", type: "uint256[2][2]" },
             { name: "_pC", type: "uint256[2]" },
-            { name: "_pubSignals", type: "uint256[5]" },
+            { name: "_pubSignals", type: "uint256[4]" },
           ],
         },
       ],
@@ -82,7 +78,8 @@ async function main() {
 
     process.stdout.write(encodedProof);
     process.exit(0);
-  } catch {
+  } catch (e) {
+    console.error(e);
     // Exit silently on any error
     process.exit(1);
   }

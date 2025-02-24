@@ -118,16 +118,15 @@ library ProofLib {
    * @param pC Third elliptic curve point (π_C) of the Groth16 proof, encoded as two field elements
    * @param pubSignals Array of public inputs and outputs:
    *        - [0] commitmentHash: Hash of the commitment being ragequit
-   *        - [1] precommitmentHash: Precommitment hash of the commitment being ragequit
-   *        - [2] nullifierHash: Nullifier hash of commitment being ragequit
-   *        - [3] value: Value of the commitment being ragequit
-   *        - [4] label: Label of commitment
+   *        - [1] nullifierHash: Nullifier hash of commitment being ragequit
+   *        - [2] value: Value of the commitment being ragequit
+   *        - [3] label: Label of commitment
    */
   struct RagequitProof {
     uint256[2] pA;
     uint256[2][2] pB;
     uint256[2] pC;
-    uint256[5] pubSignals;
+    uint256[4] pubSignals;
   }
 
   /**
@@ -140,21 +139,12 @@ library ProofLib {
   }
 
   /**
-   * @notice Retrieves the precommitment hash from the proof's public signals
-   * @param _p The ragequit proof containing the public signals
-   * @return The precommitment hash
-   */
-  function precommitmentHash(RagequitProof memory _p) internal pure returns (uint256) {
-    return _p.pubSignals[1];
-  }
-
-  /**
    * @notice Retrieves the nullifier hash from the proof's public signals
    * @param _p The ragequit proof containing the public signals
    * @return The nullifier hash
    */
   function nullifierHash(RagequitProof memory _p) internal pure returns (uint256) {
-    return _p.pubSignals[2];
+    return _p.pubSignals[1];
   }
 
   /**
@@ -163,7 +153,7 @@ library ProofLib {
    * @return The commitment value
    */
   function value(RagequitProof memory _p) internal pure returns (uint256) {
-    return _p.pubSignals[3];
+    return _p.pubSignals[2];
   }
 
   /**
@@ -172,6 +162,6 @@ library ProofLib {
    * @return The commitment label
    */
   function label(RagequitProof memory _p) internal pure returns (uint256) {
-    return _p.pubSignals[4];
+    return _p.pubSignals[3];
   }
 }
