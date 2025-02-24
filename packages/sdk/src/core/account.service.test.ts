@@ -5,6 +5,7 @@ import { Hash } from "../types/commitment.js";
 import { DepositEvent, WithdrawalEvent } from "../types/events.js";
 import { PoolInfo } from "../types/account.js";
 import { generatePrivateKey } from "viem/accounts";
+import { bigintToHash } from "../crypto.js";
 
 describe("AccountService", () => {
   let dataService: DataService;
@@ -14,14 +15,14 @@ describe("AccountService", () => {
   const pool1: PoolInfo = {
     chainId: 1,
     address: "0x1234567890123456789012345678901234567890",
-    scope: "0x1111111111111111111111111111111111111111111111111111111111111111" as Hash,
+    scope: bigintToHash(BigInt("0x1111111111111111111111111111111111111111111111111111111111111111")),
     deploymentBlock: 1000n,
   };
 
   const pool2: PoolInfo = {
     chainId: 137,
     address: "0x9876543210987654321098765432109876543210",
-    scope: "0x2222222222222222222222222222222222222222222222222222222222222222" as Hash,
+    scope: bigintToHash(BigInt("0x2222222222222222222222222222222222222222222222222222222222222222")),
     deploymentBlock: 2000n,
   };
 
@@ -31,57 +32,57 @@ describe("AccountService", () => {
   const pool1Deposits: DepositEvent[] = [
     {
       depositor: "0xdepositor1",
-      commitment: "0xc1" as Hash,
-      label: "0xf1" as Hash,
+      commitment: bigintToHash(BigInt("0xc1")),
+      label: bigintToHash(BigInt("0xf1")),
       value: 100n,
-      precommitment: "0xp1" as Hash,
+      precommitment: bigintToHash(BigInt("0xp1")),
       blockNumber: 1100n,
-      transactionHash: "0xt1" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt1")),
     },
     {
       depositor: "0xdepositor2",
-      commitment: "0xc2" as Hash,
-      label: "0xf2" as Hash,
+      commitment: bigintToHash(BigInt("0xc2")),
+      label: bigintToHash(BigInt("0xf2")),
       value: 200n,
-      precommitment: "0xp2" as Hash,
+      precommitment: bigintToHash(BigInt("0xp2")),
       blockNumber: 1200n,
-      transactionHash: "0xt2" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt2")),
     },
   ];
 
   const pool1Withdrawals: WithdrawalEvent[] = [
     {
       withdrawn: 30n,
-      spentNullifier: "0xn1" as Hash,
-      newCommitment: "0xc3" as Hash,
+      spentNullifier: bigintToHash(BigInt("0xn1")),
+      newCommitment: bigintToHash(BigInt("0xc3")),
       blockNumber: 1150n,
-      transactionHash: "0xt3" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt3")),
     },
     {
       withdrawn: 40n,
-      spentNullifier: "0xn2" as Hash,
-      newCommitment: "0xc4" as Hash,
+      spentNullifier: bigintToHash(BigInt("0xn2")),
+      newCommitment: bigintToHash(BigInt("0xc4")),
       blockNumber: 1160n,
-      transactionHash: "0xt4" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt4")),
     },
     {
       withdrawn: 150n,
-      spentNullifier: "0xn3" as Hash,
-      newCommitment: "0xc5" as Hash,
+      spentNullifier: bigintToHash(BigInt("0xn3")),
+      newCommitment: bigintToHash(BigInt("0xc5")),
       blockNumber: 1250n,
-      transactionHash: "0xt5" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt5")),
     },
   ];
 
   const pool2Deposits: DepositEvent[] = [
     {
       depositor: "0xdepositor3",
-      commitment: "0xc6" as Hash,
-      label: "0xf3" as Hash,
+      commitment: bigintToHash(BigInt("0xc6")),
+      label: bigintToHash(BigInt("0xf3")),
       value: 300n,
-      precommitment: "0xp3" as Hash,
+      precommitment: bigintToHash(BigInt("0xp3")),
       blockNumber: 2100n,
-      transactionHash: "0xt6" as Hash,
+      transactionHash: bigintToHash(BigInt("0xt6")),
     },
   ];
 
@@ -124,10 +125,10 @@ describe("AccountService", () => {
       expect(pool1Accounts).toHaveLength(2);
 
       // First deposit should have 30 remaining (100 - 30 - 40)
-      expect(pool1Accounts![0].value).toBe(30n);
+      expect(pool1Accounts![0]!.value).toBe(30n);
 
       // Second deposit should have 50 remaining (200 - 150)
-      expect(pool1Accounts![1].value).toBe(50n);
+      expect(pool1Accounts![1]!.value).toBe(50n);
 
       // Verify pool2 accounts
       const pool2Accounts = spendable.get(pool2.scope);
@@ -135,7 +136,7 @@ describe("AccountService", () => {
       expect(pool2Accounts).toHaveLength(1);
 
       // Deposit should have full value (no withdrawals)
-      expect(pool2Accounts![0].value).toBe(300n);
+      expect(pool2Accounts![0]!.value).toBe(300n);
 
       // Verify DataService calls
       expect(dataService.getDeposits).toHaveBeenCalledWith(pool1.chainId, {
@@ -158,7 +159,7 @@ describe("AccountService", () => {
       const emptyPool: PoolInfo = {
         chainId: 10,
         address: "0xempty",
-        scope: "0xempty" as Hash,
+        scope: bigintToHash(BigInt("0xdeadbeef")), // Using a valid hex value
         deploymentBlock: 3000n,
       };
 
@@ -176,7 +177,7 @@ describe("AccountService", () => {
 
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1);
-      expect(accounts![0].value).toBe(300n);
+      expect(accounts![0]!.value).toBe(300n);
     });
   });
 }); 
