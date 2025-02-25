@@ -33,6 +33,7 @@ jobs:
 
       - name: Build SDK
         run: |
+          yarn clean
           yarn build
           chmod +x ./scripts/copy_circuits.sh
           bash ./scripts/copy_circuits.sh
