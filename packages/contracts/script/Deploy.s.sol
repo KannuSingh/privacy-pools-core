@@ -208,4 +208,3 @@ contract EthereumMainnet is DeployProtocol {
     super.setUp();
   }
 }
-

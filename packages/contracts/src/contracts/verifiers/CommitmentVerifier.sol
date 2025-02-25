@@ -214,4 +214,3 @@ contract CommitmentVerifier {
     }
   }
 }
-

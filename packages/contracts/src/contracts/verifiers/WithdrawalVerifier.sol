@@ -250,4 +250,3 @@ contract WithdrawalVerifier {
     }
   }
 }
-
