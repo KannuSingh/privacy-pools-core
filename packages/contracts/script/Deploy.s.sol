@@ -79,10 +79,10 @@ abstract contract DeployProtocol is Script {
     _deploySimplePool(_simpleConfig.symbol, _simpleConfig.minimumDepositAmount, _simpleConfig.vettingFeeBPS);
 
     // Deploy the ERC20 pools
-    for (uint256 _i; _i < _poolConfigs.length; ++_i) {
-      PoolConfig memory _config = _poolConfigs[_i];
-      _deployComplexPool(_config.symbol, _config.asset, _config.minimumDepositAmount, _config.vettingFeeBPS);
-    }
+    // for (uint256 _i; _i < _poolConfigs.length; ++_i) {
+    //   PoolConfig memory _config = _poolConfigs[_i];
+    //   _deployComplexPool(_config.symbol, _config.asset, _config.minimumDepositAmount, _config.vettingFeeBPS);
+    // }
 
     vm.stopBroadcast();
   }
@@ -169,9 +169,9 @@ contract EthereumSepolia is DeployProtocol {
     vm.startBroadcast();
 
     // TestToken
-    _poolConfigs.push(
-      PoolConfig({symbol: 'TST', asset: _deployTestToken(), minimumDepositAmount: 100 ether, vettingFeeBPS: 100}) // 1%
-    );
+    // _poolConfigs.push(
+    //   PoolConfig({symbol: 'TST', asset: _deployTestToken(), minimumDepositAmount: 100 ether, vettingFeeBPS: 100}) // 1%
+    // );
 
     vm.stopBroadcast();
 
