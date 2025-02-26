@@ -11,11 +11,14 @@ import {
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { Hash, Secret } from "../../src/types/commitment.js";
 import { getAddress, Hex, keccak256 } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount, generateMnemonic, english } from "viem/accounts";
 import { SNARK_SCALAR_FIELD } from "../../src/constants.js";
 import { Withdrawal } from "../../src/index.js";
 
+const mnemonic = generateMnemonic(english);
+
 describe("Crypto Utilities", () => {
+
   describe("hashPrecommitment", () => {
     it("computes Poseidon hash of nullifier and secret", () => {
       const nullifier = BigInt(123) as Secret;
@@ -32,7 +35,7 @@ describe("Crypto Utilities", () => {
     it("creates a valid commitment", () => {
       const value = BigInt(1000);
       const label = BigInt(42);
-      const keys = generateMasterKeys("0x1234" as Hex);
+      const keys = generateMasterKeys(mnemonic);
       const { nullifier, secret } = generateDepositSecrets(keys, BigInt("0x5678") as Hash, BigInt(1));
 
       const commitment = getCommitment(value, label, nullifier, secret);
@@ -133,36 +136,26 @@ describe("Crypto Utilities", () => {
 
 describe("Master Key Generation", () => {
   it("generates deterministic master keys from a seed", () => {
-    const seed = "0x1234" as Hex;
-    const keys1 = generateMasterKeys(seed);
-    const keys2 = generateMasterKeys(seed);
+    const keys1 = generateMasterKeys(mnemonic);
+    const keys2 = generateMasterKeys(mnemonic);
 
-    expect(keys1.masterKey1).toBeDefined();
-    expect(keys1.masterKey2).toBeDefined();
+    expect(keys1.masterNullifier).toBeDefined();
+    expect(keys1.masterSecret).toBeDefined();
     expect(keys1).toEqual(keys2); // Same seed should produce same keys
-    expect(keys1.masterKey1).not.toEqual(keys1.masterKey2); // Keys should be different
-  });
-
-  it("generates different master keys without seed", () => {
-    const keys1 = generateMasterKeys();
-    const keys2 = generateMasterKeys();
-
-    expect(keys1.masterKey1).toBeDefined();
-    expect(keys1.masterKey2).toBeDefined();
-    expect(keys1).not.toEqual(keys2); // Different calls should produce different keys
+    expect(keys1.masterNullifier).not.toEqual(keys1.masterSecret); // Keys should be different
   });
 
   it("generates keys within SNARK scalar field", () => {
-    const keys = generateMasterKeys();
+    const keys = generateMasterKeys(mnemonic);
     
-    expect(BigInt(keys.masterKey1) < SNARK_SCALAR_FIELD).toBe(true);
-    expect(BigInt(keys.masterKey2) < SNARK_SCALAR_FIELD).toBe(true);
+    expect(BigInt(keys.masterNullifier) < SNARK_SCALAR_FIELD).toBe(true);
+    expect(BigInt(keys.masterSecret) < SNARK_SCALAR_FIELD).toBe(true);
   });
 });
 
 describe("Deposit Secrets Generation", () => {
   it("generates deterministic deposit secrets", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const scope = BigInt("0x5678") as Hash;
     const index = BigInt(1);
 
@@ -175,7 +168,7 @@ describe("Deposit Secrets Generation", () => {
   });
 
   it("generates different secrets for different indices", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const scope = BigInt("0x5678") as Hash;
     
     const secrets1 = generateDepositSecrets(keys, scope, BigInt(1));
@@ -186,7 +179,7 @@ describe("Deposit Secrets Generation", () => {
   });
 
   it("generates different secrets for different scopes", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const index = BigInt(1);
     
     const secrets1 = generateDepositSecrets(keys, BigInt("0x5678") as Hash, index);
@@ -199,7 +192,7 @@ describe("Deposit Secrets Generation", () => {
 
 describe("Withdrawal Secrets Generation", () => {
   it("generates deterministic withdrawal secrets", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const label = BigInt("0x5678") as Hash;
     const index = BigInt(1);
 
@@ -212,7 +205,7 @@ describe("Withdrawal Secrets Generation", () => {
   });
 
   it("generates different secrets for different indices", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const label = BigInt("0x5678") as Hash;
     
     const secrets1 = generateWithdrawalSecrets(keys, label, BigInt(1));
@@ -223,7 +216,7 @@ describe("Withdrawal Secrets Generation", () => {
   });
 
   it("generates different secrets for different labels", () => {
-    const keys = generateMasterKeys("0x1234" as Hex);
+    const keys = generateMasterKeys(mnemonic);
     const index = BigInt(1);
     
     const secrets1 = generateWithdrawalSecrets(keys, BigInt("0x5678") as Hash, index);

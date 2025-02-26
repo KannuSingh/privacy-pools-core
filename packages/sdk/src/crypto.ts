@@ -1,4 +1,5 @@
-import { generatePrivateKey } from "viem/accounts";
+import { mnemonicToAccount } from "viem/accounts";
+import { bytesToNumber } from "viem/utils";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT, LeanIMTMerkleProof } from "@zk-kit/lean-imt";
 import {
@@ -36,16 +37,26 @@ function validateNonZero(value: bigint, name: string) {
  * @param {Hex} seed - The optional seed.
  * @returns {MasterKeys} The master key pair.
  */
-export function generateMasterKeys(seed?: Hex): MasterKeys {
-  // Get a 256 bit value out of the arbitraty length seed
-  const preimage = seed ? keccak256(seed!) : generatePrivateKey();
-  // Modulo it down to the snark scalar field
-  const snarkPreimage = BigInt(preimage) % SNARK_SCALAR_FIELD;
+export function generateMasterKeys(mnemonic: string): MasterKeys {
+    if (!mnemonic) {
+        throw new PrivacyPoolError(
+            ErrorCode.INVALID_VALUE,
+            "Invalid input: mnemonic phrase is required."
+        );
+    }
+     
+    let key1 = bytesToNumber(
+      mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
+    );
 
-  const masterKey1 = poseidon([snarkPreimage, BigInt(1)]) as Secret;
-  const masterKey2 = poseidon([snarkPreimage, BigInt(2)]) as Secret;
+    let key2 = bytesToNumber(
+      mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
+    );
 
-  return { masterKey1, masterKey2 };
+    let masterNullifier = poseidon([BigInt(key1)]) as Secret;
+    let masterSecret = poseidon([BigInt(key2)]) as Secret;
+
+  return { masterNullifier, masterSecret };
 }
 
 /**
@@ -61,8 +72,8 @@ export function generateDepositSecrets(
   scope: Hash,
   index: bigint,
 ): { nullifier: Secret; secret: Secret } {
-  const nullifier = poseidon([keys.masterKey1, scope, index]) as Secret;
-  const secret = poseidon([keys.masterKey2, scope, index]) as Secret;
+  const nullifier = poseidon([keys.masterNullifier, scope, index]) as Secret;
+  const secret = poseidon([keys.masterSecret, scope, index]) as Secret;
 
   return { nullifier, secret };
 }
@@ -80,8 +91,8 @@ export function generateWithdrawalSecrets(
   label: Hash,
   index: bigint,
 ): { nullifier: Secret; secret: Secret } {
-  const nullifier = poseidon([keys.masterKey1, label, index]) as Secret;
-  const secret = poseidon([keys.masterKey2, label, index]) as Secret;
+  const nullifier = poseidon([keys.masterNullifier, label, index]) as Secret;
+  const secret = poseidon([keys.masterSecret, label, index]) as Secret;
 
   return { nullifier, secret };
 }
