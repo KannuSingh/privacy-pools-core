@@ -1,28 +1,23 @@
 import { describe, it, expect } from "vitest";
 import {
-  generateSecrets,
   hashPrecommitment,
   getCommitment,
   generateMerkleProof,
   calculateContext,
+  generateMasterKeys,
+  generateDepositSecrets,
+  generateWithdrawalSecrets,
 } from "../../src/crypto.js";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { Hash, Secret } from "../../src/types/commitment.js";
 import { getAddress, Hex, keccak256 } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount, generateMnemonic, english } from "viem/accounts";
 import { SNARK_SCALAR_FIELD } from "../../src/constants.js";
 import { Withdrawal } from "../../src/index.js";
 
-describe("Crypto Utilities", () => {
-  describe("generateSecrets", () => {
-    it("generates two unique non-zero bigint secrets", () => {
-      const { nullifier, secret } = generateSecrets();
+const mnemonic = generateMnemonic(english);
 
-      expect(nullifier).not.toBe(BigInt(0));
-      expect(secret).not.toBe(BigInt(0));
-      expect(nullifier).not.toEqual(secret);
-    });
-  });
+describe("Crypto Utilities", () => {
 
   describe("hashPrecommitment", () => {
     it("computes Poseidon hash of nullifier and secret", () => {
@@ -40,7 +35,8 @@ describe("Crypto Utilities", () => {
     it("creates a valid commitment", () => {
       const value = BigInt(1000);
       const label = BigInt(42);
-      const { nullifier, secret } = generateSecrets();
+      const keys = generateMasterKeys(mnemonic);
+      const { nullifier, secret } = generateDepositSecrets(keys, BigInt("0x5678") as Hash, BigInt(1));
 
       const commitment = getCommitment(value, label, nullifier, secret);
 
@@ -135,5 +131,98 @@ describe("Crypto Utilities", () => {
       );
       expect(BigInt(result) % SNARK_SCALAR_FIELD).toStrictEqual(BigInt(result));
     });
+  });
+});
+
+describe("Master Key Generation", () => {
+  it("generates deterministic master keys from a seed", () => {
+    const keys1 = generateMasterKeys(mnemonic);
+    const keys2 = generateMasterKeys(mnemonic);
+
+    expect(keys1.masterNullifier).toBeDefined();
+    expect(keys1.masterSecret).toBeDefined();
+    expect(keys1).toEqual(keys2); // Same seed should produce same keys
+    expect(keys1.masterNullifier).not.toEqual(keys1.masterSecret); // Keys should be different
+  });
+
+  it("generates keys within SNARK scalar field", () => {
+    const keys = generateMasterKeys(mnemonic);
+    
+    expect(BigInt(keys.masterNullifier) < SNARK_SCALAR_FIELD).toBe(true);
+    expect(BigInt(keys.masterSecret) < SNARK_SCALAR_FIELD).toBe(true);
+  });
+});
+
+describe("Deposit Secrets Generation", () => {
+  it("generates deterministic deposit secrets", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const scope = BigInt("0x5678") as Hash;
+    const index = BigInt(1);
+
+    const secrets1 = generateDepositSecrets(keys, scope, index);
+    const secrets2 = generateDepositSecrets(keys, scope, index);
+
+    expect(secrets1.nullifier).toBeDefined();
+    expect(secrets1.secret).toBeDefined();
+    expect(secrets1).toEqual(secrets2); // Same inputs should produce same secrets
+  });
+
+  it("generates different secrets for different indices", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const scope = BigInt("0x5678") as Hash;
+    
+    const secrets1 = generateDepositSecrets(keys, scope, BigInt(1));
+    const secrets2 = generateDepositSecrets(keys, scope, BigInt(2));
+
+    expect(secrets1.nullifier).not.toEqual(secrets2.nullifier);
+    expect(secrets1.secret).not.toEqual(secrets2.secret);
+  });
+
+  it("generates different secrets for different scopes", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const index = BigInt(1);
+    
+    const secrets1 = generateDepositSecrets(keys, BigInt("0x5678") as Hash, index);
+    const secrets2 = generateDepositSecrets(keys, BigInt("0x9abc") as Hash, index);
+
+    expect(secrets1.nullifier).not.toEqual(secrets2.nullifier);
+    expect(secrets1.secret).not.toEqual(secrets2.secret);
+  });
+});
+
+describe("Withdrawal Secrets Generation", () => {
+  it("generates deterministic withdrawal secrets", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const label = BigInt("0x5678") as Hash;
+    const index = BigInt(1);
+
+    const secrets1 = generateWithdrawalSecrets(keys, label, index);
+    const secrets2 = generateWithdrawalSecrets(keys, label, index);
+
+    expect(secrets1.nullifier).toBeDefined();
+    expect(secrets1.secret).toBeDefined();
+    expect(secrets1).toEqual(secrets2); // Same inputs should produce same secrets
+  });
+
+  it("generates different secrets for different indices", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const label = BigInt("0x5678") as Hash;
+    
+    const secrets1 = generateWithdrawalSecrets(keys, label, BigInt(1));
+    const secrets2 = generateWithdrawalSecrets(keys, label, BigInt(2));
+
+    expect(secrets1.nullifier).not.toEqual(secrets2.nullifier);
+    expect(secrets1.secret).not.toEqual(secrets2.secret);
+  });
+
+  it("generates different secrets for different labels", () => {
+    const keys = generateMasterKeys(mnemonic);
+    const index = BigInt(1);
+    
+    const secrets1 = generateWithdrawalSecrets(keys, BigInt("0x5678") as Hash, index);
+    const secrets2 = generateWithdrawalSecrets(keys, BigInt("0x9abc") as Hash, index);
+
+    expect(secrets1.nullifier).not.toEqual(secrets2.nullifier);
+    expect(secrets1.secret).not.toEqual(secrets2.secret);
   });
 });
