@@ -5,15 +5,15 @@ slug: /
 
 ### The challenge of private transactions
 
-On public blockchains like Ethereum, every transaction is visible to everyone. While this transparency is a core feature, it creates significant privacy challenges and risks for users . When withdrawing funds from a deposit, the link between deposit and withdrawal addresses reveals sensitive information about user behavior and relationships.
+On public blockchains like Ethereum, every transaction is visible to everyone. When all transactions are visible, every transaction reveals the full balances and transaction history of both parties. When withdrawing funds from a deposit, the link between deposit and withdrawal addresses reveals sensitive information about user behavior and relationships.
 
 ### Privacy Pools offers a solution
 
-Privacy Pool enables private withdrawals through a combination of zero-knowledge proofs and commitment schemes. Users can deposit assets into Privacy Pools and later withdraw them, either partially or fully, without creating an on-chain link between their deposit and withdrawal addresses. The protocol uses an Association Set Provider (ASP) to maintain a set of approved deposits, ensuring regulatory compliance while preserving privacy.
+Privacy Pools enables private withdrawals through a combination of zero-knowledge proofs and commitment schemes. Users can deposit assets into Privacy Pools and later withdraw them, either partially or fully, without creating an on-chain link between their deposit and withdrawal addresses. The protocol uses an Association Set Provider (ASP) to maintain a set of approved deposits, preventing potentially illicit funds from entering the system and enabling regulatory compliance.
 
 ### System architecture overview
 
-Privacy Pool's architecture consists of three distinct layers:
+Privacy Pools's architecture consists of three distinct layers:
 
 1. **Contract Layer**
    - An upgradeable Entrypoint contract that coordinates ASP-operated pools

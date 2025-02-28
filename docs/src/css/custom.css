@@ -81,7 +81,7 @@
 }
 
 html {
-  font-size: 62.5%;
+  font-size: 80%;
 }
 
 /* Improved code block styling */
@@ -206,4 +206,8 @@ code:not([class^="language-"]) {
 
 .footer {
   background: #1a1a1a;
+}
+
+.theme-doc-breadcrumbs .breadcrumbsContainer_Z_bl {
+  --ifm-breadcrumb-size-multiplier: 1.2;
 }
