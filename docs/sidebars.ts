@@ -69,6 +69,7 @@ const sidebars: SidebarsConfig = {
     },
     "dev-guide",
     "toc",
+    "privacy-policy",
   ],
 };
 
