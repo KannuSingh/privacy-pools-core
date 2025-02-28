@@ -1,11 +1,18 @@
-import { generatePrivateKey } from "viem/accounts";
+import { mnemonicToAccount } from "viem/accounts";
+import { bytesToNumber } from "viem/utils";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT, LeanIMTMerkleProof } from "@zk-kit/lean-imt";
 import {
   ErrorCode,
   PrivacyPoolError,
 } from "./exceptions/privacyPool.exception.js";
-import { Commitment, Hash, Secret, Withdrawal } from "./types/index.js";
+import {
+  Commitment,
+  Hash,
+  Secret,
+  Withdrawal,
+  MasterKeys,
+} from "./types/index.js";
 import { encodeAbiParameters, Hex, keccak256, numberToHex } from "viem";
 import { SNARK_SCALAR_FIELD } from "./constants.js";
 
@@ -25,14 +32,68 @@ function validateNonZero(value: bigint, name: string) {
 }
 
 /**
- * Generates random nullifier and secret.
+ * Generates two master keys based on some provided seed or a random value.
  *
- * @returns {{ nullifier: Secret, secret: Secret }} Randomly generated secrets.
+ * @param {Hex} seed - The optional seed.
+ * @returns {MasterKeys} The master key pair.
  */
-export function generateSecrets(): { nullifier: Secret; secret: Secret } {
-  const nullifier = (BigInt(generatePrivateKey()) %
-    SNARK_SCALAR_FIELD) as Secret;
-  const secret = (BigInt(generatePrivateKey()) % SNARK_SCALAR_FIELD) as Secret;
+export function generateMasterKeys(mnemonic: string): MasterKeys {
+    if (!mnemonic) {
+        throw new PrivacyPoolError(
+            ErrorCode.INVALID_VALUE,
+            "Invalid input: mnemonic phrase is required."
+        );
+    }
+     
+    let key1 = bytesToNumber(
+      mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
+    );
+
+    let key2 = bytesToNumber(
+      mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
+    );
+
+    let masterNullifier = poseidon([BigInt(key1)]) as Secret;
+    let masterSecret = poseidon([BigInt(key2)]) as Secret;
+
+  return { masterNullifier, masterSecret };
+}
+
+/**
+ * Generates a nullifier and secret pair for a deposit commitment.
+ *
+ * @param {MasterKeys} keys - The master keys pair.
+ * @param {Hash} scope - The pool scope.
+ * @param {bigint} index - The pool account index for the scope.
+ * @returns {Secret, Secret} The commitment nullifier and secret pair.
+ */
+export function generateDepositSecrets(
+  keys: MasterKeys,
+  scope: Hash,
+  index: bigint,
+): { nullifier: Secret; secret: Secret } {
+  const nullifier = poseidon([keys.masterNullifier, scope, index]) as Secret;
+  const secret = poseidon([keys.masterSecret, scope, index]) as Secret;
+
+  return { nullifier, secret };
+}
+
+/**
+ * Generates a nullifier and secret pair for a withdrawal commitment.
+ *
+ * @param {MasterKeys} keys - The master keys pair.
+ * @param {Hash} label - The deposit commitment label.
+ * @param {bigint} index - The withdrawal index for the pool account.
+ * @returns {Secret, Secret} The commitment nullifier and secret pair.
+ */
+export function generateWithdrawalSecrets(
+  keys: MasterKeys,
+  label: Hash,
+  index: bigint,
+): { nullifier: Secret; secret: Secret } {
+  const nullifier = poseidon([keys.masterNullifier, label, index]) as Secret;
+  const secret = poseidon([keys.masterSecret, label, index]) as Secret;
+
   return { nullifier, secret };
 }
 
