@@ -217,8 +217,8 @@ code:not([class^="language-"]) {
 }
 
 .markdown>h3 {
-    font-size: 1.7rem;
-{
+  font-size: 1.7rem;
+}
 
 .theme-doc-breadcrumbs .breadcrumbsContainer_Z_bl {
   --ifm-breadcrumb-size-multiplier: 1.2;
