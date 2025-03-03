@@ -1,4 +1,5 @@
-import { Address, Hash } from "./commitment.js";
+import { Address } from "viem";
+import { Hash } from "./commitment.js";
 
 /**
  * Represents a deposit event from a privacy pool
@@ -43,6 +44,8 @@ export interface ChainConfig {
   chainId: number;
   privacyPoolAddress: Address;
   startBlock: bigint;
+  rpcUrl?: string;
+  envioToken?: string;
 }
 
 /**
