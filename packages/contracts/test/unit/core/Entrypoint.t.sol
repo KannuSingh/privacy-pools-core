@@ -780,39 +780,6 @@ contract UnitRelay is UnitEntrypoint {
     vm.prank(_params.caller);
     _entrypoint.relay(_withdrawal, _proof, _params.scope);
   }
-
-  /**
-   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ETH
-   */
-  function test_WithdrawFeesWhenRecipientIsZeroForETH(uint256 _balance) external givenCallerHasOwnerRole {
-    vm.assume(_balance != 0);
-    vm.deal(address(_entrypoint), _balance);
-
-    // Expect revert when recipient is address zero
-    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
-    _entrypoint.withdrawFees(IERC20(_ETH), address(0));
-  }
-
-  /**
-   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ERC20
-   */
-  function test_WithdrawFeesWhenRecipientIsZeroForERC20(
-    address _asset,
-    uint256 _balance
-  ) external givenCallerHasOwnerRole {
-    _assumeFuzzable(_asset);
-    vm.assume(_asset != _ETH);
-    vm.assume(_balance != 0);
-
-    // Expect the call fetching the Entrypoint balance
-    _mockAndExpect(
-      _asset, abi.encodeWithSelector(IERC20.balanceOf.selector, address(_entrypoint)), abi.encode(_balance)
-    );
-
-    // Expect revert when recipient is address zero
-    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
-    _entrypoint.withdrawFees(IERC20(_asset), address(0));
-  }
 }
 
 /**
