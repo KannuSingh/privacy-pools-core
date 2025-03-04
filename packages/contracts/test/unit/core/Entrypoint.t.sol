@@ -923,6 +923,28 @@ contract UnitRegisterPool is UnitEntrypoint {
     vm.prank(_caller);
     _entrypoint.registerPool(IERC20(_asset), IPrivacyPool(_pool), _minDeposit, _vettingFeeBPS);
   }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the pool is dead
+   */
+  function test_RegisterPoolWhenPoolIsDead(
+    address _pool,
+    address _asset,
+    uint256 _minDeposit,
+    uint256 _vettingFeeBPS
+  ) external givenCallerHasOwnerRole {
+    // Setup test with valid pool and asset addresses
+    _assumeFuzzable(_pool);
+    _assumeFuzzable(_asset);
+    _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000 - 1);
+
+    // Mock pool being dead
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(true));
+
+    // Expect revert when trying to register a dead pool
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolIsDead.selector));
+    _entrypoint.registerPool(IERC20(_asset), IPrivacyPool(_pool), _minDeposit, _vettingFeeBPS);
+  }
 }
 
 /**
