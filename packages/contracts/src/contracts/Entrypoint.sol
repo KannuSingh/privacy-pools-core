@@ -382,4 +382,3 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _config.vettingFeeBPS = _vettingFeeBPS;
   }
 }
-
