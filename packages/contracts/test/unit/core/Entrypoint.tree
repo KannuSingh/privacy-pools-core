@@ -69,6 +69,10 @@ Entrypoint::relay
 │   │   │   │       └── It reverts with InvalidWithdrawalAmount
 │   │   │   └── When pool state is invalid
 │   │   │       └── It reverts with InvalidPoolState
+│   │   ├── When recipient is address zero
+│   │   │   └── It reverts with ZeroAddress
+│   │   ├── When fee recipient is address zero
+│   │   │   └── It reverts with ZeroAddress
 │   │   └── When invalid processooor
 │   │       └── It reverts with InvalidProcessooor
 │   └── When pool not found
@@ -143,6 +147,8 @@ Entrypoint::withdrawFees
 │   │           └── It reverts
 │   └── When reentrant call
 │       └── It reverts
+├── When recipient is address zero
+│   └── It reverts with ZeroAddress
 └── When caller lacks owner role
     └── It reverts with AccessControlUnauthorizedAccount
 

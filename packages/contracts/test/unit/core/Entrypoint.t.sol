@@ -91,9 +91,9 @@ contract EntrypointForTest is Entrypoint {
     associationSets.push(IEntrypoint.AssociationSetData({root: _root, ipfsHash: _ipfsHash, timestamp: block.timestamp}));
   }
 
-  bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
+  bytes32 public constant OWNER_ROLE = keccak256('OWNER_ROLE');
 
-  bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
+  bytes32 public constant ASP_POSTMAN = keccak256('ASP_POSTMAN');
 }
 
 /**
@@ -700,6 +700,119 @@ contract UnitRelay is UnitEntrypoint {
     vm.prank(_params.caller);
     _entrypoint.relay(_withdrawal, _proof, _params.scope);
   }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the recipient is address zero for ETH relay
+   */
+  function test_RelayWhenRecipientIsZeroForETH(
+    RelayParams memory _params,
+    ProofLib.WithdrawProof memory _proof
+  ) external {
+    // Setup test with valid parameters but zero recipient
+    _assumeFuzzable(_params.feeRecipient);
+    vm.assume(_params.amount != 0);
+    _params.asset = _ETH;
+    _params.pool = address(new PrivacyPoolETHForTest());
+    _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
+    _params.amount = bound(_params.amount, 1, 1e30);
+    _proof.pubSignals[2] = _params.amount;
+
+    // Construct withdrawal data with zero recipient
+    bytes memory _data = abi.encode(
+      IEntrypoint.RelayData({
+        recipient: address(0), // Zero address recipient
+        feeRecipient: _params.feeRecipient,
+        relayFeeBPS: _params.feeBPS
+      })
+    );
+    IPrivacyPool.Withdrawal memory _withdrawal =
+      IPrivacyPool.Withdrawal({processooor: address(_entrypoint), data: _data});
+
+    // Setup pool and mock interactions
+    _entrypoint.mockScopeToPool(_params.scope, _params.pool);
+    _entrypoint.mockPool(PoolParams(_params.pool, Constants.NATIVE_ASSET, 0, 0));
+    _mockAndExpect(_params.pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_params.asset));
+    deal(_params.pool, _params.amount);
+
+    // Expect revert due to zero address recipient
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    vm.prank(_params.caller);
+    _entrypoint.relay(_withdrawal, _proof, _params.scope);
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the recipient is address zero for ERC20 relay
+   */
+  function test_RelayWhenRecipientIsZeroForERC20(
+    RelayParams memory _params,
+    ProofLib.WithdrawProof memory _proof
+  ) external {
+    // Setup test with valid parameters but zero recipient
+    _assumeFuzzable(_params.feeRecipient);
+    vm.assume(_params.amount != 0);
+
+    // Set up ERC20 token and pool
+    _params.asset = address(new ERC20forTest('Test', 'TEST'));
+    _params.pool = address(new PrivacyPoolERC20ForTest());
+    _params.feeBPS = bound(_params.feeBPS, 0, 10_000);
+    _params.amount = bound(_params.amount, 1, 1e30);
+    _proof.pubSignals[2] = _params.amount;
+
+    // Construct withdrawal data with zero recipient
+    bytes memory _data = abi.encode(
+      IEntrypoint.RelayData({
+        recipient: address(0), // Zero address recipient
+        feeRecipient: _params.feeRecipient,
+        relayFeeBPS: _params.feeBPS
+      })
+    );
+    IPrivacyPool.Withdrawal memory _withdrawal =
+      IPrivacyPool.Withdrawal({processooor: address(_entrypoint), data: _data});
+
+    // Setup pool and mock interactions
+    _entrypoint.mockScopeToPool(_params.scope, _params.pool);
+    _mockAndExpect(_params.pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_params.asset));
+    deal(_params.asset, _params.pool, _params.amount);
+    PrivacyPoolERC20ForTest(_params.pool).setAsset(_params.asset);
+
+    // Expect revert due to zero address recipient
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    vm.prank(_params.caller);
+    _entrypoint.relay(_withdrawal, _proof, _params.scope);
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ETH
+   */
+  function test_WithdrawFeesWhenRecipientIsZeroForETH(uint256 _balance) external givenCallerHasOwnerRole {
+    vm.assume(_balance != 0);
+    vm.deal(address(_entrypoint), _balance);
+
+    // Expect revert when recipient is address zero
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    _entrypoint.withdrawFees(IERC20(_ETH), address(0));
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ERC20
+   */
+  function test_WithdrawFeesWhenRecipientIsZeroForERC20(
+    address _asset,
+    uint256 _balance
+  ) external givenCallerHasOwnerRole {
+    _assumeFuzzable(_asset);
+    vm.assume(_asset != _ETH);
+    vm.assume(_balance != 0);
+
+    // Expect the call fetching the Entrypoint balance
+    _mockAndExpect(
+      _asset, abi.encodeWithSelector(IERC20.balanceOf.selector, address(_entrypoint)), abi.encode(_balance)
+    );
+
+    // Expect revert when recipient is address zero
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    _entrypoint.withdrawFees(IERC20(_asset), address(0));
+  }
 }
 
 /**
@@ -722,6 +835,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _ETH)));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_ETH));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
 
     // Expect pool registration event
     vm.expectEmit(address(_entrypoint));
@@ -757,6 +871,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _asset)));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_asset));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
 
     // Mock ERC20 approval for non-ETH assets
     _mockAndExpect(_asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true));
@@ -812,6 +927,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     uint256 _scope = uint256(keccak256(abi.encodePacked(_pool, block.chainid, _asset)));
     _entrypoint.mockScopeToPool(_scope, _pool);
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
 
     // Expect revert when trying to register pool with existing scope
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.ScopePoolAlreadyRegistered.selector));
@@ -1147,6 +1263,39 @@ contract UnitWithdrawFees is UnitEntrypoint {
     vm.prank(_caller);
     _entrypoint.withdrawFees(IERC20(_asset), _recipient);
   }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ETH
+   */
+  function test_WithdrawFeesWhenRecipientIsZeroForETH(uint256 _balance) external givenCallerHasOwnerRole {
+    vm.assume(_balance != 0);
+    vm.deal(address(_entrypoint), _balance);
+
+    // Expect revert when recipient is address zero
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    _entrypoint.withdrawFees(IERC20(_ETH), address(0));
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the fee recipient is address zero for ERC20
+   */
+  function test_WithdrawFeesWhenRecipientIsZeroForERC20(
+    address _asset,
+    uint256 _balance
+  ) external givenCallerHasOwnerRole {
+    _assumeFuzzable(_asset);
+    vm.assume(_asset != _ETH);
+    vm.assume(_balance != 0);
+
+    // Expect the call fetching the Entrypoint balance
+    _mockAndExpect(
+      _asset, abi.encodeWithSelector(IERC20.balanceOf.selector, address(_entrypoint)), abi.encode(_balance)
+    );
+
+    // Expect revert when recipient is address zero
+    vm.expectRevert(IEntrypoint.ZeroAddress.selector);
+    _entrypoint.withdrawFees(IERC20(_asset), address(0));
+  }
 }
 
 /**
@@ -1236,9 +1385,9 @@ contract UnitReceive is UnitEntrypoint {
  * @notice Unit tests for Entrypoint's role based access configuration
  */
 contract UnitAccessControl is UnitEntrypoint {
-  bytes32 public constant OWNER_ROLE = 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b;
-  bytes32 public constant ASP_POSTMAN = 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5;
   bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+  bytes32 public constant OWNER_ROLE = keccak256('OWNER_ROLE');
+  bytes32 public constant ASP_POSTMAN = keccak256('ASP_POSTMAN');
 
   /**
    * @notice Test that the OWNER_ROLE can manage other roles
