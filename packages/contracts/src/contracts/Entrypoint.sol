@@ -132,9 +132,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     // Check withdrawn amount is non-zero
     if (_proof.withdrawnValue() == 0) revert InvalidWithdrawalAmount();
     // Check allowed processooor is this Entrypoint
-    if (_withdrawal.processooor != address(this)) {
-      revert InvalidProcessooor();
-    }
+    if (_withdrawal.processooor != address(this)) revert InvalidProcessooor();
 
     // Fetch pool by scope
     IPrivacyPool _pool = scopeToPool[_scope];
@@ -185,17 +183,13 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
     // Fetch pool configuration
     AssetConfig storage _config = assetConfig[_asset];
-    if (address(_config.pool) != address(0)) {
-      revert AssetPoolAlreadyRegistered();
-    }
+    if (address(_config.pool) != address(0)) revert AssetPoolAlreadyRegistered();
 
     if (_pool.dead()) revert PoolIsDead();
 
     // Fetch pool scope and validate asset
     uint256 _scope = _pool.SCOPE();
-    if (address(scopeToPool[_scope]) != address(0)) {
-      revert ScopePoolAlreadyRegistered();
-    }
+    if (address(scopeToPool[_scope]) != address(0)) revert ScopePoolAlreadyRegistered();
     if (_asset != IERC20(_pool.ASSET())) revert AssetMismatch();
 
     // Store pool configuration
@@ -206,9 +200,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS);
 
     // If asset is an ERC20, approve pool to spend
-    if (address(_asset) != Constants.NATIVE_ASSET) {
-      _asset.approve(address(_pool), type(uint256).max);
-    }
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), type(uint256).max);
 
     emit PoolRegistered(_pool, _asset, _scope);
   }
@@ -223,9 +215,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _scope = _pool.SCOPE();
 
     // If asset is an ERC20, revoke pool allowance
-    if (address(_asset) != Constants.NATIVE_ASSET) {
-      _asset.approve(address(_pool), 0);
-    }
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), 0);
 
     // Remove pool configuration
     delete scopeToPool[_scope];
@@ -322,9 +312,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     if (address(_pool) == address(0)) revert PoolNotFound();
 
     // Check minimum deposit amount
-    if (_value < _config.minimumDepositAmount) {
-      revert MinimumDepositAmount();
-    }
+    if (_value < _config.minimumDepositAmount) revert MinimumDepositAmount();
 
     // Deduct vetting fees
     uint256 _amountAfterFees = _deductFee(_value, _config.vettingFeeBPS);
@@ -394,3 +382,4 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _config.vettingFeeBPS = _vettingFeeBPS;
   }
 }
+
