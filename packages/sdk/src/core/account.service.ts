@@ -4,7 +4,7 @@ import { Hex, bytesToNumber } from "viem";
 import { english, generateMnemonic, mnemonicToAccount } from "viem/accounts";
 import { DataService } from "./data.service.js";
 import {
-  Commitment,
+  AccountCommitment,
   PoolAccount,
   PoolInfo,
   PrivacyPoolAccount,
@@ -35,16 +35,15 @@ export class AccountService {
    */
   constructor(
     private readonly dataService: DataService,
+    mnemonic: string,
     account?: PrivacyPoolAccount,
-    mnemonic?: string,
   ) {
     this.logger = new Logger({ prefix: "Account" });
     this.account = account || this._initializeAccount(mnemonic);
   }
 
-  private _initializeAccount(mnemonic?: string): PrivacyPoolAccount {
+  private _initializeAccount(mnemonic: string): PrivacyPoolAccount {
     try {
-      mnemonic = mnemonic || generateMnemonic(english, 128);
       this.logger.debug("Initializing account with mnemonic");
 
       let key1 = bytesToNumber(
@@ -59,9 +58,10 @@ export class AccountService {
       let masterKey2 = poseidon([BigInt(key2)]) as Secret;
 
       return {
-        mnemonic,
         masterKeys: [masterKey1, masterKey2],
         poolAccounts: new Map(),
+        creationTimestamp: 0n,
+        lastUpdateTimestamp: 0n
       };
     } catch (error) {
       throw AccountError.accountInitializationFailed(
@@ -103,11 +103,11 @@ export class AccountService {
    * 
    * @returns A map of scope to array of spendable commitments
    */
-  public getSpendableCommitments(): Map<bigint, Commitment[]> {
-    const result = new Map<bigint, Commitment[]>();
+  public getSpendableCommitments(): Map<bigint, AccountCommitment[]> {
+    const result = new Map<bigint, AccountCommitment[]>();
 
     for (const [scope, accounts] of this.account.poolAccounts.entries()) {
-      const nonZeroCommitments: Commitment[] = [];
+      const nonZeroCommitments: AccountCommitment[] = [];
 
       for (const account of accounts) {
         const lastCommitment =
@@ -159,7 +159,7 @@ export class AccountService {
    * @returns The nullifier and secret for the new commitment
    * @throws {AccountError} If no account is found for the commitment
    */
-  public createWithdrawalSecrets(commitment: Commitment): {
+  public createWithdrawalSecrets(commitment: AccountCommitment): {
     nullifier: Secret;
     secret: Secret;
   } {
@@ -192,6 +192,7 @@ export class AccountService {
    * @param secret - The secret used for the deposit
    * @param label - The label for the commitment
    * @param blockNumber - The block number of the deposit
+   * @param timestamp - The timestamp of the deposit
    * @param txHash - The transaction hash of the deposit
    * @returns The new pool account
    */
@@ -202,10 +203,19 @@ export class AccountService {
     secret: Secret,
     label: Hash,
     blockNumber: bigint,
+    timestamp: bigint,
     txHash: Hash,
   ): PoolAccount {
     const precommitment = this._hashPrecommitment(nullifier, secret);
     const commitment = this._hashCommitment(value, label, precommitment);
+
+    // Update account timestamps
+    if (this.account.creationTimestamp === 0n || timestamp < this.account.creationTimestamp) {
+      this.account.creationTimestamp = timestamp;
+    }
+    if (timestamp > this.account.lastUpdateTimestamp) {
+      this.account.lastUpdateTimestamp = timestamp;
+    }
 
     const newAccount: PoolAccount = {
       label,
@@ -216,6 +226,7 @@ export class AccountService {
         nullifier,
         secret,
         blockNumber,
+        timestamp,
         txHash,
       },
       children: [],
@@ -242,18 +253,25 @@ export class AccountService {
    * @param nullifier - The nullifier used for spending
    * @param secret - The secret used for spending
    * @param blockNumber - The block number of the withdrawal
+   * @param timestamp - The timestamp of the withdrawal
    * @param txHash - The transaction hash of the withdrawal
    * @returns The new commitment
    * @throws {AccountError} If no account is found for the commitment
    */
   public addWithdrawalCommitment(
-    parentCommitment: Commitment,
+    parentCommitment: AccountCommitment,
     value: bigint,
     nullifier: Secret,
     secret: Secret,
     blockNumber: bigint,
+    timestamp: bigint,
     txHash: Hash,
-  ): Commitment {
+  ): AccountCommitment {
+    // Update last update timestamp
+    if (timestamp > this.account.lastUpdateTimestamp) {
+      this.account.lastUpdateTimestamp = timestamp;
+    }
+
     let foundAccount: PoolAccount | undefined;
     let foundScope: bigint | undefined;
 
@@ -276,13 +294,14 @@ export class AccountService {
     }
 
     const precommitment = this._hashPrecommitment(nullifier, secret);
-    const newCommitment: Commitment = {
+    const newCommitment: AccountCommitment = {
       hash: this._hashCommitment(value, parentCommitment.label, precommitment),
       value,
       label: parentCommitment.label,
       nullifier,
       secret,
       blockNumber,
+      timestamp,
       txHash,
     };
 
@@ -313,13 +332,13 @@ export class AccountService {
 
     for (const withdrawal of withdrawals) {
       for (const account of foundAccounts.values()) {
-        const isParentCommitment = 
+        const isParentCommitment =
           BigInt(account.deposit.nullifier) === BigInt(withdrawal.spentNullifier) ||
           account.children.some(child => BigInt(child.nullifier) === BigInt(withdrawal.spentNullifier));
 
         if (isParentCommitment) {
-          const parentCommitment = account.children.length > 0 
-            ? account.children[account.children.length - 1] 
+          const parentCommitment = account.children.length > 0
+            ? account.children[account.children.length - 1]
             : account.deposit;
 
           if (!parentCommitment) {
@@ -333,6 +352,7 @@ export class AccountService {
             withdrawal.spentNullifier as unknown as Secret,
             parentCommitment.secret,
             withdrawal.blockNumber,
+            withdrawal.timestamp,
             withdrawal.transactionHash,
           );
           break;
@@ -429,6 +449,7 @@ export class AccountService {
             secret,
             deposit.label,
             deposit.blockNumber,
+            deposit.timestamp,
             deposit.transactionHash,
           );
         });
