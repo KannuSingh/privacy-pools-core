@@ -61,10 +61,13 @@ Entrypoint::relay
 │   │   ├── Given valid processooor
 │   │   │   ├── Given valid withdrawal and proof
 │   │   │   │   ├── Given withdrawal amount is not zero
-│   │   │   │   │   ├── It processes withdrawal
-│   │   │   │   │   ├── It transfers correct amounts
-│   │   │   │   │   ├── It maintains pool balance
-│   │   │   │   │   └── It emits WithdrawalRelayed event
+│   │   │   │   │   ├── Given relay fee within max limit
+│   │   │   │   │   │   ├── It processes withdrawal
+│   │   │   │   │   │   ├── It transfers correct amounts
+│   │   │   │   │   │   ├── It maintains pool balance
+│   │   │   │   │   │   └── It emits WithdrawalRelayed event
+│   │   │   │   │   └── When relay fee exceeds max limit
+│   │   │   │   │       └── It reverts with RelayFeeGreaterThanMax
 │   │   │   │   └── When withdrawal amount is zero
 │   │   │   │       └── It reverts with InvalidWithdrawalAmount
 │   │   │   └── When pool state is invalid
