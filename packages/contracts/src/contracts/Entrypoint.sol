@@ -240,9 +240,9 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     if (address(_config.pool) == address(0)) revert PoolNotFound();
 
     // Update pool configuration with validation
-    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS);
+    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS, _maxRelayFeeBPS);
 
-    emit PoolConfigurationUpdated(_config.pool, _asset, _minimumDepositAmount, _vettingFeeBPS);
+    emit PoolConfigurationUpdated(_config.pool, _asset, _minimumDepositAmount, _vettingFeeBPS, _maxRelayFeeBPS);
   }
 
   /// @inheritdoc IEntrypoint
@@ -386,5 +386,6 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
     _config.minimumDepositAmount = _minimumDepositAmount;
     _config.vettingFeeBPS = _vettingFeeBPS;
+    _config.maxRelayFeeBPS = _maxRelayFeeBPS;
   }
 }

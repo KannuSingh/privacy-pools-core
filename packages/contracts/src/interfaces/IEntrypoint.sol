@@ -121,9 +121,14 @@ interface IEntrypoint {
    * @param _asset The asset of the pool
    * @param _newMinimumDepositAmount The updated minimum deposit amount
    * @param _newVettingFeeBPS The updated vetting fee in basis points
+   * @param _newMaxRelayFeeBPS The updated maximum relay fee in basis points
    */
   event PoolConfigurationUpdated(
-    IPrivacyPool _pool, IERC20 _asset, uint256 _newMinimumDepositAmount, uint256 _newVettingFeeBPS
+    IPrivacyPool _pool,
+    IERC20 _asset,
+    uint256 _newMinimumDepositAmount,
+    uint256 _newVettingFeeBPS,
+    uint256 _newMaxRelayFeeBPS
   );
 
   /*///////////////////////////////////////////////////////////////
@@ -272,12 +277,14 @@ interface IEntrypoint {
    * @param _pool The address of the Privacy Pool contract
    * @param _minimumDepositAmount The minimum deposit amount for the asset
    * @param _vettingFeeBPS The deposit fee in basis points
+   * @param _maxRelayFeeBPS The maximum relay fee in basis points
    */
   function registerPool(
     IERC20 _asset,
     IPrivacyPool _pool,
     uint256 _minimumDepositAmount,
-    uint256 _vettingFeeBPS
+    uint256 _vettingFeeBPS,
+    uint256 _maxRelayFeeBPS
   ) external;
 
   /**
@@ -291,8 +298,14 @@ interface IEntrypoint {
    * @param _asset The asset of the pool to update
    * @param _minimumDepositAmount The new minimum deposit amount
    * @param _vettingFeeBPS The new vetting fee in basis points
+   * @param _maxRelayFeeBPS The new max relay fee in basis points
    */
-  function updatePoolConfiguration(IERC20 _asset, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS) external;
+  function updatePoolConfiguration(
+    IERC20 _asset,
+    uint256 _minimumDepositAmount,
+    uint256 _vettingFeeBPS,
+    uint256 _maxRelayFeeBPS
+  ) external;
 
   /**
    * @notice Irreversebly halt deposits from a Privacy Pool
@@ -324,11 +337,12 @@ interface IEntrypoint {
    * @return _pool The Privacy Pool contract
    * @return _minimumDepositAmount The minimum deposit amount
    * @return _vettingFeeBPS The deposit fee in basis points
+   * @return _maxRelayFeeBPS The max relayer fee in basis points
    */
   function assetConfig(IERC20 _asset)
     external
     view
-    returns (IPrivacyPool _pool, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS);
+    returns (IPrivacyPool _pool, uint256 _minimumDepositAmount, uint256 _vettingFeeBPS, uint256 _maxRelayFeeBPS);
 
   /**
    * @notice Returns the association set data at an index
