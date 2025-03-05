@@ -37,9 +37,9 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   using SafeERC20 for IERC20;
   using ProofLib for ProofLib.WithdrawProof;
 
-  // @dev 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e
+  /// @dev 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e
   bytes32 internal constant _OWNER_ROLE = keccak256('OWNER_ROLE');
-  // @dev 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5
+  /// @dev 0xfc84ade01695dae2ade01aa4226dc40bdceaf9d5dbd3bf8630b1dd5af195bbc5
   bytes32 internal constant _ASP_POSTMAN = keccak256('ASP_POSTMAN');
 
   /// @inheritdoc IEntrypoint
