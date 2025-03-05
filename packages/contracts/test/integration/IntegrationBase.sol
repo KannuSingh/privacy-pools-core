@@ -549,4 +549,3 @@ contract IntegrationBase is Test {
     _secret = uint256(keccak256(bytes(_seed))) % Constants.SNARK_SCALAR_FIELD;
   }
 }
-

@@ -291,4 +291,3 @@ contract IntegrationProofs is IntegrationBase {
     _ethPool.withdraw(_withdrawal, _proof);
   }
 }
-
