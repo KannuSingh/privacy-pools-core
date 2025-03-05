@@ -147,6 +147,9 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
     // Decode relay data
     RelayData memory _data = abi.decode(_withdrawal.data, (RelayData));
+
+    if (_data.relayFeeBPS > assetConfig[_asset].maxRelayFeeBPS) revert RelayFeeGreaterThanMax();
+
     uint256 _withdrawnAmount = _proof.withdrawnValue();
 
     // Deduct fees
@@ -175,7 +178,8 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     IERC20 _asset,
     IPrivacyPool _pool,
     uint256 _minimumDepositAmount,
-    uint256 _vettingFeeBPS
+    uint256 _vettingFeeBPS,
+    uint256 _maxRelayFeeBPS
   ) external onlyRole(_OWNER_ROLE) {
     // Sanity check addresses
     if (address(_asset) == address(0)) revert ZeroAddress();
@@ -197,7 +201,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _config.pool = _pool;
 
     // Update pool configuration with validation
-    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS);
+    _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS, _maxRelayFeeBPS);
 
     // If asset is an ERC20, approve pool to spend
     if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), type(uint256).max);
@@ -228,7 +232,8 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   function updatePoolConfiguration(
     IERC20 _asset,
     uint256 _minimumDepositAmount,
-    uint256 _vettingFeeBPS
+    uint256 _vettingFeeBPS,
+    uint256 _maxRelayFeeBPS
   ) external onlyRole(_OWNER_ROLE) {
     // Fetch pool configuration
     AssetConfig storage _config = assetConfig[_asset];
@@ -373,10 +378,11 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   function _setPoolConfiguration(
     AssetConfig storage _config,
     uint256 _minimumDepositAmount,
-    uint256 _vettingFeeBPS
+    uint256 _vettingFeeBPS,
+    uint256 _maxRelayFeeBPS
   ) internal {
     // Check fee is less than 100%
-    if (_vettingFeeBPS >= 10_000) revert InvalidFeeBPS();
+    if (_vettingFeeBPS >= 10_000 || _maxRelayFeeBPS >= 10_000) revert InvalidFeeBPS();
 
     _config.minimumDepositAmount = _minimumDepositAmount;
     _config.vettingFeeBPS = _vettingFeeBPS;

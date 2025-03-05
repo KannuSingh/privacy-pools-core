@@ -25,6 +25,7 @@ interface IEntrypoint {
     IPrivacyPool pool;
     uint256 minimumDepositAmount;
     uint256 vettingFeeBPS;
+    uint256 maxRelayFeeBPS;
   }
 
   /**
@@ -158,6 +159,11 @@ interface IEntrypoint {
    * @notice Thrown when trying to deposit less than the minimum deposit amount
    */
   error MinimumDepositAmount();
+
+  /**
+   * @notice Thrown when trying to relay with a relayer fee greater than the maximum configured
+   */
+  error RelayFeeGreaterThanMax();
 
   /**
    * @notice Thrown when trying to process a withdrawal with an invalid processooor
