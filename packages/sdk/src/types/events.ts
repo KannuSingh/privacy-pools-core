@@ -11,6 +11,7 @@ export interface DepositEvent {
   value: bigint;
   precommitment: Hash;
   blockNumber: bigint;
+  timestamp: bigint;
   transactionHash: Hash;
 }
 
@@ -22,6 +23,7 @@ export interface WithdrawalEvent {
   spentNullifier: Hash;
   newCommitment: Hash;
   blockNumber: bigint;
+  timestamp: bigint;
   transactionHash: Hash;
 }
 
@@ -34,6 +36,7 @@ export interface RagequitEvent {
   label: Hash;
   value: bigint;
   blockNumber: bigint;
+  timestamp: bigint;
   transactionHash: Hash;
 }
 

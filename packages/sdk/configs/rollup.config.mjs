@@ -17,6 +17,15 @@ const typescriptConfig = {
   outputToFilesystem: false,
 }
 
+// External dependencies that should not be bundled
+const external = [
+  '@envio-dev/hypersync-client',
+  'viem',
+  'viem/accounts',
+  'viem/chains',
+  'maci-crypto',
+];
+
 export default [
 
   {
@@ -29,6 +38,7 @@ export default [
         entryFileNames: "[name].mjs"
       },
     ],
+    external,
     plugins: [
       nodeResolve({
         exportConditions: ["umd"],
@@ -55,6 +65,7 @@ export default [
         entryFileNames: "[name].mjs"
       },
     ],
+    external,
     plugins: [
       nodeResolve({
         exportConditions: ["node"],
@@ -83,6 +94,7 @@ export default [
         sourcemap: false,
       },
     ],
+    external,
     plugins: [
       nodeResolve({
         exportConditions: ["node"],
@@ -103,6 +115,7 @@ export default [
   {
     input: path.join(rootOutDir, "types", "index.d.ts"),
     output: [{ file: path.join(rootOutDir, "index.d.mts"), format: "esm" }],
+    external,
     plugins: [dts()],
   }
 

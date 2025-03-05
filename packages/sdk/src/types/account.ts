@@ -3,24 +3,26 @@ import { Address } from "viem";
 
 export interface PoolAccount {
   label: Hash;
-  deposit: Commitment;
-  children: Commitment[];
+  deposit: AccountCommitment;
+  children: AccountCommitment[];
 }
 
-export interface Commitment {
+export interface AccountCommitment {
   hash: Hash;
   value: bigint;
   label: Hash;
   nullifier: Secret;
   secret: Secret;
   blockNumber: bigint;
+  timestamp: bigint;
   txHash: Hash;
 }
 
 export interface PrivacyPoolAccount {
-  mnemonic: string;
   masterKeys: [Secret, Secret];
   poolAccounts: Map<bigint, PoolAccount[]>;
+  creationTimestamp: bigint;
+  lastUpdateTimestamp: bigint;
 }
 
 export interface PoolInfo {

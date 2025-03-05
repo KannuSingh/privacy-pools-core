@@ -2,6 +2,8 @@ import {
   HypersyncClient,
   presetQueryLogsOfEvent,
   Query,
+  QueryResponse,
+  Log
 } from "@envio-dev/hypersync-client";
 import {
   ChainConfig,
@@ -73,8 +75,7 @@ export class DataService {
       const toBlock = options.toBlock ?? undefined;
 
       this.logger.debug(
-        `Fetching deposits for chain ${chainId} from block ${fromBlock}${
-          toBlock ? ` to ${toBlock}` : ""
+        `Fetching deposits for chain ${chainId} from block ${fromBlock}${toBlock ? ` to ${toBlock}` : ""
         }`,
       );
 
@@ -101,7 +102,16 @@ export class DataService {
 
       const res = await client.get(query);
 
+      // Create a map of block numbers to timestamps
+      const blockTimestamps = new Map(
+        res.data.blocks.map(block => [
+          block.number,
+          block.timestamp ? BigInt(block.timestamp) : 0n
+        ])
+      );
+
       return res.data.logs.map((log) => {
+        let a: Log = log;
         if (!log.topics || log.topics.length < 2) {
           throw DataError.invalidLog("deposit", "missing topics");
         }
@@ -137,13 +147,20 @@ export class DataService {
           throw DataError.invalidLog("deposit", "missing required fields");
         }
 
+        const blockNumber = BigInt(log.blockNumber);
+        const timestamp = blockTimestamps.get(Number(blockNumber));
+        if (!timestamp) {
+          throw DataError.invalidLog("deposit", "missing block timestamp");
+        }
+
         return {
           depositor: `0x${depositor.toString(16).padStart(40, "0")}`,
           commitment: bigintToHash(commitment),
           label: bigintToHash(label),
           value,
           precommitment: bigintToHash(precommitment),
-          blockNumber: BigInt(log.blockNumber),
+          blockNumber,
+          timestamp,
           transactionHash: log.transactionHash as unknown as Hash,
         };
       });
@@ -173,8 +190,7 @@ export class DataService {
       const toBlock = options.toBlock ?? undefined;
 
       this.logger.debug(
-        `Fetching withdrawals for chain ${chainId} from block ${fromBlock}${
-          toBlock ? ` to ${toBlock}` : ""
+        `Fetching withdrawals for chain ${chainId} from block ${fromBlock}${toBlock ? ` to ${toBlock}` : ""
         }`,
       );
 
@@ -187,6 +203,14 @@ export class DataService {
       );
 
       const res = await client.get(query);
+
+      // Create a map of block numbers to timestamps
+      const blockTimestamps = new Map(
+        res.data.blocks.map(block => [
+          block.number,
+          block.timestamp ? BigInt(block.timestamp) : 0n
+        ])
+      );
 
       return res.data.logs.map((log) => {
         if (!log.topics || log.topics.length < 2) {
@@ -222,11 +246,18 @@ export class DataService {
           throw DataError.invalidLog("withdrawal", "missing required fields");
         }
 
+        const blockNumber = BigInt(log.blockNumber);
+        const timestamp = blockTimestamps.get(Number(blockNumber));
+        if (!timestamp) {
+          throw DataError.invalidLog("withdrawal", "missing block timestamp");
+        }
+
         return {
           withdrawn: value,
           spentNullifier: bigintToHash(spentNullifier),
           newCommitment: bigintToHash(newCommitment),
-          blockNumber: BigInt(log.blockNumber),
+          blockNumber,
+          timestamp,
           transactionHash: log.transactionHash as unknown as Hash,
         };
       });
@@ -256,8 +287,7 @@ export class DataService {
       const toBlock = options.toBlock ?? undefined;
 
       this.logger.debug(
-        `Fetching ragequits for chain ${chainId} from block ${fromBlock}${
-          toBlock ? ` to ${toBlock}` : ""
+        `Fetching ragequits for chain ${chainId} from block ${fromBlock}${toBlock ? ` to ${toBlock}` : ""
         }`,
       );
 
@@ -270,6 +300,14 @@ export class DataService {
       );
 
       const res = await client.get(query);
+
+      // Create a map of block numbers to timestamps
+      const blockTimestamps = new Map(
+        res.data.blocks.map(block => [
+          block.number,
+          block.timestamp ? BigInt(block.timestamp) : 0n
+        ])
+      );
 
       return res.data.logs.map((log) => {
         if (!log.topics || log.topics.length < 2) {
@@ -306,12 +344,19 @@ export class DataService {
           throw DataError.invalidLog("ragequit", "missing required fields");
         }
 
+        const blockNumber = BigInt(log.blockNumber);
+        const timestamp = blockTimestamps.get(Number(blockNumber));
+        if (!timestamp) {
+          throw DataError.invalidLog("ragequit", "missing block timestamp");
+        }
+
         return {
           ragequitter: `0x${ragequitter.toString(16).padStart(40, "0")}`,
           commitment: bigintToHash(commitment),
           label: bigintToHash(label),
           value,
-          blockNumber: BigInt(log.blockNumber),
+          blockNumber,
+          timestamp,
           transactionHash: log.transactionHash as unknown as Hash,
         };
       });

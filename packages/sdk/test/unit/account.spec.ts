@@ -3,9 +3,10 @@ import { AccountService } from "../../src/core/account.service.js";
 import { DataService } from "../../src/core/data.service.js";
 import { Hash, Secret } from "../../src/types/commitment.js";
 import { DepositEvent, WithdrawalEvent } from "../../src/types/events.js";
-import { PoolInfo, Commitment } from "../../src/types/account.js";
+import { PoolInfo, AccountCommitment } from "../../src/types/account.js";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { Address } from "viem";
+import { english, generateMnemonic } from "viem/accounts";
 
 function randomBigInt(): bigint {
   return BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
@@ -29,6 +30,7 @@ describe("AccountService", () => {
   let masterKeys: [Secret, Secret];
   let depositEvents: DepositEvent[] = [];
   let withdrawalEvents: WithdrawalEvent[] = [];
+  const testMnemonic = generateMnemonic(english);
 
   beforeEach(() => {
     // Reset test data arrays
@@ -46,7 +48,7 @@ describe("AccountService", () => {
     } as unknown as DataService;
 
     // Initialize account service with mocked data service
-    accountService = new AccountService(dataService);
+    accountService = new AccountService(dataService, testMnemonic);
     masterKeys = accountService.account.masterKeys;
 
     // Generate test data
@@ -67,6 +69,7 @@ describe("AccountService", () => {
 
       const precommitment = poseidon([nullifier, secret]) as Hash;
       const commitment = poseidon([value, label, precommitment]) as Hash;
+      const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
       const deposit: DepositEvent = {
         depositor: POOL.address,
@@ -75,6 +78,7 @@ describe("AccountService", () => {
         value,
         precommitment,
         blockNumber: POOL.deploymentBlock + BigInt(i * 100),
+        timestamp,
         transactionHash: BigInt(i + 1) as Hash,
       };
 
@@ -88,6 +92,7 @@ describe("AccountService", () => {
         nullifier,
         secret,
         blockNumber: deposit.blockNumber,
+        timestamp,
         txHash: deposit.transactionHash,
       };
       let remainingValue = value;
@@ -125,6 +130,7 @@ describe("AccountService", () => {
           spentNullifier: poseidon([withdrawalNullifier]) as Hash,
           newCommitment,
           blockNumber: currentCommitment.blockNumber + BigInt((j + 1) * 100),
+          timestamp: currentCommitment.timestamp + BigInt((j + 1) * 60), // Add 1 minute per withdrawal
           transactionHash: BigInt(i * 100 + j + 2) as Hash,
         };
 
@@ -138,6 +144,7 @@ describe("AccountService", () => {
           nullifier: withdrawalNullifier,
           secret: withdrawalSecret,
           blockNumber: withdrawal.blockNumber,
+          timestamp: withdrawal.timestamp,
           txHash: withdrawal.transactionHash,
         };
       }
@@ -160,7 +167,7 @@ describe("AccountService", () => {
 
     const spendable = accountService
       .getSpendableCommitments()
-      .get(POOL.scope) as Commitment[];
+      .get(POOL.scope) as AccountCommitment[];
 
     if (spendable) {
       console.log("Spendable:", spendable);
