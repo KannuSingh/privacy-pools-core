@@ -31,7 +31,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@0xbow/privacy-pools-core-sdk": "0.1.8",
+    "@0xbow/privacy-pools-core-sdk": "0.1.12",
     "@openzeppelin/contracts": "5.1.0",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@openzeppelin/foundry-upgrades": "0.3.6",

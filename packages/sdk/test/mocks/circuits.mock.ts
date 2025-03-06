@@ -11,11 +11,6 @@ export const binariesMock: Binaries = {
     vkey: new Uint8Array([4, 5, 6]),
     zkey: new Uint8Array([7, 8, 9]),
   },
-  merkleTree: {
-    wasm: new Uint8Array([10, 11, 12]),
-    vkey: new Uint8Array([13, 14, 15]),
-    zkey: new Uint8Array([16, 17, 18]),
-  },
   commitment: {
     wasm: new Uint8Array([19, 20, 21]),
     vkey: new Uint8Array([22, 23, 24]),
@@ -40,7 +35,7 @@ export class CircuitsMock extends Circuits {
     return this.version;
   }
 
-  get introspectBinaries(): { [key: string]: CircuitArtifacts } {
+  get introspectBinaries(): Binaries {
     return this.binaries;
   }
 }
