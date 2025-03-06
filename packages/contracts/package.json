@@ -37,7 +37,7 @@
     "@openzeppelin/foundry-upgrades": "0.3.6",
     "@zk-kit/lean-imt": "2.2.2",
     "@zk-kit/lean-imt.sol": "2.0.0",
-    "poseidon-solidity": "^0.0.5",
+    "poseidon-solidity": "0.0.5",
     "solc": "0.8.28",
     "viem": "^2.23.2"
   },

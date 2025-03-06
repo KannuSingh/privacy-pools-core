@@ -1,13 +1,12 @@
 #!/bin/bash
 
-CIRCUITS=("merkleTree" "commitment" "withdraw")
-BUILD_DIR="build"
+CIRCUITS=("commitment" "withdraw")
 DEST_DIR="artifacts"
 
 mkdir -p "$DEST_DIR"
 for circuit in "${CIRCUITS[@]}"
 do
-  cp "$BUILD_DIR/$circuit/groth16_pkey.zkey" "$DEST_DIR/${circuit}.zkey"
-  cp "$BUILD_DIR/$circuit/groth16_vkey.json" "$DEST_DIR/${circuit}.vkey"
-  cp "$BUILD_DIR/$circuit/${circuit}_js/${circuit}.wasm" "$DEST_DIR/"
+  cp "trusted-setup/final-keys/$circuit.zkey" "$DEST_DIR/${circuit}.zkey"
+  cp "trusted-setup/final-keys/$circuit.vkey" "$DEST_DIR/${circuit}.vkey"
+  cp "build/$circuit/${circuit}_js/${circuit}.wasm" "$DEST_DIR/"
 done
