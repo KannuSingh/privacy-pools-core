@@ -19,7 +19,7 @@ export interface AccountCommitment {
 }
 
 export interface PrivacyPoolAccount {
-  masterKeys: [Secret, Secret];
+  masterKeys: [masterNullifier: Secret, masterSecret: Secret];
   poolAccounts: Map<Hash, PoolAccount[]>;
   creationTimestamp: bigint;
   lastUpdateTimestamp: bigint;

@@ -46,19 +46,19 @@ export class AccountService {
     try {
       this.logger.debug("Initializing account with mnemonic");
 
-      let key1 = bytesToNumber(
+      let masterNullifierSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
       );
 
-      let key2 = bytesToNumber(
+      let masterSecretSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
       );
 
-      let masterKey1 = poseidon([BigInt(key1)]) as Secret;
-      let masterKey2 = poseidon([BigInt(key2)]) as Secret;
+      let masterNullifier = poseidon([BigInt(masterNullifierSeed)]) as Secret;
+      let masterSecret = poseidon([BigInt(masterSecretSeed)]) as Secret;
 
       return {
-        masterKeys: [masterKey1, masterKey2],
+        masterKeys: [masterNullifier, masterSecret],
         poolAccounts: new Map(),
         creationTimestamp: 0n,
         lastUpdateTimestamp: 0n
@@ -71,19 +71,23 @@ export class AccountService {
   }
 
   private _genDepositNullifier(scope: Hash, index: bigint): Secret {
-    return poseidon([this.account.masterKeys[0], scope, index]) as Secret;
+    const [masterNullifier] = this.account.masterKeys;
+    return poseidon([masterNullifier, scope, index]) as Secret;
   }
 
   private _genDepositSecret(scope: Hash, index: bigint): Secret {
-    return poseidon([this.account.masterKeys[1], scope, index]) as Secret;
+    const [, masterSecret] = this.account.masterKeys;
+    return poseidon([masterSecret, scope, index]) as Secret;
   }
 
   private _genWithdrawalNullifier(label: Hash, index: bigint): Secret {
-    return poseidon([this.account.masterKeys[0], label, index]) as Secret;
+    const [masterNullifier] = this.account.masterKeys;
+    return poseidon([masterNullifier, label, index]) as Secret;
   }
 
   private _genWithdrawalSecret(label: Hash, index: bigint): Secret {
-    return poseidon([this.account.masterKeys[1], label, index]) as Secret;
+    const [, masterSecret] = this.account.masterKeys;
+    return poseidon([masterSecret, label, index]) as Secret;
   }
 
   private _hashCommitment(

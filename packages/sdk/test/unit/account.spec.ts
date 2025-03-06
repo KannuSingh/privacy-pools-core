@@ -66,13 +66,14 @@ describe("AccountService", () => {
     for (let i = 0; i < NUM_DEPOSITS; ++i) {
       const value = 100n;
       const label = randomBigInt() as Hash;
+      const [masterNullifier, masterSecret] = masterKeys;
 
       const nullifier = poseidon([
-        masterKeys[0],
+        masterNullifier,
         POOL.scope,
         BigInt(i),
       ]) as Secret;
-      const secret = poseidon([masterKeys[1], POOL.scope, BigInt(i)]) as Secret;
+      const secret = poseidon([masterSecret, POOL.scope, BigInt(i)]) as Secret;
 
       const precommitment = poseidon([nullifier, secret]) as Hash;
       const commitment = poseidon([value, label, precommitment]) as Hash;
@@ -110,12 +111,12 @@ describe("AccountService", () => {
 
         // Generate withdrawal nullifier and secret using master keys
         const withdrawalNullifier = poseidon([
-          masterKeys[0],
+          masterNullifier,
           currentCommitment.label,
           BigInt(j),
         ]) as Secret;
         const withdrawalSecret = poseidon([
-          masterKeys[1],
+          masterSecret,
           currentCommitment.label,
           BigInt(j),
         ]) as Secret;
