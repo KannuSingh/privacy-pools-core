@@ -1,6 +1,6 @@
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { Hash, Secret } from "../types/commitment.js";
-import { Hex, bytesToNumber } from "viem";
+import { Hex, bytesToBigInt, bytesToNumber } from "viem";
 import { english, generateMnemonic, mnemonicToAccount } from "viem/accounts";
 import { DataService } from "./data.service.js";
 import {
@@ -204,7 +204,7 @@ export class AccountService {
     label: Hash,
     blockNumber: bigint,
     timestamp: bigint,
-    txHash: Hash,
+    txHash: Hex,
   ): PoolAccount {
     const precommitment = this._hashPrecommitment(nullifier, secret);
     const commitment = this._hashCommitment(value, label, precommitment);
@@ -265,7 +265,7 @@ export class AccountService {
     secret: Secret,
     blockNumber: bigint,
     timestamp: bigint,
-    txHash: Hash,
+    txHash: Hex,
   ): AccountCommitment {
     // Update last update timestamp
     if (timestamp > this.account.lastUpdateTimestamp) {
@@ -312,53 +312,6 @@ export class AccountService {
     );
 
     return newCommitment;
-  }
-
-  /**
-   * Process withdrawals for a given chain and block range
-   * 
-   * @param chainId - The chain ID to process withdrawals for
-   * @param fromBlock - The starting block number
-   * @param foundAccounts - Map of accounts indexed by label
-   */
-  private async _processWithdrawals(
-    chainId: number,
-    fromBlock: bigint,
-    foundAccounts: Map<Hash, PoolAccount>,
-  ): Promise<void> {
-    const withdrawals = await this.dataService.getWithdrawals(chainId, {
-      fromBlock,
-    });
-
-    for (const withdrawal of withdrawals) {
-      for (const account of foundAccounts.values()) {
-        const isParentCommitment =
-          BigInt(account.deposit.nullifier) === BigInt(withdrawal.spentNullifier) ||
-          account.children.some(child => BigInt(child.nullifier) === BigInt(withdrawal.spentNullifier));
-
-        if (isParentCommitment) {
-          const parentCommitment = account.children.length > 0
-            ? account.children[account.children.length - 1]
-            : account.deposit;
-
-          if (!parentCommitment) {
-            this.logger.warn(`No parent commitment found for withdrawal ${withdrawal.spentNullifier.toString()}`);
-            continue;
-          }
-
-          this.addWithdrawalCommitment(
-            parentCommitment,
-            withdrawal.withdrawn,
-            withdrawal.spentNullifier as unknown as Secret,
-            parentCommitment.secret,
-            withdrawal.blockNumber,
-            withdrawal.timestamp,
-            withdrawal.transactionHash,
-          );
-          break;
-        }
-      }
-    }
   }
 
   /**
@@ -468,5 +421,45 @@ export class AccountService {
         );
       }),
     );
+  }
+
+  private async _processWithdrawals(
+    chainId: number,
+    fromBlock: bigint,
+    foundAccounts: Map<Hash, PoolAccount>,
+  ): Promise<void> {
+    const withdrawals = await this.dataService.getWithdrawals(chainId, {
+      fromBlock,
+    });
+
+    for (const withdrawal of withdrawals) {
+      for (const account of foundAccounts.values()) {
+        const isParentCommitment =
+          BigInt(account.deposit.nullifier) === BigInt(withdrawal.spentNullifier) ||
+          account.children.some(child => BigInt(child.nullifier) === BigInt(withdrawal.spentNullifier));
+
+        if (isParentCommitment) {
+          const parentCommitment = account.children.length > 0
+            ? account.children[account.children.length - 1]
+            : account.deposit;
+
+          if (!parentCommitment) {
+            this.logger.warn(`No parent commitment found for withdrawal ${withdrawal.spentNullifier.toString()}`);
+            continue;
+          }
+
+          this.addWithdrawalCommitment(
+            parentCommitment,
+            withdrawal.withdrawn,
+            withdrawal.spentNullifier as unknown as Secret,
+            parentCommitment.secret,
+            withdrawal.blockNumber,
+            withdrawal.timestamp,
+            withdrawal.transactionHash,
+          );
+          break;
+        }
+      }
+    }
   }
 }

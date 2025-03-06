@@ -12,6 +12,13 @@ function randomBigInt(): bigint {
   return BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 }
 
+// Helper function to create mock transaction hashes
+function mockTxHash(index: bigint): `0x${string}` {
+  // Pad the index to create a valid 32-byte hash
+  const paddedIndex = index.toString(16).padStart(64, '0');
+  return `0x${paddedIndex}`;
+}
+
 describe("AccountService", () => {
   // Configuration for test data size
   const NUM_DEPOSITS = 1; // Number of random deposits
@@ -79,7 +86,7 @@ describe("AccountService", () => {
         precommitment,
         blockNumber: POOL.deploymentBlock + BigInt(i * 100),
         timestamp,
-        transactionHash: BigInt(i + 1) as Hash,
+        transactionHash: mockTxHash(BigInt(i + 1)),
       };
 
       depositEvents.push(deposit);
@@ -131,7 +138,7 @@ describe("AccountService", () => {
           newCommitment,
           blockNumber: currentCommitment.blockNumber + BigInt((j + 1) * 100),
           timestamp: currentCommitment.timestamp + BigInt((j + 1) * 60), // Add 1 minute per withdrawal
-          transactionHash: BigInt(i * 100 + j + 2) as Hash,
+          transactionHash: mockTxHash(BigInt(i * 100 + j + 2)),
         };
 
         withdrawalEvents.push(withdrawal);

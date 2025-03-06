@@ -1,5 +1,5 @@
 import { Hash, Secret } from "./commitment.js";
-import { Address } from "viem";
+import { Address, Hex } from "viem";
 
 export interface PoolAccount {
   label: Hash;
@@ -15,19 +15,19 @@ export interface AccountCommitment {
   secret: Secret;
   blockNumber: bigint;
   timestamp: bigint;
-  txHash: Hash;
+  txHash: Hex;
 }
 
 export interface PrivacyPoolAccount {
   masterKeys: [Secret, Secret];
-  poolAccounts: Map<bigint, PoolAccount[]>;
+  poolAccounts: Map<Hash, PoolAccount[]>;
   creationTimestamp: bigint;
   lastUpdateTimestamp: bigint;
 }
 
 export interface PoolInfo {
   chainId: number;
-  address: Address;
+  address: string;
   scope: Hash;
   deploymentBlock: bigint;
 }

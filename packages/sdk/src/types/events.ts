@@ -1,4 +1,4 @@
-import { Address } from "viem";
+import { Address, Hex } from "viem";
 import { Hash } from "./commitment.js";
 
 /**
@@ -12,7 +12,7 @@ export interface DepositEvent {
   precommitment: Hash;
   blockNumber: bigint;
   timestamp: bigint;
-  transactionHash: Hash;
+  transactionHash: Hex;
 }
 
 /**
@@ -24,7 +24,7 @@ export interface WithdrawalEvent {
   newCommitment: Hash;
   blockNumber: bigint;
   timestamp: bigint;
-  transactionHash: Hash;
+  transactionHash: Hex;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface RagequitEvent {
   value: bigint;
   blockNumber: bigint;
   timestamp: bigint;
-  transactionHash: Hash;
+  transactionHash: Hex;
 }
 
 /**
@@ -47,8 +47,8 @@ export interface ChainConfig {
   chainId: number;
   privacyPoolAddress: Address;
   startBlock: bigint;
-  rpcUrl?: string;
-  envioToken?: string;
+  rpcUrl: string;
+  apiKey: string;
 }
 
 /**
