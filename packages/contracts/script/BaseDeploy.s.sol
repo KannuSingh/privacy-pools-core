@@ -36,6 +36,8 @@ abstract contract DeployProtocol is Script {
     uint256 maxRelayFeeBPS;
   }
 
+  error ChainIdAndRPCMismatch();
+
   bytes11 internal constant _entrypointCustomSalt = bytes11(keccak256('Entrypoint'));
   bytes11 internal constant _nativePoolCustomSalt = bytes11(keccak256(abi.encodePacked('PrivacyPool', 'Native')));
   bytes11 internal constant _withdrawalVerifierCustomSalt =
@@ -164,7 +166,7 @@ abstract contract DeployProtocol is Script {
   }
 
   modifier chainId(uint256 _chainId) {
-    require(block.chainid == _chainId, 'RPC does not match required chain id');
+    if (block.chainid != _chainId) revert ChainIdAndRPCMismatch();
     _;
   }
 
@@ -172,4 +174,3 @@ abstract contract DeployProtocol is Script {
     return bytes32(abi.encodePacked(deployer, hex'00', _custom));
   }
 }
-
