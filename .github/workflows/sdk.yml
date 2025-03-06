@@ -62,3 +62,5 @@ jobs:
 
       - name: Run tests with coverage
         run: yarn test:cov
+        env:
+          HYPERSYNC_API_KEY: ${{ secrets.HYPERSYNC_API_KEY }}
