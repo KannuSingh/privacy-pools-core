@@ -129,10 +129,9 @@ abstract contract State is IState {
   }
 
   /**
-   * @notice Inserts a leaf into the state
-   * @dev Reverts if the leaf is already in the state. Deletes the oldest known root
-   * @dev A circular buffer is used for root storage to decrease the cost of storing new roots
+   * @notice Insert a leaf into the state
    * @param _leaf The leaf to insert
+   * @return _updatedRoot The new root after inserting the leaf
    */
   function _insert(uint256 _leaf) internal returns (uint256 _updatedRoot) {
     // Insert leaf in the tree
@@ -156,6 +155,7 @@ abstract contract State is IState {
    * @notice Returns whether the root is a known root
    * @dev A circular buffer is used for root storage to decrease the cost of storing new roots
    * @param _root The root to check
+   * @return Returns true if the root exists in the history, false otherwise
    */
   function _isKnownRoot(uint256 _root) internal view returns (bool) {
     if (_root == 0) return false;
@@ -176,6 +176,7 @@ abstract contract State is IState {
   /**
    * @notice Returns whether a leaf is in the state
    * @param _leaf The leaf to check
+   * @return Returns true if the leaf exists in the tree, false otherwise
    */
   function _isInState(uint256 _leaf) internal view returns (bool) {
     return _merkleTree._has(_leaf);

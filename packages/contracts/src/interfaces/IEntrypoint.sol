@@ -240,6 +240,7 @@ interface IEntrypoint {
    * @notice Push a new root to the association root set
    * @param _root The new ASP root
    * @param _ipfsHash The IPFS hash of the association set data
+   * @return _index The index of the newly added root
    */
   function updateRoot(uint256 _root, bytes32 _ipfsHash) external returns (uint256 _index);
 

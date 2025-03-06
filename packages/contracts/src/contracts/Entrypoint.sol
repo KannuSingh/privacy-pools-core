@@ -299,10 +299,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
                         INTERNAL METHODS 
   //////////////////////////////////////////////////////////////*/
 
-  /**
-   * @notice Authorize an upgrade if the caller is `OWNER_ROLE`
-   * @dev Inherited from `UUPSUpgradeable`
-   */
+  /// @inheritdoc UUPSUpgradeable
   function _authorizeUpgrade(address) internal override onlyRole(_OWNER_ROLE) {}
 
   /**
@@ -365,6 +362,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    * @notice Deduct fees from an amount
    * @param _amount The amount before fees
    * @param _feeBPS The fee in basis points
+   * @return _afterFees The amount after fees are deducted
    */
   function _deductFee(uint256 _amount, uint256 _feeBPS) internal pure returns (uint256 _afterFees) {
     _afterFees = _amount - ((_amount * _feeBPS) / 10_000);
@@ -376,6 +374,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
    * @param _config The pool configuration to update
    * @param _minimumDepositAmount The new minimum deposit amount
    * @param _vettingFeeBPS The new vetting fee in basis points
+   * @param _maxRelayFeeBPS The maximum relay fee in basis points
    */
   function _setPoolConfiguration(
     AssetConfig storage _config,
