@@ -12,6 +12,13 @@ function randomBigInt(): bigint {
   return BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 }
 
+// Helper function to create mock transaction hashes
+function mockTxHash(index: bigint): `0x${string}` {
+  // Pad the index to create a valid 32-byte hash
+  const paddedIndex = index.toString(16).padStart(64, '0');
+  return `0x${paddedIndex}`;
+}
+
 describe("AccountService", () => {
   // Configuration for test data size
   const NUM_DEPOSITS = 1; // Number of random deposits
@@ -59,13 +66,14 @@ describe("AccountService", () => {
     for (let i = 0; i < NUM_DEPOSITS; ++i) {
       const value = 100n;
       const label = randomBigInt() as Hash;
+      const [masterNullifier, masterSecret] = masterKeys;
 
       const nullifier = poseidon([
-        masterKeys[0],
+        masterNullifier,
         POOL.scope,
         BigInt(i),
       ]) as Secret;
-      const secret = poseidon([masterKeys[1], POOL.scope, BigInt(i)]) as Secret;
+      const secret = poseidon([masterSecret, POOL.scope, BigInt(i)]) as Secret;
 
       const precommitment = poseidon([nullifier, secret]) as Hash;
       const commitment = poseidon([value, label, precommitment]) as Hash;
@@ -79,7 +87,7 @@ describe("AccountService", () => {
         precommitment,
         blockNumber: POOL.deploymentBlock + BigInt(i * 100),
         timestamp,
-        transactionHash: BigInt(i + 1) as Hash,
+        transactionHash: mockTxHash(BigInt(i + 1)),
       };
 
       depositEvents.push(deposit);
@@ -103,12 +111,12 @@ describe("AccountService", () => {
 
         // Generate withdrawal nullifier and secret using master keys
         const withdrawalNullifier = poseidon([
-          masterKeys[0],
+          masterNullifier,
           currentCommitment.label,
           BigInt(j),
         ]) as Secret;
         const withdrawalSecret = poseidon([
-          masterKeys[1],
+          masterSecret,
           currentCommitment.label,
           BigInt(j),
         ]) as Secret;
@@ -131,7 +139,7 @@ describe("AccountService", () => {
           newCommitment,
           blockNumber: currentCommitment.blockNumber + BigInt((j + 1) * 100),
           timestamp: currentCommitment.timestamp + BigInt((j + 1) * 60), // Add 1 minute per withdrawal
-          transactionHash: BigInt(i * 100 + j + 2) as Hash,
+          transactionHash: mockTxHash(BigInt(i * 100 + j + 2)),
         };
 
         withdrawalEvents.push(withdrawal);
