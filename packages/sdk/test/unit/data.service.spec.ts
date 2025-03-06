@@ -11,9 +11,9 @@ describe('DataService with Sepolia', () => {
   const START_BLOCK = 7781496n;
 
   beforeAll(() => {
-    const apiKey = process.env.HYPERSYNC_API_KEY;
+    const apiKey = process.env.RPC_API_KEY;
     if (!apiKey) {
-      throw new Error('HYPERSYNC_API_KEY environment variable is required');
+      throw new Error('RPC_API_KEY environment variable is required');
     }
 
     const config: ChainConfig = {

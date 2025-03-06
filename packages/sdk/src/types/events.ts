@@ -48,7 +48,7 @@ export interface ChainConfig {
   privacyPoolAddress: Address;
   startBlock: bigint;
   rpcUrl: string;
-  apiKey: string;
+  apiKey: string;  // API key for RPC provider authentication
 }
 
 /**
