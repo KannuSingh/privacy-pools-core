@@ -19,7 +19,6 @@ const typescriptConfig = {
 
 // External dependencies that should not be bundled
 const external = [
-  '@envio-dev/hypersync-client',
   'viem',
   'viem/accounts',
   'viem/chains',
