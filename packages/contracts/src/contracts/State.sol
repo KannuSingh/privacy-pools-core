@@ -32,7 +32,7 @@ abstract contract State is IState {
   using InternalLeanIMT for LeanIMTData;
 
   /// @inheritdoc IState
-  uint32 public constant ROOT_HISTORY_SIZE = 30;
+  uint32 public constant ROOT_HISTORY_SIZE = 64;
   /// @inheritdoc IState
   uint32 public constant MAX_TREE_DEPTH = 32;
 
