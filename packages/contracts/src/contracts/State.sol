@@ -169,9 +169,7 @@ abstract contract State is IState {
     // Check all possible roots in the history
     for (uint32 _i = 0; _i < ROOT_HISTORY_SIZE; _i++) {
       if (_root == roots[_index]) return true;
-
-      // Move to previous index with wrap-around
-      _index = _index > 0 ? _index - 1 : ROOT_HISTORY_SIZE - 1;
+      _index = (_index + ROOT_HISTORY_SIZE - 1) % ROOT_HISTORY_SIZE;
     }
     return false;
   }
