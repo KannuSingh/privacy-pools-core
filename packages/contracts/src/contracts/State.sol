@@ -139,14 +139,16 @@ abstract contract State is IState {
 
     if (_merkleTree.depth > MAX_TREE_DEPTH) revert MaxTreeDepthReached();
 
-    // Calculate the new root index (circular buffer)
-    uint32 newRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+    // Store the root at the appropriate index
+    // For the first insertion (_merkleTree.size == 1), this will be index 0
+    // For subsequent insertions, this will be (currentRootIndex + 1) % ROOT_HISTORY_SIZE
+    uint32 newIndex = _merkleTree.size == 1 ? 0 : (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
 
-    // Update the current root index
-    currentRootIndex = newRootIndex;
+    // Store the root
+    roots[newIndex] = _updatedRoot;
 
-    // Store the new root at the new index
-    roots[newRootIndex] = _updatedRoot;
+    // Update currentRootIndex to point to the latest root
+    currentRootIndex = newIndex;
 
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }
@@ -161,15 +163,15 @@ abstract contract State is IState {
   function _isKnownRoot(uint256 _root) internal view returns (bool) {
     if (_root == 0) return false;
 
-    uint32 _currentRootIndex = currentRootIndex;
-
     // Start from the most recent root (current index)
-    // and work backwards through the history
-    for (uint32 _i = 0; _i < ROOT_HISTORY_SIZE; _i++) {
-      // Calculate index: current - i, with wrap-around
-      uint32 _index = _currentRootIndex >= _i ? _currentRootIndex - _i : ROOT_HISTORY_SIZE - (_i - _currentRootIndex);
+    uint32 _index = currentRootIndex;
 
+    // Check all possible roots in the history
+    for (uint32 _i = 0; _i < ROOT_HISTORY_SIZE; _i++) {
       if (_root == roots[_index]) return true;
+
+      // Move to previous index with wrap-around
+      _index = _index > 0 ? _index - 1 : ROOT_HISTORY_SIZE - 1;
     }
     return false;
   }

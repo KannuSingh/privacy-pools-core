@@ -70,7 +70,7 @@ contract PoolForTest is PrivacyPool {
   }
 
   function insertLeaf(uint256 _leaf) external returns (uint256 _root) {
-    _root = _merkleTree._insert(_leaf);
+    _root = _insert(_leaf);
   }
 
   function mockTreeDepth(uint256 _depth) external {
@@ -83,6 +83,10 @@ contract PoolForTest is PrivacyPool {
 
   function mockCurrentRoot(uint256 _root) external {
     _merkleTree.sideNodes[_merkleTree.depth] = _root;
+  }
+
+  function isKnownRoot(uint256 _root) external returns (bool) {
+    return _isKnownRoot(_root);
   }
 }
 
@@ -798,5 +802,73 @@ contract UnitStateViews is UnitPrivacyPool {
   function test_currentTreeSize(uint256 _size) external {
     _pool.mockTreeSize(_size);
     assertEq(_pool.currentTreeSize(), _size);
+  }
+}
+
+contract UnitRootStorage is UnitPrivacyPool {
+  function test_roots() public {
+    uint256 _leavesAmount = 64; // Let's fill the circular buffer
+
+    uint256[] memory _mirroredRoots = new uint256[](64);
+
+    assertEq(_pool.currentRootIndex(), 0, 'Initial root index must be zero');
+    assertEq(_pool.currentTreeSize(), 0, 'Initial tree size must be zero');
+    assertEq(_pool.currentRoot(), 0, 'Initial current root must be zero');
+    assertEq(_amountOfKnownRoots(), 0, 'Initial amount of known roots must be zero');
+
+    // Insert each leaf
+    for (uint256 _i; _i < _leavesAmount; _i++) {
+      // Create unique leaf
+      uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', _i + 99))) % Constants.SNARK_SCALAR_FIELD;
+      // Insert leaf in state
+      uint256 _newRoot = _pool.insertLeaf(_leaf);
+      _mirroredRoots[_i] = _newRoot;
+
+      // Tree size = amount of leaves should have increased by 1
+      assertEq(_pool.currentTreeSize(), _i + 1, 'Incorrect tree size');
+      // The root at the index = _i must be non-zero. That's the root we just stored
+      assertTrue(_pool.roots(_i) != 0, 'Incorrent root at index');
+
+      // Known roots must be equal to the amount of inserted leaves at this point (before filling the buffer)
+      assertEq(_amountOfKnownRoots(), _i + 1, 'Invalid amount of non-zero roots');
+
+      uint256 _idx = _pool.currentRootIndex();
+      assertEq(_idx, _i, 'Incorrect current root index');
+      assertEq(_pool.roots(_idx), _pool.currentRoot(), 'Root at latest index must match the current root');
+    }
+
+    // Get the amount of known roots after filling the buffer
+    assertEq(_amountOfKnownRoots(), 64, 'Invalid amount of non-zero roots');
+    assertEq(_pool.currentRootIndex(), 63, 'Root index point to the latest index in the buffer'); // 0 -> 63
+
+    // All roots must be known
+    for (uint256 _i; _i < _mirroredRoots.length; _i++) {
+      assertTrue(_mirroredRoots[_i] != 0, 'Mirrored root must be non-zero');
+      assertTrue(_pool.isKnownRoot(_mirroredRoots[_i]), 'Mirrored root must be known (in the buffer)');
+    }
+
+    // Completely rewrite the circular buffer
+    for (uint256 _i; _i < _leavesAmount; _i++) {
+      // Create unique leaf
+      uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', _i + 999))) % Constants.SNARK_SCALAR_FIELD;
+      // Insert leaf in state
+      _pool.insertLeaf(_leaf);
+
+      // Once the circular buffer is full, we must always have 64 known roots
+      assertEq(_amountOfKnownRoots(), 64, 'Invalid amount of non-zero roots');
+    }
+
+    // All initial roots must have been forgotten
+    for (uint256 _i; _i < _mirroredRoots.length; _i++) {
+      assertFalse(_pool.isKnownRoot(_mirroredRoots[_i]), 'Mirrored root must be unknown');
+    }
+  }
+
+  function _amountOfKnownRoots() internal returns (uint256 _counter) {
+    for (uint256 _i; _i < 64; _i++) {
+      if (_pool.roots(_i) != 0) {
+        ++_counter;
+      }
+    }
   }
 }
