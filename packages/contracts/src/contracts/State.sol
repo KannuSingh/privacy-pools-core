@@ -154,6 +154,7 @@ abstract contract State is IState {
   /**
    * @notice Returns whether the root is a known root
    * @dev A circular buffer is used for root storage to decrease the cost of storing new roots
+   * @dev Optimized to start search from most recent roots, improving average case performance
    * @param _root The root to check
    * @return Returns true if the root exists in the history, false otherwise
    */
@@ -161,15 +162,15 @@ abstract contract State is IState {
     if (_root == 0) return false;
 
     uint32 _currentRootIndex = currentRootIndex;
-    uint32 _index = _currentRootIndex;
 
-    // Check ROOT_HISTORY_SIZE indices, starting from current
+    // Start from the most recent root (current index)
+    // and work backwards through the history
     for (uint32 _i = 0; _i < ROOT_HISTORY_SIZE; _i++) {
-      if (_root == roots[_index]) return true;
-      // Move to previous index, wrap to ROOT_HISTORY_SIZE-1 if we go below 0
-      _index = _index > 0 ? _index - 1 : ROOT_HISTORY_SIZE - 1;
-    }
+      // Calculate index: current - i, with wrap-around
+      uint32 _index = _currentRootIndex >= _i ? _currentRootIndex - _i : ROOT_HISTORY_SIZE - (_i - _currentRootIndex);
 
+      if (_root == roots[_index]) return true;
+    }
     return false;
   }
 
