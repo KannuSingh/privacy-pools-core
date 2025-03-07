@@ -394,7 +394,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     vm.startPrank(_OWNER);
 
-    // Deploy UDST pool
+    // Deploy USDT pool
     PrivacyPoolComplex _usdtPool = new PrivacyPoolComplex(
       address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_USDT)
     );
