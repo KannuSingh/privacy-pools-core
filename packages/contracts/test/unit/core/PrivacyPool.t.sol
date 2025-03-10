@@ -817,20 +817,20 @@ contract UnitRootStorage is UnitPrivacyPool {
     assertEq(_amountOfKnownRoots(), 0, 'Initial amount of known roots must be zero');
 
     // Insert the first 63 leaves (indices 1 to 63, leaving index 0 empty)
-    for (uint256 _i; _i < ROOT_HISTORY_SIZE - 1; _i++) {
+    for (uint256 _i = 1; _i < ROOT_HISTORY_SIZE; _i++) {
       // Create unique leaf
       uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', _i + 99))) % Constants.SNARK_SCALAR_FIELD;
       // Insert leaf in state
       uint256 _newRoot = _pool.insertLeaf(_leaf);
-      _mirroredRoots[_i] = _newRoot;
+      _mirroredRoots[_i - 1] = _newRoot;
 
-      assertEq(_pool.currentTreeSize(), _i + 1, 'Tree size should have increased by 1');
+      assertEq(_pool.currentTreeSize(), _i, 'Tree size should have increased by 1');
       uint256 _idx = _pool.currentRootIndex();
-      assertEq(_idx, _i + 1, 'Current root index mismatch');
+      assertEq(_idx, _i, 'Current root index mismatch');
       assertEq(_pool.roots(_idx), _pool.currentRoot(), 'Root at current index must match the current root');
 
       // Known roots must be equal to the amount of inserted leaves at this point
-      assertEq(_amountOfKnownRoots(), _i + 1, 'Invalid amount of non-zero roots');
+      assertEq(_amountOfKnownRoots(), _i, 'Invalid amount of non-zero roots');
     }
 
     // Insert 64th leaf, filling the circular buffer (and wrapping around to index 0)
