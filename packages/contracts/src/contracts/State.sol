@@ -139,16 +139,14 @@ abstract contract State is IState {
 
     if (_merkleTree.depth > MAX_TREE_DEPTH) revert MaxTreeDepthReached();
 
-    // Store the root at the appropriate index
-    // For the first insertion (_merkleTree.size == 1), this will be index 0
-    // For subsequent insertions, this will be (currentRootIndex + 1) % ROOT_HISTORY_SIZE
-    uint32 newIndex = _merkleTree.size == 1 ? 0 : (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+    // Calculate the next index
+    uint32 nextIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
 
-    // Store the root
-    roots[newIndex] = _updatedRoot;
+    // Store the root at the next index
+    roots[nextIndex] = _updatedRoot;
 
     // Update currentRootIndex to point to the latest root
-    currentRootIndex = newIndex;
+    currentRootIndex = nextIndex;
 
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }

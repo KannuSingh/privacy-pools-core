@@ -806,56 +806,60 @@ contract UnitStateViews is UnitPrivacyPool {
 }
 
 contract UnitRootStorage is UnitPrivacyPool {
-  function test_roots() public {
-    uint256 _leavesAmount = 64; // Let's fill the circular buffer
+  uint32 internal constant ROOT_HISTORY_SIZE = 64;
 
-    uint256[] memory _mirroredRoots = new uint256[](64);
+  function test_roots() public {
+    uint256[] memory _mirroredRoots = new uint256[](ROOT_HISTORY_SIZE);
 
     assertEq(_pool.currentRootIndex(), 0, 'Initial root index must be zero');
     assertEq(_pool.currentTreeSize(), 0, 'Initial tree size must be zero');
     assertEq(_pool.currentRoot(), 0, 'Initial current root must be zero');
     assertEq(_amountOfKnownRoots(), 0, 'Initial amount of known roots must be zero');
 
-    // Insert each leaf
-    for (uint256 _i; _i < _leavesAmount; _i++) {
+    // Insert the first 63 leaves (indices 1 to 63, leaving index 0 empty)
+    for (uint256 _i; _i < ROOT_HISTORY_SIZE - 1; _i++) {
       // Create unique leaf
       uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', _i + 99))) % Constants.SNARK_SCALAR_FIELD;
       // Insert leaf in state
       uint256 _newRoot = _pool.insertLeaf(_leaf);
       _mirroredRoots[_i] = _newRoot;
 
-      // Tree size = amount of leaves should have increased by 1
-      assertEq(_pool.currentTreeSize(), _i + 1, 'Incorrect tree size');
-      // The root at the index = _i must be non-zero. That's the root we just stored
-      assertTrue(_pool.roots(_i) != 0, 'Incorrent root at index');
-
-      // Known roots must be equal to the amount of inserted leaves at this point (before filling the buffer)
-      assertEq(_amountOfKnownRoots(), _i + 1, 'Invalid amount of non-zero roots');
-
+      assertEq(_pool.currentTreeSize(), _i + 1, 'Tree size should have increased by 1');
       uint256 _idx = _pool.currentRootIndex();
-      assertEq(_idx, _i, 'Incorrect current root index');
-      assertEq(_pool.roots(_idx), _pool.currentRoot(), 'Root at latest index must match the current root');
+      assertEq(_idx, _i + 1, 'Current root index mismatch');
+      assertEq(_pool.roots(_idx), _pool.currentRoot(), 'Root at current index must match the current root');
+
+      // Known roots must be equal to the amount of inserted leaves at this point
+      assertEq(_amountOfKnownRoots(), _i + 1, 'Invalid amount of non-zero roots');
     }
 
-    // Get the amount of known roots after filling the buffer
-    assertEq(_amountOfKnownRoots(), 64, 'Invalid amount of non-zero roots');
-    assertEq(_pool.currentRootIndex(), 63, 'Root index point to the latest index in the buffer'); // 0 -> 63
+    // Insert 64th leaf, filling the circular buffer (and wrapping around to index 0)
+    uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', ROOT_HISTORY_SIZE + 99))) % Constants.SNARK_SCALAR_FIELD;
+    uint256 _newRoot = _pool.insertLeaf(_leaf);
+    _mirroredRoots[ROOT_HISTORY_SIZE - 1] = _newRoot;
 
-    // All roots must be known
+    // Tree size must match the history size
+    assertEq(_pool.currentTreeSize(), ROOT_HISTORY_SIZE, 'Tree size must equal the root history size');
+    // Known roots must be equal to the full root history size
+    assertEq(_amountOfKnownRoots(), ROOT_HISTORY_SIZE, 'Invalid amount of non-zero roots');
+    // Index should have wrapped around to zero
+    assertEq(_pool.currentRootIndex(), 0, 'Current root index must be zero');
+    // Latest root must be stored at the current root index
+    assertEq(_pool.roots(0), _pool.currentRoot(), 'Root at current index must match the current root');
+
+    // All 64 roots must be known
     for (uint256 _i; _i < _mirroredRoots.length; _i++) {
       assertTrue(_mirroredRoots[_i] != 0, 'Mirrored root must be non-zero');
       assertTrue(_pool.isKnownRoot(_mirroredRoots[_i]), 'Mirrored root must be known (in the buffer)');
     }
 
-    // Completely rewrite the circular buffer
-    for (uint256 _i; _i < _leavesAmount; _i++) {
-      // Create unique leaf
+    // Completely overwrite the circular buffer
+    for (uint256 _i; _i < ROOT_HISTORY_SIZE; _i++) {
       uint256 _leaf = uint256(keccak256(abi.encodePacked('leaf', _i + 999))) % Constants.SNARK_SCALAR_FIELD;
-      // Insert leaf in state
       _pool.insertLeaf(_leaf);
 
       // Once the circular buffer is full, we must always have 64 known roots
-      assertEq(_amountOfKnownRoots(), 64, 'Invalid amount of non-zero roots');
+      assertEq(_amountOfKnownRoots(), ROOT_HISTORY_SIZE, 'Invalid amount of non-zero roots');
     }
 
     // All initial roots must have been forgotten
@@ -865,7 +869,7 @@ contract UnitRootStorage is UnitPrivacyPool {
   }
 
   function _amountOfKnownRoots() internal returns (uint256 _counter) {
-    for (uint256 _i; _i < 64; _i++) {
+    for (uint256 _i; _i < ROOT_HISTORY_SIZE + 1; _i++) {
       if (_pool.roots(_i) != 0) {
         ++_counter;
       }
