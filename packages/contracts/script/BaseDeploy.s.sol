@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
+import {ERC1967Proxy} from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import {IERC20} from '@oz/token/ERC20/ERC20.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console} from 'forge-std/console.sol';
-import {ICreateX} from 'interfaces/external/ICreateX.sol';
-
-import {ERC1967Proxy} from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import {Constants} from 'contracts/lib/Constants.sol';
+import {DeployLib} from 'contracts/lib/DeployLib.sol';
 
 import {IPrivacyPool} from 'interfaces/IPrivacyPool.sol';
+import {ICreateX} from 'interfaces/external/ICreateX.sol';
 
 import {Entrypoint} from 'contracts/Entrypoint.sol';
 import {PrivacyPoolComplex} from 'contracts/implementations/PrivacyPoolComplex.sol';
@@ -37,13 +37,6 @@ abstract contract DeployProtocol is Script {
   }
 
   error ChainIdAndRPCMismatch();
-
-  bytes11 internal constant _entrypointCustomSalt = bytes11(keccak256('Entrypoint'));
-  bytes11 internal constant _nativePoolCustomSalt = bytes11(keccak256(abi.encodePacked('PrivacyPoolSimple')));
-  bytes11 internal constant _withdrawalVerifierCustomSalt =
-    bytes11(keccak256(abi.encodePacked('Groth16', 'WithdrawalVerifier')));
-  bytes11 internal constant _ragequitVerifierCustomSalt =
-    bytes11(keccak256(abi.encodePacked('Groth16', 'RagequitVerifier')));
 
   // @notice Deployed Entrypoint
   Entrypoint public entrypoint;
@@ -76,7 +69,7 @@ abstract contract DeployProtocol is Script {
 
   // @dev Must be called with the `--account` flag which acts as the caller
   function run() public virtual {
-    vm.startBroadcast();
+    vm.startBroadcast(deployer);
 
     // Deploy verifiers
     _deployGroth16Verifiers();
@@ -97,14 +90,17 @@ abstract contract DeployProtocol is Script {
   function _deployGroth16Verifiers() private {
     // Deploy WithdrawalVerifier using Create2
     withdrawalVerifier = CreateX.deployCreate2(
-      _salt(_withdrawalVerifierCustomSalt), abi.encodePacked(type(WithdrawalVerifier).creationCode)
+      DeployLib.salt(deployer, DeployLib.WITHDRAWAL_VERIFIER_SALT),
+      abi.encodePacked(type(WithdrawalVerifier).creationCode)
     );
 
     console.log('Withdrawal Verifier deployed at: %s', withdrawalVerifier);
 
     // Deploy CommitmentVerifier using Create2
-    ragequitVerifier =
-      CreateX.deployCreate2(_salt(_ragequitVerifierCustomSalt), abi.encodePacked(type(CommitmentVerifier).creationCode));
+    ragequitVerifier = CreateX.deployCreate2(
+      DeployLib.salt(deployer, DeployLib.RAGEQUIT_VERIFIER_SALT),
+      abi.encodePacked(type(CommitmentVerifier).creationCode)
+    );
 
     console.log('Ragequit Verifier deployed at: %s', ragequitVerifier);
   }
@@ -118,7 +114,7 @@ abstract contract DeployProtocol is Script {
 
     // Deploy proxy and initialize
     address _entrypoint = CreateX.deployCreate2(
-      _salt(_entrypointCustomSalt),
+      DeployLib.salt(deployer, DeployLib.ENTRYPOINT_SALT),
       abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
     );
 
@@ -130,7 +126,7 @@ abstract contract DeployProtocol is Script {
   function _deploySimplePool(PoolConfig memory _config) private {
     // Deploy pool with Create2
     address _pool = CreateX.deployCreate2(
-      _salt(_nativePoolCustomSalt),
+      DeployLib.salt(deployer, DeployLib.SIMPLE_POOL_SALT),
       abi.encodePacked(
         type(PrivacyPoolSimple).creationCode, abi.encode(address(entrypoint), withdrawalVerifier, ragequitVerifier)
       )
@@ -149,17 +145,12 @@ abstract contract DeployProtocol is Script {
   }
 
   function _deployComplexPool(PoolConfig memory _config) private {
-    bytes11 _complexPoolCustomSalt = bytes11(keccak256(abi.encodePacked('PrivacyPoolComplex', _config.symbol)));
-
     // Deploy pool with Create2
     address _pool = CreateX.deployCreate2(
-      _salt(_complexPoolCustomSalt),
+      DeployLib.salt(deployer, DeployLib.COMPLEX_POOL_SALT),
       abi.encodePacked(
         type(PrivacyPoolComplex).creationCode,
-        address(entrypoint),
-        withdrawalVerifier,
-        ragequitVerifier,
-        address(_config.asset)
+        abi.encode(address(entrypoint), withdrawalVerifier, ragequitVerifier, address(_config.asset))
       )
     );
 
@@ -174,9 +165,5 @@ abstract contract DeployProtocol is Script {
   modifier chainId(uint256 _chainId) {
     if (block.chainid != _chainId) revert ChainIdAndRPCMismatch();
     _;
-  }
-
-  function _salt(bytes11 _custom) internal view returns (bytes32) {
-    return bytes32(abi.encodePacked(deployer, hex'00', _custom));
   }
 }

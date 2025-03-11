@@ -12,6 +12,7 @@ import {PrivacyPoolSimple} from 'contracts/implementations/PrivacyPoolSimple.sol
 import {CommitmentVerifier} from 'contracts/verifiers/CommitmentVerifier.sol';
 import {WithdrawalVerifier} from 'contracts/verifiers/WithdrawalVerifier.sol';
 
+import {ERC1967Proxy} from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
 
 import {IERC20} from '@oz/interfaces/IERC20.sol';
@@ -24,6 +25,7 @@ import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
 import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
 import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 
+import {ICreateX} from 'interfaces/external/ICreateX.sol';
 import {Constants} from 'test/helper/Constants.sol';
 
 contract IntegrationBase is Test {
@@ -91,6 +93,9 @@ contract IntegrationBase is Test {
   CommitmentVerifier internal _commitmentVerifier;
   WithdrawalVerifier internal _withdrawalVerifier;
 
+  // CreateX Singleton
+  ICreateX internal constant _CREATEX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
+
   // Assets
   IERC20 internal constant _DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
   IERC20 internal _ETH = IERC20(Constants.NATIVE_ASSET);
@@ -134,23 +139,52 @@ contract IntegrationBase is Test {
     vm.createSelectFork(vm.rpcUrl('mainnet'));
 
     vm.startPrank(_OWNER);
+
     // Deploy Groth16 ragequit verifier
-    _commitmentVerifier = DeployLib.deployCommitmentVerifier(_OWNER);
+    _commitmentVerifier = CommitmentVerifier(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.RAGEQUIT_VERIFIER_SALT),
+        abi.encodePacked(type(CommitmentVerifier).creationCode)
+      )
+    );
 
     // Deploy Groth16 withdrawal verifier
-    _withdrawalVerifier = DeployLib.deployWithdrawalVerifier(_OWNER);
+    _withdrawalVerifier = WithdrawalVerifier(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.WITHDRAWAL_VERIFIER_SALT),
+        abi.encodePacked(type(WithdrawalVerifier).creationCode)
+      )
+    );
 
     // Deploy Entrypoint
-    _entrypoint = DeployLib.deployEntrypoint(_OWNER, _OWNER, _POSTMAN);
+    address _impl = address(new Entrypoint());
+    bytes memory _intializationData = abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN));
+    address _entrypointAddr = _CREATEX.deployCreate2(
+      DeployLib.salt(_OWNER, DeployLib.ENTRYPOINT_SALT),
+      abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
+    );
+    _entrypoint = Entrypoint(payable(_entrypointAddr));
 
     // Deploy ETH pool
-    _ethPool = DeployLib.deploySimplePool(
-      _OWNER, address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier)
+    _ethPool = PrivacyPoolSimple(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.SIMPLE_POOL_SALT),
+        abi.encodePacked(
+          type(PrivacyPoolSimple).creationCode,
+          abi.encode(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier))
+        )
+      )
     );
 
     // Deploy DAI pool
-    _daiPool = DeployLib.deployComplexPool(
-      _OWNER, address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_DAI)
+    _daiPool = PrivacyPoolComplex(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.COMPLEX_POOL_SALT),
+        abi.encodePacked(
+          type(PrivacyPoolComplex).creationCode,
+          abi.encode(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_DAI))
+        )
+      )
     );
 
     // Register ETH pool
