@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
-import {ICreateX} from './utils/ICreateX.sol';
 import {IERC20} from '@oz/token/ERC20/ERC20.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console} from 'forge-std/console.sol';
+import {ICreateX} from 'interfaces/external/ICreateX.sol';
 
 import {ERC1967Proxy} from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
@@ -39,7 +39,7 @@ abstract contract DeployProtocol is Script {
   error ChainIdAndRPCMismatch();
 
   bytes11 internal constant _entrypointCustomSalt = bytes11(keccak256('Entrypoint'));
-  bytes11 internal constant _nativePoolCustomSalt = bytes11(keccak256(abi.encodePacked('PrivacyPool', 'Native')));
+  bytes11 internal constant _nativePoolCustomSalt = bytes11(keccak256(abi.encodePacked('PrivacyPoolSimple')));
   bytes11 internal constant _withdrawalVerifierCustomSalt =
     bytes11(keccak256(abi.encodePacked('Groth16', 'WithdrawalVerifier')));
   bytes11 internal constant _ragequitVerifierCustomSalt =
@@ -154,7 +154,13 @@ abstract contract DeployProtocol is Script {
     // Deploy pool with Create2
     address _pool = CreateX.deployCreate2(
       _salt(_complexPoolCustomSalt),
-      abi.encodePacked(type(PrivacyPoolComplex).creationCode, address(entrypoint), withdrawalVerifier, ragequitVerifier)
+      abi.encodePacked(
+        type(PrivacyPoolComplex).creationCode,
+        address(entrypoint),
+        withdrawalVerifier,
+        ragequitVerifier,
+        address(_config.asset)
+      )
     );
 
     // Register pool at entrypoint with defined configuration
