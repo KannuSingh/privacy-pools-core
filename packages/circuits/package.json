@@ -25,7 +25,7 @@
     "verify:withdraw": "npx circomkit verify withdraw default",
     "verify:commitment": "npx circomkit verify commitment default",
     "gencontract:withdraw": "npx snarkjs zkey export solidityverifier trusted-setup/final-keys/withdraw.zkey WithdrawalVerifier.sol",
-    "gencontract:commitment": "npx snarkjs zkey export solidityverifier trusted-setup/final-keys/commitment.zkey CommitmentVerifier.sol"
+    "gencontract:commitment": "npx snarkjs zkey export solidityverifier trusted-setup/final-keys/ragequit.zkey CommitmentVerifier.sol"
   },
   "dependencies": {
     "@zk-kit/lean-imt": "2.2.2",
