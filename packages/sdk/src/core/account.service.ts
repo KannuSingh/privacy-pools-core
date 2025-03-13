@@ -46,16 +46,16 @@ export class AccountService {
     try {
       this.logger.debug("Initializing account with mnemonic");
 
-      let masterNullifierSeed = bytesToNumber(
+      const masterNullifierSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
       );
 
-      let masterSecretSeed = bytesToNumber(
+      const masterSecretSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
       );
 
-      let masterNullifier = poseidon([BigInt(masterNullifierSeed)]) as Secret;
-      let masterSecret = poseidon([BigInt(masterSecretSeed)]) as Secret;
+      const masterNullifier = poseidon([BigInt(masterNullifierSeed)]) as Secret;
+      const masterSecret = poseidon([BigInt(masterSecretSeed)]) as Secret;
 
       return {
         masterKeys: [masterNullifier, masterSecret],

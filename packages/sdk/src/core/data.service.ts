@@ -3,7 +3,6 @@ import {
   createPublicClient,
   http,
   parseAbiItem,
-  type Address,
 } from "viem";
 import {
   ChainConfig,

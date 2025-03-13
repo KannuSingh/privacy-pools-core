@@ -1,5 +1,5 @@
 import { Hash, Secret } from "./commitment.js";
-import { Address, Hex } from "viem";
+import { Hex } from "viem";
 
 export interface PoolAccount {
   label: Hash;
