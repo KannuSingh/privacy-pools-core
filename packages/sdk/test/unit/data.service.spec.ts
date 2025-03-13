@@ -50,7 +50,6 @@ describe('DataService with Sepolia', () => {
         value: expect.any(BigInt),
         precommitment: expect.any(BigInt),
         blockNumber: expect.any(BigInt),
-        timestamp: expect.any(BigInt),
         transactionHash: expect.stringMatching(/^0x[a-fA-F0-9]{64}$/),
       })
     );
@@ -64,7 +63,6 @@ describe('DataService with Sepolia', () => {
     expect(deposit.precommitment).toBeGreaterThan(0n);
     expect(deposit.value).toBeGreaterThan(0n);
     expect(deposit.blockNumber).toBeGreaterThanOrEqual(START_BLOCK);
-    expect(deposit.timestamp).toBeGreaterThan(0n);
     expect(deposit.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
 
     // Log some useful information
@@ -76,7 +74,6 @@ describe('DataService with Sepolia', () => {
       label: deposit.label.toString(),
       value: deposit.value.toString(),
       precommitment: deposit.precommitment.toString(),
-      timestamp: new Date(Number(deposit.timestamp) * 1000).toISOString(),
       transactionHash: deposit.transactionHash,
     });
   });
@@ -107,7 +104,6 @@ describe('DataService with Sepolia', () => {
     expect(withdrawal.newCommitment).toBeGreaterThan(0n);
     expect(withdrawal.withdrawn).toBeGreaterThan(0n);
     expect(withdrawal.blockNumber).toBeGreaterThanOrEqual(START_BLOCK);
-    expect(withdrawal.timestamp).toBeGreaterThan(0n);
     expect(withdrawal.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
 
     // Log some useful information
@@ -117,7 +113,6 @@ describe('DataService with Sepolia', () => {
       withdrawn: withdrawal.withdrawn.toString(),
       spentNullifier: withdrawal.spentNullifier.toString(),
       newCommitment: withdrawal.newCommitment.toString(),
-      timestamp: new Date(Number(withdrawal.timestamp) * 1000).toISOString(),
       transactionHash: withdrawal.transactionHash,
     });
   });
@@ -150,7 +145,6 @@ describe('DataService with Sepolia', () => {
       expect(ragequit.label).toBeGreaterThan(0n);
       expect(ragequit.value).toBeGreaterThan(0n);
       expect(ragequit.blockNumber).toBeGreaterThanOrEqual(START_BLOCK);
-      expect(ragequit.timestamp).toBeGreaterThan(0n);
       expect(ragequit.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
 
       // Log some useful information
@@ -161,7 +155,6 @@ describe('DataService with Sepolia', () => {
         commitment: ragequit.commitment.toString(),
         label: ragequit.label.toString(),
         value: ragequit.value.toString(),
-        timestamp: new Date(Number(ragequit.timestamp) * 1000).toISOString(),
         transactionHash: ragequit.transactionHash,
       });
     } else {
