@@ -2,7 +2,7 @@ import sqlite3 from "sqlite3";
 import { open, Database } from "sqlite";
 
 import path from "path";
-import { SQLITE_DB_PATH } from "../config.js";
+import { CONFIG } from "../config/index.js";
 import { RelayerDatabase } from "../types/db.types.js";
 import {
   RequestStatus,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS requests (
    * Initializes the database with the given path.
    */
   constructor() {
-    this.dbPath = path.resolve(SQLITE_DB_PATH);
+    this.dbPath = path.resolve(CONFIG.sqlite_db_path);
   }
 
   /**

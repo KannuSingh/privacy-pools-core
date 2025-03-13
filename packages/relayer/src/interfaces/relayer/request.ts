@@ -56,6 +56,8 @@ export interface RelayRequestBody {
   proof: ProofRelayerPayload;
   /** Pool scope */
   scope: string;
+  /** Chain ID to process the request on */
+  chainId: string | number;
 }
 
 /**

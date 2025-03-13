@@ -14,6 +14,7 @@ export enum ErrorCode {
   FEE_MISMATCH = "FEE_MISMATCH",
   CONTEXT_MISMATCH = "CONTEXT_MISMATCH",
   INSUFFICIENT_WITHDRAWN_VALUE = "INSUFFICIENT_WITHDRAWN_VALUE",
+  ASSET_NOT_SUPPORTED = "ASSET_NOT_SUPPORTED",
 
   // Config errors
   INVALID_CONFIG = "INVALID_CONFIG",
@@ -186,6 +187,14 @@ export class WithdrawalValidationError extends RelayerError {
     return new WithdrawalValidationError(
       "Withdrawn value is too small",
       ErrorCode.INSUFFICIENT_WITHDRAWN_VALUE,
+      details,
+    );
+  }
+
+  public static assetNotSupported(details: string) {
+    return new WithdrawalValidationError(
+      "Asset not supported on this chain",
+      ErrorCode.ASSET_NOT_SUPPORTED,
       details,
     );
   }

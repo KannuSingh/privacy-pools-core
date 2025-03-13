@@ -12,16 +12,34 @@ import {
   SDKError,
   type Hash,
 } from "@0xbow/privacy-pools-core-sdk";
-import { Address } from "viem";
+import { Address, Chain } from "viem";
 import {
-  CHAIN,
-  ENTRYPOINT_ADDRESS,
-  PROVIDER_URL,
-  SIGNER_PRIVATE_KEY,
-} from "../config.js";
+  CONFIG,
+  getChainConfig,
+  getEntrypointAddress,
+  getSignerPrivateKey
+} from "../config/index.js";
 import { WithdrawalPayload } from "../interfaces/relayer/request.js";
 import { RelayerError, SdkError } from "../exceptions/base.exception.js";
 import { SdkProviderInterface } from "../types/sdk.types.js";
+
+/**
+ * Creates a Chain object for the given chain configuration
+ * 
+ * @param {object} chainConfig - The chain configuration
+ * @returns {Chain} - The Chain object
+ */
+function createChainObject(chainConfig: any): Chain {
+  return {
+    id: chainConfig.chain_id,
+    name: chainConfig.chain_name,
+    nativeCurrency: chainConfig.native_currency,
+    rpcUrls: {
+      default: { http: [chainConfig.rpc_url] },
+      public: { http: [chainConfig.rpc_url] },
+    },
+  };
+}
 
 /**
  * Class representing the SDK provider for interacting with Privacy Pool SDK.
@@ -29,19 +47,59 @@ import { SdkProviderInterface } from "../types/sdk.types.js";
 export class SdkProvider implements SdkProviderInterface {
   /** Instance of the PrivacyPoolSDK. */
   private sdk: PrivacyPoolSDK;
-  private contracts: ContractInteractionsService;
+  
+  /** Map of chain ID to contract interactions service */
+  private contractsByChain: Map<number, ContractInteractionsService>;
 
   /**
    * Initializes a new instance of the SDK provider.
    */
   constructor() {
     this.sdk = new PrivacyPoolSDK(new Circuits({ browser: false }));
-    this.contracts = this.sdk.createContractInstance(
-      PROVIDER_URL,
-      CHAIN,
-      ENTRYPOINT_ADDRESS,
-      SIGNER_PRIVATE_KEY,
-    );
+    this.contractsByChain = new Map();
+    
+    // Initialize contract instances for all supported chains
+    CONFIG.chains.forEach(chainConfig => {
+      try {
+        // Create chain object
+        const chain = createChainObject(chainConfig);
+        
+        // Get entrypoint address and signer private key
+        const entrypointAddress = chainConfig.entrypoint_address || CONFIG.defaults.entrypoint_address;
+        const signerPrivateKey = chainConfig.signer_private_key || CONFIG.defaults.signer_private_key;
+        
+        // Create contract instance
+        const contracts = this.sdk.createContractInstance(
+          chainConfig.rpc_url,
+          chain,
+          entrypointAddress,
+          signerPrivateKey,
+        );
+        
+        this.contractsByChain.set(chainConfig.chain_id, contracts);
+      } catch (error) {
+        console.error(`Error initializing chain ${chainConfig.chain_id}: ${error}`);
+      }
+    });
+    
+    if (this.contractsByChain.size === 0) {
+      throw new Error("No chains were successfully initialized");
+    }
+  }
+
+  /**
+   * Gets the contract interactions service for a specific chain.
+   * 
+   * @param {number} chainId - The chain ID.
+   * @returns {ContractInteractionsService} - The contract interactions service for the specified chain.
+   * @throws {RelayerError} - If the chain is not supported.
+   */
+  private getContractsForChain(chainId: number): ContractInteractionsService {
+    const contracts = this.contractsByChain.get(chainId);
+    if (!contracts) {
+      throw RelayerError.unknown(`Chain with ID ${chainId} not supported.`);
+    }
+    return contracts;
   }
 
   /**
@@ -58,12 +116,15 @@ export class SdkProvider implements SdkProviderInterface {
    * Broadcasts a withdrawal transaction.
    *
    * @param {WithdrawalPayload} withdrawalPayload - The withdrawal payload.
+   * @param {number} chainId - The chain ID to broadcast on.
    * @returns {Promise<{ hash: string }>} - A promise resolving to an object containing the transaction hash.
    */
   async broadcastWithdrawal(
     withdrawalPayload: WithdrawalPayload,
+    chainId: number,
   ): Promise<{ hash: string }> {
-    return this.contracts.relay(
+    const contracts = this.getContractsForChain(chainId);
+    return contracts.relay(
       withdrawalPayload.withdrawal,
       withdrawalPayload.proof,
       withdrawalPayload.scope as Hash,
@@ -74,6 +135,7 @@ export class SdkProvider implements SdkProviderInterface {
    * Calculates the context for a withdrawal.
    *
    * @param {Withdrawal} withdrawal - The withdrawal object.
+   * @param {bigint} scope - The scope value.
    * @returns {string} - The calculated context.
    */
   calculateContext(withdrawal: Withdrawal, scope: bigint): string {
@@ -84,13 +146,16 @@ export class SdkProvider implements SdkProviderInterface {
    * Converts a scope value to an asset address.
    *
    * @param {bigint} scope - The scope value.
+   * @param {number} chainId - The chain ID.
    * @returns {Promise<{ poolAddress: Address; assetAddress: Address; }>} - A promise resolving to the asset address.
    */
   async scopeData(
     scope: bigint,
+    chainId: number,
   ): Promise<{ poolAddress: Address; assetAddress: Address }> {
     try {
-      const data = await this.contracts.getScopeData(scope);
+      const contracts = this.getContractsForChain(chainId);
+      const data = await contracts.getScopeData(scope);
       return data;
     } catch (error) {
       if (error instanceof SDKError) {

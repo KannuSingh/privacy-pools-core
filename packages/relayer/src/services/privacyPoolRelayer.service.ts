@@ -3,13 +3,10 @@
  */
 import { getAddress } from "viem";
 import {
-  ENTRYPOINT_ADDRESS,
-  FEE_BPS,
-  FEE_RECEIVER_ADDRESS,
-  PROVIDER_URL,
-  SIGNER_PRIVATE_KEY,
-  WITHDRAW_AMOUNTS,
-} from "../config.js";
+  getEntrypointAddress,
+  getFeeReceiverAddress,
+  getAssetConfig
+} from "../config/index.js";
 import {
   RelayerError,
   WithdrawalValidationError,
@@ -32,10 +29,6 @@ export class PrivacyPoolRelayer {
   protected db: RelayerDatabase;
   /** SDK provider for handling blockchain interactions. */
   protected sdkProvider: SdkProviderInterface;
-  /** RPC URL for blockchain communication. */
-  private readonly rpcUrl: string = PROVIDER_URL;
-  /** Private key for signing transactions. */
-  private readonly privateKey: string = SIGNER_PRIVATE_KEY;
 
   /**
    * Initializes a new instance of the Privacy Pool Relayer.
@@ -49,22 +42,23 @@ export class PrivacyPoolRelayer {
    * Handles a withdrawal request.
    *
    * @param {WithdrawalPayload} req - The withdrawal request payload.
+   * @param {number} chainId - The chain ID to process the request on.
    * @returns {Promise<RelayerResponse>} - A promise resolving to the relayer response.
    */
-  async handleRequest(req: WithdrawalPayload): Promise<RelayerResponse> {
+  async handleRequest(req: WithdrawalPayload, chainId: number): Promise<RelayerResponse> {
     const requestId = crypto.randomUUID();
     const timestamp = Date.now();
 
     try {
       await this.db.createNewRequest(requestId, timestamp, req);
-      await this.validateWithdrawal(req);
+      await this.validateWithdrawal(req, chainId);
 
       const isValidWithdrawalProof = await this.verifyProof(req.proof);
       if (!isValidWithdrawalProof) {
         throw ZkError.invalidProof();
       }
 
-      const response = await this.broadcastWithdrawal(req);
+      const response = await this.broadcastWithdrawal(req, chainId);
       await this.db.updateBroadcastedRequest(requestId, response.hash);
 
       return {
@@ -102,42 +96,42 @@ export class PrivacyPoolRelayer {
    * Broadcasts a withdrawal transaction.
    *
    * @param {WithdrawalPayload} withdrawal - The withdrawal payload.
+   * @param {number} chainId - The chain ID to broadcast on.
    * @returns {Promise<{ hash: string }>} - A promise resolving to the transaction hash.
    */
   protected async broadcastWithdrawal(
     withdrawal: WithdrawalPayload,
+    chainId: number,
   ): Promise<{ hash: string }> {
-    return this.sdkProvider.broadcastWithdrawal(withdrawal);
+    return this.sdkProvider.broadcastWithdrawal(withdrawal, chainId);
   }
 
   /**
    * Validates a withdrawal request against relayer rules.
    *
    * @param {WithdrawalPayload} wp - The withdrawal payload.
+   * @param {number} chainId - The chain ID to validate against.
    * @throws {WithdrawalValidationError} - If validation fails.
    * @throws {ValidationError} - If public signals are malformed.
    */
-  protected async validateWithdrawal(wp: WithdrawalPayload) {
+  protected async validateWithdrawal(wp: WithdrawalPayload, chainId: number) {
+    const entrypointAddress = getEntrypointAddress(chainId);
+    const feeReceiverAddress = getFeeReceiverAddress(chainId);
+    
     const { feeRecipient, relayFeeBPS } = decodeWithdrawalData(
       wp.withdrawal.data,
     );
     const proofSignals = parseSignals(wp.proof.publicSignals);
 
-    if (wp.withdrawal.processooor !== ENTRYPOINT_ADDRESS) {
+    if (wp.withdrawal.processooor !== entrypointAddress) {
       throw WithdrawalValidationError.processooorMismatch(
-        `Processooor mismatch: expected "${ENTRYPOINT_ADDRESS}", got "${wp.withdrawal.processooor}".`,
+        `Processooor mismatch: expected "${entrypointAddress}", got "${wp.withdrawal.processooor}".`,
       );
     }
 
-    if (getAddress(feeRecipient) !== FEE_RECEIVER_ADDRESS) {
+    if (getAddress(feeRecipient) !== feeReceiverAddress) {
       throw WithdrawalValidationError.feeReceiverMismatch(
-        `Fee recipient mismatch: expected "${FEE_RECEIVER_ADDRESS}", got "${feeRecipient}".`,
-      );
-    }
-
-    if (relayFeeBPS !== FEE_BPS) {
-      throw WithdrawalValidationError.feeMismatch(
-        `Relay fee mismatch: expected "${FEE_BPS}", got "${relayFeeBPS}".`,
+        `Fee recipient mismatch: expected "${feeReceiverAddress}", got "${feeRecipient}".`,
       );
     }
 
@@ -150,13 +144,26 @@ export class PrivacyPoolRelayer {
       );
     }
 
-    const { assetAddress } = await this.sdkProvider.scopeData(wp.scope);
-    const MIN_WITHDRAW_DEFAULT = 100_000n;
-    const minWithdrawAmount =
-      WITHDRAW_AMOUNTS[assetAddress] ?? MIN_WITHDRAW_DEFAULT;
-    if (proofSignals.withdrawnValue < minWithdrawAmount) {
+    const { assetAddress } = await this.sdkProvider.scopeData(wp.scope, chainId);
+    
+    // Get asset configuration for this chain and asset
+    const assetConfig = getAssetConfig(chainId, assetAddress);
+    
+    if (!assetConfig) {
+      throw WithdrawalValidationError.assetNotSupported(
+        `Asset ${assetAddress} is not supported on chain ${chainId}.`
+      );
+    }
+    
+    if (relayFeeBPS !== assetConfig.fee_bps) {
+      throw WithdrawalValidationError.feeMismatch(
+        `Relay fee mismatch: expected "${assetConfig.fee_bps}", got "${relayFeeBPS}".`,
+      );
+    }
+    
+    if (proofSignals.withdrawnValue < assetConfig.min_withdraw_amount) {
       throw WithdrawalValidationError.withdrawnValueTooSmall(
-        `Withdrawn value too small: expected minimum "${minWithdrawAmount}", got "${proofSignals.withdrawnValue}".`,
+        `Withdrawn value too small: expected minimum "${assetConfig.min_withdraw_amount}", got "${proofSignals.withdrawnValue}".`,
       );
     }
   }
