@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ConfigError } from "../exceptions/base.exception.js";
 import { zConfig } from "./schemas.js";
-import { Config, ChainConfig, AssetConfig } from "./types.js";
+import { ChainConfig, AssetConfig } from "./types.js";
 
 /**
  * Reads the configuration file from the path specified in the CONFIG_PATH environment variable
