@@ -1,7 +1,7 @@
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { Hash, Secret } from "../types/commitment.js";
-import { Hex, bytesToBigInt, bytesToNumber } from "viem";
-import { english, generateMnemonic, mnemonicToAccount } from "viem/accounts";
+import { Hex, bytesToNumber } from "viem";
+import { mnemonicToAccount } from "viem/accounts";
 import { DataService } from "./data.service.js";
 import {
   AccountCommitment,
@@ -46,16 +46,16 @@ export class AccountService {
     try {
       this.logger.debug("Initializing account with mnemonic");
 
-      let masterNullifierSeed = bytesToNumber(
+      const masterNullifierSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
       );
 
-      let masterSecretSeed = bytesToNumber(
+      const masterSecretSeed = bytesToNumber(
         mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
       );
 
-      let masterNullifier = poseidon([BigInt(masterNullifierSeed)]) as Secret;
-      let masterSecret = poseidon([BigInt(masterSecretSeed)]) as Secret;
+      const masterNullifier = poseidon([BigInt(masterNullifierSeed)]) as Secret;
+      const masterSecret = poseidon([BigInt(masterSecretSeed)]) as Secret;
 
       return {
         masterKeys: [masterNullifier, masterSecret],
@@ -196,7 +196,6 @@ export class AccountService {
    * @param secret - The secret used for the deposit
    * @param label - The label for the commitment
    * @param blockNumber - The block number of the deposit
-   * @param timestamp - The timestamp of the deposit
    * @param txHash - The transaction hash of the deposit
    * @returns The new pool account
    */
@@ -207,19 +206,10 @@ export class AccountService {
     secret: Secret,
     label: Hash,
     blockNumber: bigint,
-    timestamp: bigint,
     txHash: Hex,
   ): PoolAccount {
     const precommitment = this._hashPrecommitment(nullifier, secret);
     const commitment = this._hashCommitment(value, label, precommitment);
-
-    // Update account timestamps
-    if (this.account.creationTimestamp === 0n || timestamp < this.account.creationTimestamp) {
-      this.account.creationTimestamp = timestamp;
-    }
-    if (timestamp > this.account.lastUpdateTimestamp) {
-      this.account.lastUpdateTimestamp = timestamp;
-    }
 
     const newAccount: PoolAccount = {
       label,
@@ -230,7 +220,6 @@ export class AccountService {
         nullifier,
         secret,
         blockNumber,
-        timestamp,
         txHash,
       },
       children: [],
@@ -257,7 +246,6 @@ export class AccountService {
    * @param nullifier - The nullifier used for spending
    * @param secret - The secret used for spending
    * @param blockNumber - The block number of the withdrawal
-   * @param timestamp - The timestamp of the withdrawal
    * @param txHash - The transaction hash of the withdrawal
    * @returns The new commitment
    * @throws {AccountError} If no account is found for the commitment
@@ -268,14 +256,8 @@ export class AccountService {
     nullifier: Secret,
     secret: Secret,
     blockNumber: bigint,
-    timestamp: bigint,
     txHash: Hex,
   ): AccountCommitment {
-    // Update last update timestamp
-    if (timestamp > this.account.lastUpdateTimestamp) {
-      this.account.lastUpdateTimestamp = timestamp;
-    }
-
     let foundAccount: PoolAccount | undefined;
     let foundScope: bigint | undefined;
 
@@ -305,7 +287,6 @@ export class AccountService {
       nullifier,
       secret,
       blockNumber,
-      timestamp,
       txHash,
     };
 
@@ -406,7 +387,6 @@ export class AccountService {
             secret,
             deposit.label,
             deposit.blockNumber,
-            deposit.timestamp,
             deposit.transactionHash,
           );
         });
@@ -458,7 +438,6 @@ export class AccountService {
             withdrawal.spentNullifier as unknown as Secret,
             parentCommitment.secret,
             withdrawal.blockNumber,
-            withdrawal.timestamp,
             withdrawal.transactionHash,
           );
           break;
