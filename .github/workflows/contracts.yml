@@ -17,7 +17,7 @@ defaults:
     working-directory: packages/contracts
 
 env:
-  MAINNET_RPC: ${{ secrets.MAINNET_RPC }}
+  MAINNET_RPC: ${{ secrets.ETHEREUM_MAINNET_RPC }}
   SEPOLIA_RPC: ${{ secrets.SEPOLIA_RPC }}
 
 jobs:
