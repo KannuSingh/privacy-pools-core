@@ -31,13 +31,13 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@0xbow/privacy-pools-core-sdk": "0.1.8",
+    "@0xbow/privacy-pools-core-sdk": "0.1.13",
     "@openzeppelin/contracts": "5.1.0",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@openzeppelin/foundry-upgrades": "0.3.6",
     "@zk-kit/lean-imt": "2.2.2",
     "@zk-kit/lean-imt.sol": "2.0.0",
-    "poseidon-solidity": "^0.0.5",
+    "poseidon-solidity": "0.0.5",
     "solc": "0.8.28",
     "viem": "^2.23.2"
   },

@@ -102,7 +102,11 @@ export const circuitToAsset: Circ2Asset = {
 /**
  * Type representing the mapping of circuit name strings to their associated circuit artifacts.
  */
-export type Binaries = { [key in CircuitNameString]: CircuitArtifacts };
+export interface Binaries {
+  commitment: CircuitArtifacts;
+  withdraw: CircuitArtifacts;
+  merkleTree?: CircuitArtifacts;
+}
 
 /**
  * Interface defining the methods required for managing circuits and their artifacts.
