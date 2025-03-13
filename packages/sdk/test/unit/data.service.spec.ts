@@ -36,10 +36,10 @@ describe('DataService with Sepolia', () => {
 
   it('should fetch deposit events', async () => {
     const deposits = await dataService.getDeposits(SEPOLIA_CHAIN_ID);
-    
+
     expect(deposits.length).toBeGreaterThan(0);
     expect(deposits[0]).toBeDefined();
-    
+
     // Verify the structure of a deposit event
     const deposit = deposits[0] as DepositEvent;
     expect(deposit).toEqual(
@@ -80,10 +80,10 @@ describe('DataService with Sepolia', () => {
 
   it('should fetch withdrawal events', async () => {
     const withdrawals = await dataService.getWithdrawals(SEPOLIA_CHAIN_ID);
-    
+
     expect(withdrawals.length).toBeGreaterThan(0);
     expect(withdrawals[0]).toBeDefined();
-    
+
     // Verify the structure of a withdrawal event
     const withdrawal = withdrawals[0] as WithdrawalEvent;
     expect(withdrawal).toEqual(
@@ -92,7 +92,6 @@ describe('DataService with Sepolia', () => {
         spentNullifier: expect.any(BigInt),
         newCommitment: expect.any(BigInt),
         blockNumber: expect.any(BigInt),
-        timestamp: expect.any(BigInt),
         transactionHash: expect.stringMatching(/^0x[a-fA-F0-9]{64}$/),
       })
     );
@@ -119,11 +118,11 @@ describe('DataService with Sepolia', () => {
 
   it('should fetch ragequit events', async () => {
     const ragequits = await dataService.getRagequits(SEPOLIA_CHAIN_ID);
-    
+
     // Ragequits might not exist, so we don't assert on length
     if (ragequits.length > 0) {
       expect(ragequits[0]).toBeDefined();
-      
+
       // Verify the structure of a ragequit event
       const ragequit = ragequits[0] as RagequitEvent;
       expect(ragequit).toEqual(
@@ -133,7 +132,6 @@ describe('DataService with Sepolia', () => {
           label: expect.any(BigInt),
           value: expect.any(BigInt),
           blockNumber: expect.any(BigInt),
-          timestamp: expect.any(BigInt),
           transactionHash: expect.stringMatching(/^0x[a-fA-F0-9]{64}$/),
         })
       );
@@ -165,7 +163,7 @@ describe('DataService with Sepolia', () => {
   it('should handle event filter options', async () => {
     const fromBlock = START_BLOCK;
     const toBlock = START_BLOCK + 1000n;
-    
+
     const deposits = await dataService.getDeposits(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
     const withdrawals = await dataService.getWithdrawals(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
     const ragequits = await dataService.getRagequits(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
