@@ -32,7 +32,7 @@ abstract contract State is IState {
   using InternalLeanIMT for LeanIMTData;
 
   /// @inheritdoc IState
-  uint32 public constant ROOT_HISTORY_SIZE = 30;
+  uint32 public constant ROOT_HISTORY_SIZE = 64;
   /// @inheritdoc IState
   uint32 public constant MAX_TREE_DEPTH = 32;
 
@@ -139,14 +139,14 @@ abstract contract State is IState {
 
     if (_merkleTree.depth > MAX_TREE_DEPTH) revert MaxTreeDepthReached();
 
-    // Calculate the new root index (circular buffer)
-    uint32 newRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+    // Calculate the next index
+    uint32 nextIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
 
-    // Update the current root index
-    currentRootIndex = newRootIndex;
+    // Store the root at the next index
+    roots[nextIndex] = _updatedRoot;
 
-    // Store the new root at the new index
-    roots[newRootIndex] = _updatedRoot;
+    // Update currentRootIndex to point to the latest root
+    currentRootIndex = nextIndex;
 
     emit LeafInserted(_merkleTree.size, _leaf, _updatedRoot);
   }
@@ -154,22 +154,21 @@ abstract contract State is IState {
   /**
    * @notice Returns whether the root is a known root
    * @dev A circular buffer is used for root storage to decrease the cost of storing new roots
+   * @dev Optimized to start search from most recent roots, improving average case performance
    * @param _root The root to check
    * @return Returns true if the root exists in the history, false otherwise
    */
   function _isKnownRoot(uint256 _root) internal view returns (bool) {
     if (_root == 0) return false;
 
-    uint32 _currentRootIndex = currentRootIndex;
-    uint32 _index = _currentRootIndex;
+    // Start from the most recent root (current index)
+    uint32 _index = currentRootIndex;
 
-    // Check ROOT_HISTORY_SIZE indices, starting from current
+    // Check all possible roots in the history
     for (uint32 _i = 0; _i < ROOT_HISTORY_SIZE; _i++) {
       if (_root == roots[_index]) return true;
-      // Move to previous index, wrap to ROOT_HISTORY_SIZE-1 if we go below 0
-      _index = _index > 0 ? _index - 1 : ROOT_HISTORY_SIZE - 1;
+      _index = (_index + ROOT_HISTORY_SIZE - 1) % ROOT_HISTORY_SIZE;
     }
-
     return false;
   }
 

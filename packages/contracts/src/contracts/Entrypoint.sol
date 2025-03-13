@@ -94,7 +94,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
 
     // Push new association set and update index
     associationSets.push(AssociationSetData(_root, _ipfsHash, block.timestamp));
-    _index = associationSets.length;
+    _index = associationSets.length - 1;
 
     emit RootUpdated(_root, _ipfsHash, block.timestamp);
   }
@@ -206,7 +206,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _setPoolConfiguration(_config, _minimumDepositAmount, _vettingFeeBPS, _maxRelayFeeBPS);
 
     // If asset is an ERC20, approve pool to spend
-    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), type(uint256).max);
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.forceApprove(address(_pool), type(uint256).max);
 
     emit PoolRegistered(_pool, _asset, _scope);
   }
@@ -221,7 +221,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     uint256 _scope = _pool.SCOPE();
 
     // If asset is an ERC20, revoke pool allowance
-    if (address(_asset) != Constants.NATIVE_ASSET) _asset.approve(address(_pool), 0);
+    if (address(_asset) != Constants.NATIVE_ASSET) _asset.forceApprove(address(_pool), 0);
 
     // Remove pool configuration
     delete scopeToPool[_scope];
