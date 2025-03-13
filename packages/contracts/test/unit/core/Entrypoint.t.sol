@@ -236,7 +236,10 @@ contract UnitRootUpdate is UnitEntrypoint {
     assertEq(_retrievedRoot, _root, 'Retrieved root should match input root');
     assertEq(_retrievedIpfsHash, _ipfsHash, 'Retrieved IPFS hash should match input hash');
     assertEq(_retrievedTimestamp, _timestamp, 'Retrieved timestamp should match block timestamp');
-    assertEq(_index, 1, 'First root update should have index 1');
+    assertEq(_index, 0, 'First root update should have index 0');
+
+    _index = _entrypoint.updateRoot(_root, _ipfsHash);
+    assertEq(_index, 1, 'Second root update should have index 1');
   }
 
   function test_UpdateRootWhenRootIsZero(bytes32 _ipfsHash) external givenCallerHasPostmanRole {
