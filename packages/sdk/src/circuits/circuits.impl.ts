@@ -152,16 +152,14 @@ export class Circuits implements CircuitsInterface {
    */
   // prettier-ignore
   async downloadArtifacts(version: VersionString): Promise<Binaries> { // eslint-disable-line @typescript-eslint/no-unused-vars
-    const [commitment, merkleTree, withdraw] = await Promise.all([
+    const [commitment, withdraw] = await Promise.all([
       this._downloadCircuitArtifacts(CircuitName.Commitment),
-      this._downloadCircuitArtifacts(CircuitName.MerkleTree),
       this._downloadCircuitArtifacts(CircuitName.Withdraw),
     ]);
     return {
       commitment,
-      merkleTree,
       withdraw,
-    };
+    } as Binaries;
   }
 
   /**
@@ -187,7 +185,11 @@ export class Circuits implements CircuitsInterface {
     version: VersionString = Version.Latest,
   ): Promise<Uint8Array> {
     await this._handleInitialization(version);
-    return this.binaries[circuitName]?.vkey;
+    const artifacts = this.binaries[circuitName];
+    if (!artifacts) {
+      throw new CircuitInitialization(`Circuit artifacts not found for ${circuitName}`);
+    }
+    return artifacts.vkey;
   }
 
   /**
@@ -202,7 +204,11 @@ export class Circuits implements CircuitsInterface {
     version: VersionString = Version.Latest,
   ): Promise<Uint8Array> {
     await this._handleInitialization(version);
-    return this.binaries[circuitName]?.zkey;
+    const artifacts = this.binaries[circuitName];
+    if (!artifacts) {
+      throw new CircuitInitialization(`Circuit artifacts not found for ${circuitName}`);
+    }
+    return artifacts.zkey;
   }
 
   /**
@@ -217,6 +223,10 @@ export class Circuits implements CircuitsInterface {
     version: VersionString = Version.Latest,
   ): Promise<Uint8Array> {
     await this._handleInitialization(version);
-    return this.binaries[circuitName]?.wasm;
+    const artifacts = this.binaries[circuitName];
+    if (!artifacts) {
+      throw new CircuitInitialization(`Circuit artifacts not found for ${circuitName}`);
+    }
+    return artifacts.wasm;
   }
 }

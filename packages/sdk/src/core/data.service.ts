@@ -3,7 +3,6 @@ import {
   createPublicClient,
   http,
   parseAbiItem,
-  type Address,
 } from "viem";
 import {
   ChainConfig,
@@ -94,10 +93,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("deposit", "missing args");
           }
@@ -121,14 +118,13 @@ export class DataService {
             value,
             precommitment: precommitment as Hash,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("deposit", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
       throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
@@ -164,10 +160,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("withdrawal", "missing args");
           }
@@ -187,14 +181,13 @@ export class DataService {
             spentNullifier: spentNullifier as Hash,
             newCommitment: newCommitment as Hash,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("withdrawal", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
       throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
@@ -230,10 +223,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("ragequit", "missing args");
           }
@@ -255,14 +246,13 @@ export class DataService {
             label: label as Hash,
             value,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("ragequit", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
       throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));

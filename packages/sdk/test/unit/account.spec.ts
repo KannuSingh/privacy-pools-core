@@ -77,7 +77,6 @@ describe("AccountService", () => {
 
       const precommitment = poseidon([nullifier, secret]) as Hash;
       const commitment = poseidon([value, label, precommitment]) as Hash;
-      const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
       const deposit: DepositEvent = {
         depositor: POOL.address,
@@ -86,7 +85,6 @@ describe("AccountService", () => {
         value,
         precommitment,
         blockNumber: POOL.deploymentBlock + BigInt(i * 100),
-        timestamp,
         transactionHash: mockTxHash(BigInt(i + 1)),
       };
 
@@ -100,7 +98,6 @@ describe("AccountService", () => {
         nullifier,
         secret,
         blockNumber: deposit.blockNumber,
-        timestamp,
         txHash: deposit.transactionHash,
       };
       let remainingValue = value;
@@ -138,7 +135,6 @@ describe("AccountService", () => {
           spentNullifier: poseidon([withdrawalNullifier]) as Hash,
           newCommitment,
           blockNumber: currentCommitment.blockNumber + BigInt((j + 1) * 100),
-          timestamp: currentCommitment.timestamp + BigInt((j + 1) * 60), // Add 1 minute per withdrawal
           transactionHash: mockTxHash(BigInt(i * 100 + j + 2)),
         };
 
@@ -152,7 +148,6 @@ describe("AccountService", () => {
           nullifier: withdrawalNullifier,
           secret: withdrawalSecret,
           blockNumber: withdrawal.blockNumber,
-          timestamp: withdrawal.timestamp,
           txHash: withdrawal.transactionHash,
         };
       }

@@ -45,16 +45,16 @@ export function generateMasterKeys(mnemonic: string): MasterKeys {
         );
     }
      
-    let key1 = bytesToNumber(
+    const key1 = bytesToNumber(
       mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey!,
     );
 
-    let key2 = bytesToNumber(
+    const key2 = bytesToNumber(
       mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey!,
     );
 
-    let masterNullifier = poseidon([BigInt(key1)]) as Secret;
-    let masterSecret = poseidon([BigInt(key2)]) as Secret;
+    const masterNullifier = poseidon([BigInt(key1)]) as Secret;
+    const masterSecret = poseidon([BigInt(key2)]) as Secret;
 
   return { masterNullifier, masterSecret };
 }

@@ -116,9 +116,6 @@ describe("Circuits", () => {
       expect(await circuits.getWasm(CircuitName.Commitment)).toStrictEqual(
         binariesMock.commitment.wasm,
       );
-      expect(await circuits.getWasm(CircuitName.MerkleTree)).toStrictEqual(
-        binariesMock.merkleTree.wasm,
-      );
     });
 
     it("returns proving key", async () => {
@@ -128,9 +125,6 @@ describe("Circuits", () => {
       expect(
         await circuits.getProvingKey(CircuitName.Commitment),
       ).toStrictEqual(binariesMock.commitment.zkey);
-      expect(
-        await circuits.getProvingKey(CircuitName.MerkleTree),
-      ).toStrictEqual(binariesMock.merkleTree.zkey);
     });
 
     it("returns verifying key", async () => {
@@ -140,9 +134,6 @@ describe("Circuits", () => {
       expect(
         await circuits.getVerificationKey(CircuitName.Commitment),
       ).toStrictEqual(binariesMock.commitment.vkey);
-      expect(
-        await circuits.getVerificationKey(CircuitName.MerkleTree),
-      ).toStrictEqual(binariesMock.merkleTree.vkey);
     });
   });
 });
