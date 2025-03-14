@@ -391,4 +391,3 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     _config.maxRelayFeeBPS = _maxRelayFeeBPS;
   }
 }
-

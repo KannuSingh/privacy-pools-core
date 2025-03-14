@@ -1706,4 +1706,3 @@ contract Attacker {
     Entrypoint(payable(msg.sender)).deposit(uint256(keccak256('precommitment')));
   }
 }
-

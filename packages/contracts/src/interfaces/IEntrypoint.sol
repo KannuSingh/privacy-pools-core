@@ -372,4 +372,3 @@ interface IEntrypoint {
    */
   function rootByIndex(uint256 _index) external view returns (uint256 _root);
 }
-
