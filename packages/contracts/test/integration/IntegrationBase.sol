@@ -4,12 +4,15 @@ pragma solidity 0.8.28;
 import {Entrypoint, IEntrypoint} from 'contracts/Entrypoint.sol';
 import {IPrivacyPool} from 'contracts/PrivacyPool.sol';
 
+import {DeployLib} from 'contracts/lib/DeployLib.sol';
+
 import {PrivacyPoolComplex} from 'contracts/implementations/PrivacyPoolComplex.sol';
 import {PrivacyPoolSimple} from 'contracts/implementations/PrivacyPoolSimple.sol';
 
 import {CommitmentVerifier} from 'contracts/verifiers/CommitmentVerifier.sol';
 import {WithdrawalVerifier} from 'contracts/verifiers/WithdrawalVerifier.sol';
 
+import {ERC1967Proxy} from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import {UnsafeUpgrades} from '@upgrades/Upgrades.sol';
 
 import {IERC20} from '@oz/interfaces/IERC20.sol';
@@ -22,6 +25,7 @@ import {PoseidonT2} from 'poseidon/PoseidonT2.sol';
 import {PoseidonT3} from 'poseidon/PoseidonT3.sol';
 import {PoseidonT4} from 'poseidon/PoseidonT4.sol';
 
+import {ICreateX} from 'interfaces/external/ICreateX.sol';
 import {Constants} from 'test/helper/Constants.sol';
 
 contract IntegrationBase is Test {
@@ -81,13 +85,16 @@ contract IntegrationBase is Test {
   uint256 internal constant _FORK_BLOCK = 18_920_905;
 
   // Core protocol contracts
-  IEntrypoint internal _entrypoint;
-  IPrivacyPool internal _ethPool;
-  IPrivacyPool internal _daiPool;
+  Entrypoint internal _entrypoint;
+  PrivacyPoolSimple internal _ethPool;
+  PrivacyPoolComplex internal _daiPool;
 
   // Groth16 Verifiers
   CommitmentVerifier internal _commitmentVerifier;
   WithdrawalVerifier internal _withdrawalVerifier;
+
+  // CreateX Singleton
+  ICreateX internal constant _CREATEX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
 
   // Assets
   IERC20 internal constant _DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
@@ -127,43 +134,70 @@ contract IntegrationBase is Test {
                               SETUP
   //////////////////////////////////////////////////////////////*/
 
+  //asd
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('mainnet'));
 
     vm.startPrank(_OWNER);
+
     // Deploy Groth16 ragequit verifier
-    _commitmentVerifier = new CommitmentVerifier();
+    _commitmentVerifier = CommitmentVerifier(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.RAGEQUIT_VERIFIER_SALT),
+        abi.encodePacked(type(CommitmentVerifier).creationCode)
+      )
+    );
 
     // Deploy Groth16 withdrawal verifier
-    _withdrawalVerifier = new WithdrawalVerifier();
+    _withdrawalVerifier = WithdrawalVerifier(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.WITHDRAWAL_VERIFIER_SALT),
+        abi.encodePacked(type(WithdrawalVerifier).creationCode)
+      )
+    );
 
     // Deploy Entrypoint
     address _impl = address(new Entrypoint());
-    _entrypoint = Entrypoint(
-      payable(UnsafeUpgrades.deployUUPSProxy(_impl, abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN))))
+    bytes memory _intializationData = abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN));
+    address _entrypointAddr = _CREATEX.deployCreate2(
+      DeployLib.salt(_OWNER, DeployLib.ENTRYPOINT_SALT),
+      abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
+    );
+    _entrypoint = Entrypoint(payable(_entrypointAddr));
+
+    // Deploy ETH pool
+    _ethPool = PrivacyPoolSimple(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.SIMPLE_POOL_SALT),
+        abi.encodePacked(
+          type(PrivacyPoolSimple).creationCode,
+          abi.encode(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier))
+        )
+      )
     );
 
-    // Deploy ETH Pool
-    _ethPool = IPrivacyPool(
-      address(new PrivacyPoolSimple(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier)))
-    );
-
-    // Deploy DAI Pool
-    _daiPool = IPrivacyPool(
-      address(
-        new PrivacyPoolComplex(
-          address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_DAI)
+    // Deploy DAI pool
+    _daiPool = PrivacyPoolComplex(
+      _CREATEX.deployCreate2(
+        DeployLib.salt(_OWNER, DeployLib.COMPLEX_POOL_SALT),
+        abi.encodePacked(
+          type(PrivacyPoolComplex).creationCode,
+          abi.encode(address(_entrypoint), address(_withdrawalVerifier), address(_commitmentVerifier), address(_DAI))
         )
       )
     );
 
     // Register ETH pool
     _entrypoint.registerPool(
-      IERC20(Constants.NATIVE_ASSET), IPrivacyPool(_ethPool), _MIN_DEPOSIT, _VETTING_FEE_BPS, _MAX_RELAY_FEE_BPS
+      IERC20(Constants.NATIVE_ASSET),
+      IPrivacyPool(address(_ethPool)),
+      _MIN_DEPOSIT,
+      _VETTING_FEE_BPS,
+      _MAX_RELAY_FEE_BPS
     );
 
     // Register DAI pool
-    _entrypoint.registerPool(_DAI, IPrivacyPool(_daiPool), _MIN_DEPOSIT, _VETTING_FEE_BPS, _MAX_RELAY_FEE_BPS);
+    _entrypoint.registerPool(_DAI, IPrivacyPool(address(_daiPool)), _MIN_DEPOSIT, _VETTING_FEE_BPS, _MAX_RELAY_FEE_BPS);
 
     vm.stopPrank();
   }
@@ -183,7 +217,9 @@ contract IntegrationBase is Test {
     }
 
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.asset == IERC20(Constants.NATIVE_ASSET)
+      ? IPrivacyPool(address(_ethPool))
+      : IPrivacyPool(address(_daiPool));
 
     // Fetch current nonce
     uint256 _currentNonce = _pool.nonce();
@@ -248,7 +284,9 @@ contract IntegrationBase is Test {
 
   function _selfWithdraw(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET)
+      ? IPrivacyPool(address(_ethPool))
+      : IPrivacyPool(address(_daiPool));
 
     // Build `Withdrawal` object for direct withdrawal
     IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({processooor: _params.recipient, data: ''});
@@ -259,7 +297,9 @@ contract IntegrationBase is Test {
 
   function _withdrawThroughRelayer(WithdrawalParams memory _params) internal returns (Commitment memory _commitment) {
     // Define pool to deposit to
-    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _params.commitment.asset == IERC20(Constants.NATIVE_ASSET)
+      ? IPrivacyPool(address(_ethPool))
+      : IPrivacyPool(address(_daiPool));
 
     // Build `Withdrawal` object for relayed withdrawal
     IPrivacyPool.Withdrawal memory _withdrawal = IPrivacyPool.Withdrawal({
@@ -357,7 +397,9 @@ contract IntegrationBase is Test {
 
   function _ragequit(address _depositor, Commitment memory _commitment) internal {
     // Define pool to ragequit from
-    IPrivacyPool _pool = _commitment.asset == IERC20(Constants.NATIVE_ASSET) ? _ethPool : _daiPool;
+    IPrivacyPool _pool = _commitment.asset == IERC20(Constants.NATIVE_ASSET)
+      ? IPrivacyPool(address(_ethPool))
+      : IPrivacyPool(address(_daiPool));
 
     uint256 _depositorInitialBalance = _balance(_depositor, _commitment.asset);
     uint256 _entrypointInitialBalance = _balance(address(_entrypoint), _commitment.asset);
