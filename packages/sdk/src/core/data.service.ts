@@ -11,6 +11,7 @@ import {
   WithdrawalEvent,
   RagequitEvent,
 } from "../types/events.js";
+import { PoolInfo } from "../types/account.js";
 import { Hash } from "../types/commitment.js";
 import { Logger } from "../utils/logger.js";
 import { DataError } from "../errors/data.error.js";
@@ -73,18 +74,16 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getDeposits(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo
   ): Promise<DepositEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: DEPOSIT_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: pool.deploymentBlock ?? config.startBlock
       }).catch(error => {
         throw new DataError(
           "Failed to fetch deposit logs",
@@ -127,7 +126,7 @@ export class DataService {
       });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -140,18 +139,17 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getWithdrawals(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo,
+    fromBlock: bigint = pool.deploymentBlock
   ): Promise<WithdrawalEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: WITHDRAWAL_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: fromBlock ?? config.startBlock,
       }).catch(error => {
         throw new DataError(
           "Failed to fetch withdrawal logs",
@@ -190,7 +188,7 @@ export class DataService {
       });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -203,18 +201,17 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getRagequits(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo,
+    fromBlock: bigint = pool.deploymentBlock
   ): Promise<RagequitEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: RAGEQUIT_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: fromBlock ?? config.startBlock,
       }).catch(error => {
         throw new DataError(
           "Failed to fetch ragequit logs",
@@ -255,7 +252,7 @@ export class DataService {
       });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 

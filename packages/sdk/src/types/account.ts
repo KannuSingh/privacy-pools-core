@@ -1,10 +1,12 @@
 import { Hash, Secret } from "./commitment.js";
 import { Hex } from "viem";
+import { RagequitEvent } from "./events.js";
 
 export interface PoolAccount {
   label: Hash;
   deposit: AccountCommitment;
   children: AccountCommitment[];
+  ragequit?: RagequitEvent
 }
 
 export interface AccountCommitment {
@@ -27,7 +29,7 @@ export interface PrivacyPoolAccount {
 
 export interface PoolInfo {
   chainId: number;
-  address: string;
+  address: Hex;
   scope: Hash;
   deploymentBlock: bigint;
 }
