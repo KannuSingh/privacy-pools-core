@@ -604,11 +604,17 @@ export class AccountService {
         const withdrawals = await this.dataService.getWithdrawals(pool, firstDepositBlock);
         const ragequits = await this.dataService.getRagequits(pool, firstDepositBlock);
 
+        // Map ragequits by label for quick lookup
+        const ragequitMap = new Map<Hash, RagequitEvent>();
+        for (const ragequit of ragequits) {
+          ragequitMap.set(ragequit.label, ragequit);
+        }
+
         this.logger.info(
           `Found ${withdrawals.length} withdrawals for pool ${pool.address}`
         );
 
-        if (withdrawals.length === 0) {
+        if (withdrawals.length === 0 && ragequits.length === 0) {
           return;
         }
 
@@ -616,12 +622,6 @@ export class AccountService {
         const withdrawalMap = new Map<Hash, WithdrawalEvent>();
         for (const withdrawal of withdrawals) {
           withdrawalMap.set(withdrawal.spentNullifier, withdrawal);
-        }
-
-        // Map ragequits by label for quick lookup
-        const ragequitMap = new Map<Hash, RagequitEvent>();
-        for (const ragequit of ragequits) {
-          ragequitMap.set(ragequit.label, ragequit);
         }
 
         // Process each account
