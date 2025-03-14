@@ -553,7 +553,7 @@ export class AccountService {
 
         // Process withdrawals and ragequits for all pools
         // This is done after all deposits are processed to ensure we have the complete account state
-        await this._processWithdrawals(pools);
+        await this._processWithdrawalsAndRagequits(pools);
       }),
     );
   }
@@ -577,7 +577,7 @@ export class AccountService {
    * @throws {DataError} If event fetching fails
    * @private
    */
-  private async _processWithdrawals(
+  private async _processWithdrawalsAndRagequits(
     pools: PoolInfo[]
   ): Promise<void> {
     await Promise.all(
@@ -600,15 +600,9 @@ export class AccountService {
           }
         }
 
-        // Fetch withdrawal events from the first deposit block
+        // Fetch withdrawal and ragequit events from the first deposit block
         const withdrawals = await this.dataService.getWithdrawals(pool, firstDepositBlock);
         const ragequits = await this.dataService.getRagequits(pool, firstDepositBlock);
-
-        // Map ragequits by label for quick lookup
-        const ragequitMap = new Map<Hash, RagequitEvent>();
-        for (const ragequit of ragequits) {
-          ragequitMap.set(ragequit.label, ragequit);
-        }
 
         this.logger.info(
           `Found ${withdrawals.length} withdrawals for pool ${pool.address}`
@@ -624,6 +618,12 @@ export class AccountService {
           withdrawalMap.set(withdrawal.spentNullifier, withdrawal);
         }
 
+        // Map ragequits by label for quick lookup
+        const ragequitMap = new Map<Hash, RagequitEvent>();
+        for (const ragequit of ragequits) {
+          ragequitMap.set(ragequit.label, ragequit);
+        }
+
         // Process each account
         for (const account of accounts) {
           let currentCommitment = account.deposit;
@@ -632,8 +632,7 @@ export class AccountService {
           // Continue processing withdrawals until no more are found
           while (true) {
             // Generate nullifier for this withdrawal
-            const nullifier = this._genWithdrawalNullifier(account.label, index);
-            const nullifierHash = poseidon([nullifier]) as Hash;
+            const nullifierHash = poseidon([currentCommitment.nullifier]) as Hash;
 
             // Look for a withdrawal event with this nullifier
             const withdrawal = withdrawalMap.get(nullifierHash);
@@ -642,12 +641,13 @@ export class AccountService {
             }
 
             // Generate secret for this withdrawal
+            const nullifier = this._genWithdrawalNullifier(account.label, index);
             const secret = this._genWithdrawalSecret(account.label, index);
 
             // Add the withdrawal commitment to the account
             const newCommitment = this.addWithdrawalCommitment(
               currentCommitment,
-              withdrawal.withdrawn,
+              currentCommitment.value - withdrawal.withdrawn,
               nullifier,
               secret,
               withdrawal.blockNumber,
