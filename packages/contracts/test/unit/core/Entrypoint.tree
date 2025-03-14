@@ -92,8 +92,12 @@ Entrypoint::registerPool
 │   │   └── It emits PoolRegistered event
 │   ├── When asset pool exists
 │   │   └── It reverts with AssetPoolAlreadyRegistered
-│   └── When scope pool exists
-│       └── It reverts with ScopePoolAlreadyRegistered
+│   ├── When scope pool exists
+│   │   └── It reverts with ScopePoolAlreadyRegistered
+│   ├── When pool is dead
+│   │   └── It reverts with PoolIsDead
+│   └── When pool's Entrypoint address mismatches
+│       └── It reverts with InvalidEntrypointForPool
 └── When caller lacks owner role
     └── It reverts with AccessControlUnauthorizedAccount
 

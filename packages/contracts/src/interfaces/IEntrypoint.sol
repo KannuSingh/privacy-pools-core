@@ -151,6 +151,11 @@ interface IEntrypoint {
   error PoolIsDead();
 
   /**
+   * @notice Thrown when trying to register a pool whose configured Entrypoint is not this one
+   */
+  error InvalidEntrypointForPool();
+
+  /**
    * @notice Thrown when trying to register a pool for an asset that is already present in the registry
    */
   error AssetPoolAlreadyRegistered();

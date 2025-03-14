@@ -192,6 +192,7 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     if (address(_config.pool) != address(0)) revert AssetPoolAlreadyRegistered();
 
     if (_pool.dead()) revert PoolIsDead();
+    if (address(_pool.ENTRYPOINT()) != address(this)) revert InvalidEntrypointForPool();
 
     // Fetch pool scope and validate asset
     uint256 _scope = _pool.SCOPE();

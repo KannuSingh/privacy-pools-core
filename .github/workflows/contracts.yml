@@ -19,6 +19,7 @@ defaults:
 env:
   ETHEREUM_MAINNET_RPC: ${{ secrets.ETHEREUM_MAINNET_RPC }}
   ETHEREUM_SEPOLIA_RPC: ${{ secrets.ETHEREUM_SEPOLIA_RPC }}
+  GNOSIS_RPC: ${{ secrets.GNOSIS_RPC }}
 
 jobs:
   unit-tests:
