@@ -3,12 +3,29 @@ import { DataService } from '../../src/core/data.service.js';
 import { ChainConfig, DepositEvent, WithdrawalEvent, RagequitEvent } from '../../src/types/events.js';
 import { Hash } from '../../src/types/commitment.js';
 import { DataError } from '../../src/errors/data.error.js';
+import { PoolInfo } from '../../src/types/account.js';
 
 describe('DataService with Sepolia', () => {
   let dataService: DataService;
   const SEPOLIA_CHAIN_ID = 11155111;
   const POOL_ADDRESS = '0xbbe3b00d54f0ee032eff07a47139da8d44095c96';
   const START_BLOCK = 7781496n;
+
+  // Create a PoolInfo object for testing
+  const poolInfo: PoolInfo = {
+    chainId: SEPOLIA_CHAIN_ID,
+    address: POOL_ADDRESS,
+    deploymentBlock: START_BLOCK,
+    scope: 1n as Hash // Using a dummy value for scope
+  };
+
+  // Create an invalid pool for error testing
+  const invalidPoolInfo: PoolInfo = {
+    chainId: 1234,
+    address: '0x0000000000000000000000000000000000000000',
+    deploymentBlock: 0n,
+    scope: 1n as Hash // Using a dummy value for scope
+  };
 
   beforeAll(() => {
     const apiKey = process.env.RPC_API_KEY;
@@ -28,14 +45,13 @@ describe('DataService with Sepolia', () => {
   });
 
   it('should throw error when chain is not configured', async () => {
-    const invalidChainId = 1234;
-    await expect(dataService.getDeposits(invalidChainId)).rejects.toThrow(DataError);
-    await expect(dataService.getWithdrawals(invalidChainId)).rejects.toThrow(DataError);
-    await expect(dataService.getRagequits(invalidChainId)).rejects.toThrow(DataError);
+    await expect(dataService.getDeposits(invalidPoolInfo)).rejects.toThrow(DataError);
+    await expect(dataService.getWithdrawals(invalidPoolInfo)).rejects.toThrow(DataError);
+    await expect(dataService.getRagequits(invalidPoolInfo)).rejects.toThrow(DataError);
   });
 
   it('should fetch deposit events', async () => {
-    const deposits = await dataService.getDeposits(SEPOLIA_CHAIN_ID);
+    const deposits = await dataService.getDeposits(poolInfo);
 
     expect(deposits.length).toBeGreaterThan(0);
     expect(deposits[0]).toBeDefined();
@@ -79,7 +95,7 @@ describe('DataService with Sepolia', () => {
   });
 
   it('should fetch withdrawal events', async () => {
-    const withdrawals = await dataService.getWithdrawals(SEPOLIA_CHAIN_ID);
+    const withdrawals = await dataService.getWithdrawals(poolInfo);
 
     expect(withdrawals.length).toBeGreaterThan(0);
     expect(withdrawals[0]).toBeDefined();
@@ -117,7 +133,7 @@ describe('DataService with Sepolia', () => {
   });
 
   it('should fetch ragequit events', async () => {
-    const ragequits = await dataService.getRagequits(SEPOLIA_CHAIN_ID);
+    const ragequits = await dataService.getRagequits(poolInfo);
 
     // Ragequits might not exist, so we don't assert on length
     if (ragequits.length > 0) {
@@ -160,18 +176,16 @@ describe('DataService with Sepolia', () => {
     }
   });
 
-  it('should handle event filter options', async () => {
-    const fromBlock = START_BLOCK;
-    const toBlock = START_BLOCK + 1000n;
+  it('should handle fromBlock parameter', async () => {
+    const fromBlock = START_BLOCK + 500n;
 
-    const deposits = await dataService.getDeposits(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
-    const withdrawals = await dataService.getWithdrawals(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
-    const ragequits = await dataService.getRagequits(SEPOLIA_CHAIN_ID, { fromBlock, toBlock });
+    // Test with custom fromBlock
+    const withdrawals = await dataService.getWithdrawals(poolInfo, fromBlock);
+    const ragequits = await dataService.getRagequits(poolInfo, fromBlock);
 
-    // Verify that all events are within the block range
-    for (const event of [...deposits, ...withdrawals, ...ragequits]) {
+    // Verify that all events are after the fromBlock
+    for (const event of [...withdrawals, ...ragequits]) {
       expect(event.blockNumber).toBeGreaterThanOrEqual(fromBlock);
-      expect(event.blockNumber).toBeLessThanOrEqual(toBlock);
     }
   });
 }); 
