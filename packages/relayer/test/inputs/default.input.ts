@@ -8,6 +8,8 @@ export const SIGNER_PRIVATE_KEY_TEST =
 export const FEE_BPS_TEST = 2_000n;
 export const PROVIDER_URL_TEST = "http://some.rpc.url";
 export const ASSET_ADDRESS_TEST = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+export const CHAIN_ID_TEST = 31337;
+export const MIN_WITHDRAW_AMOUNT_TEST = 200n;
 
 export const PUBLIC_SIGNALS_TEST = [
   "3329689937152127469229150262753567411942915488378487399955260719617505754356",
@@ -21,6 +23,32 @@ export const PUBLIC_SIGNALS_TEST = [
 ].map(BigInt);
 
 export const testingConfig = {
+  CONFIG: {
+    defaults: {
+      fee_receiver_address: FEE_RECEIVER_ADDRESS_TEST,
+      entrypoint_address: ENTRYPOINT_ADDRESS_TEST,
+      signer_private_key: SIGNER_PRIVATE_KEY_TEST,
+    },
+    chains: [
+      {
+        chain_id: CHAIN_ID_TEST,
+        chain_name: "localhost",
+        rpc_url: PROVIDER_URL_TEST,
+        supported_assets: [
+          {
+            asset_address: ASSET_ADDRESS_TEST,
+            asset_name: "Test Token",
+            fee_bps: FEE_BPS_TEST,
+            min_withdraw_amount: MIN_WITHDRAW_AMOUNT_TEST,
+          },
+        ],
+      },
+    ],
+    sqlite_db_path: "test.sqlite",
+    cors_allow_all: false,
+    allowed_domains: ["http://localhost:3000"],
+  },
+  // Keep these for backward compatibility with existing tests
   FEE_RECEIVER_ADDRESS: FEE_RECEIVER_ADDRESS_TEST,
   ENTRYPOINT_ADDRESS: ENTRYPOINT_ADDRESS_TEST,
   PROVIDER_URL: PROVIDER_URL_TEST,
@@ -28,8 +56,6 @@ export const testingConfig = {
   FEE_BPS: FEE_BPS_TEST,
   SQLITE_DB_PATH: "test.sqlite",
   WITHDRAW_AMOUNTS: {
-    [ASSET_ADDRESS_TEST]: 200,
+    [ASSET_ADDRESS_TEST]: MIN_WITHDRAW_AMOUNT_TEST,
   },
-  CHAIN: "",
-  ALLOWED_DOMAINS: ["http://localhost:3000"],
 };

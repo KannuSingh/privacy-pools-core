@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
-import { ValidationError } from "../../exceptions/base.exception.js";
+import { ConfigError, ValidationError } from "../../exceptions/base.exception.js";
 import {
   RelayerResponse,
   RelayRequestBody,
@@ -9,6 +9,7 @@ import {
 import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
 import { PrivacyPoolRelayer } from "../../services/index.js";
 import { RequestMashall } from "../../types.js";
+import { CONFIG } from "../../config/index.js";
 
 /**
  * Converts a RelayRequestBody into a WithdrawalPayload.
@@ -38,18 +39,45 @@ function relayRequestBodyToWithdrawalPayload(
 }
 
 /**
+ * Checks if a chain ID is supported.
+ * 
+ * @param {number} chainId - The chain ID to check.
+ * @returns {boolean} - Whether the chain is supported.
+ */
+function isChainSupported(chainId: number): boolean {
+  return CONFIG.chains.some(chain => chain.chain_id === chainId);
+}
+
+/**
  * Parses and validates the withdrawal request body.
  *
  * @param {Request["body"]} body - The request body to parse.
- * @returns {WithdrawalPayload} - The validated and formatted withdrawal payload.
+ * @returns {{ payload: WithdrawalPayload, chainId: number }} - The validated withdrawal payload and chain ID.
  * @throws {ValidationError} - If the input data is invalid.
+ * @throws {ConfigError} - If the chain is not supported.
  */
-function parseWithdrawal(body: Request["body"]): WithdrawalPayload {
+function parseWithdrawal(body: Request["body"]): { payload: WithdrawalPayload, chainId: number } {
   if (validateRelayRequestBody(body)) {
     try {
-      return relayRequestBodyToWithdrawalPayload(body);
+      const payload = relayRequestBodyToWithdrawalPayload(body);
+      const chainId = typeof body.chainId === 'string' ? parseInt(body.chainId, 10) : body.chainId;
+      
+      if (isNaN(chainId)) {
+        throw ValidationError.invalidInput({ message: "Invalid chain ID format" });
+      }
+      
+      // Check if the chain is supported early
+      if (!isChainSupported(chainId)) {
+        throw ConfigError.default(`Chain with ID ${chainId} not supported.`);
+      }
+      
+      return { payload, chainId };
     } catch (error) {
       console.error(error);
+      // Re-throw ConfigError as is
+      if (error instanceof ConfigError) {
+        throw error;
+      }
       // TODO: extend this catch to return more details about the issue (viem error, node error, etc)
       throw ValidationError.invalidInput({
         message: "Can't parse payload into SDK structure",
@@ -73,10 +101,12 @@ export async function relayRequestHandler(
   next: NextFunction,
 ) {
   try {
+    const { payload: withdrawalPayload, chainId } = parseWithdrawal(req.body);
+    
     const privacyPoolRelayer = new PrivacyPoolRelayer();
-    const withdrawalPayload = parseWithdrawal(req.body);
     const requestResponse: RelayerResponse =
-      await privacyPoolRelayer.handleRequest(withdrawalPayload);
+      await privacyPoolRelayer.handleRequest(withdrawalPayload, chainId);
+      
     res
       .status(200)
       .json(res.locals.marshalResponse(new RequestMashall(requestResponse)));

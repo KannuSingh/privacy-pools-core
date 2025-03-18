@@ -41,8 +41,9 @@ const relayRequestSchema: JSONSchemaType<RelayRequestBody> = {
       required: ["pi_a", "pi_b", "pi_c"],
     },
     scope: { type: "string" },
+    chainId: { type: ["string", "number"] },
   },
-  required: ["withdrawal", "proof", "publicSignals", "scope"],
+  required: ["withdrawal", "proof", "publicSignals", "scope", "chainId"],
 } as const;
 
 export const validateRelayRequestBody = ajv.compile(relayRequestSchema);

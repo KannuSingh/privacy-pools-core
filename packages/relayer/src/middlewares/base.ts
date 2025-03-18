@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { RelayerError } from "../exceptions/base.exception.js";
 import { RelayerMarshall } from "../types.js";
+import { ConfigError, ValidationError } from "../exceptions/base.exception.js";
 
 /**
  * Middleware to attach a marshaller function to the response locals.
@@ -35,9 +36,24 @@ export function errorHandlerMiddleware(
   res: Response,
   next: NextFunction,
 ) {
+  console.error("Error in request handler:", err);
+  
   if (err instanceof RelayerError) {
-    // TODO: error handling based on RelayerError subtypes should be done by checking `err.name`
-    res.status(400).json({ error: err.toJSON() });
+    if (err instanceof ConfigError) {
+      res.status(400).json({ 
+        error: err.message,
+        code: err.code
+      });
+    } else if (err instanceof ValidationError) {
+      res.status(400).json({ 
+        error: err.message,
+        code: err.code,
+        details: err.details
+      });
+    } else {
+      // Handle other RelayerError types
+      res.status(400).json({ error: err.toJSON() });
+    }
   } else {
     res.status(500).json({ error: "Internal Server Error" });
   }
