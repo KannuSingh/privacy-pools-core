@@ -17,7 +17,7 @@ import {
   CONFIG
 } from "../config/index.js";
 import { WithdrawalPayload } from "../interfaces/relayer/request.js";
-import { RelayerError, SdkError } from "../exceptions/base.exception.js";
+import { RelayerError, SdkError, ConfigError } from "../exceptions/base.exception.js";
 import { SdkProviderInterface } from "../types/sdk.types.js";
 
 /**
@@ -103,7 +103,7 @@ export class SdkProvider implements SdkProviderInterface {
   private getContractsForChain(chainId: number): ContractInteractionsService {
     const contracts = this.contractsByChain.get(chainId);
     if (!contracts) {
-      throw RelayerError.unknown(`Chain with ID ${chainId} not supported.`);
+      throw ConfigError.default(`Chain with ID ${chainId} not supported.`);
     }
     return contracts;
   }
