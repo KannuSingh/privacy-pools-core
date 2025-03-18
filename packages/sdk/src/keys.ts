@@ -4,10 +4,10 @@ import { Hex } from "viem";
 import { generatePrivateKey } from "viem/accounts";
 
 export function genMasterKeys(seed?: Hex): [Secret, Secret] {
-  let preimage = seed ? poseidon([BigInt(seed)]) : BigInt(generatePrivateKey());
+  const preimage = seed ? poseidon([BigInt(seed)]) : BigInt(generatePrivateKey());
 
-  let masterKey1 = poseidon([preimage, BigInt(1)]) as Secret;
-  let masterKey2 = poseidon([preimage, BigInt(2)]) as Secret;
+  const masterKey1 = poseidon([preimage, BigInt(1)]) as Secret;
+  const masterKey2 = poseidon([preimage, BigInt(2)]) as Secret;
 
   return [masterKey1, masterKey2];
 }
@@ -24,8 +24,8 @@ export function getDepositSecrets(
   scope: Hash,
   index: bigint,
 ): { nullifier: Secret; secret: Secret } {
-  let depositNullifier = poseidon([masterKey[0], scope, index]) as Secret;
-  let depositSecret = poseidon([masterKey[1], scope, index]) as Secret;
+  const depositNullifier = poseidon([masterKey[0], scope, index]) as Secret;
+  const depositSecret = poseidon([masterKey[1], scope, index]) as Secret;
 
   return { nullifier: depositNullifier, secret: depositSecret };
 }
@@ -35,8 +35,8 @@ export function getWithdrawalSecrets(
   label: Hash,
   index: bigint,
 ): { nullifier: Secret; secret: Secret } {
-  let withdrawalNullifier = poseidon([masterKey[0], label, index]) as Secret;
-  let withdrawalSecret = poseidon([masterKey[1], label, index]) as Secret;
+  const withdrawalNullifier = poseidon([masterKey[0], label, index]) as Secret;
+  const withdrawalSecret = poseidon([masterKey[1], label, index]) as Secret;
 
   return { nullifier: withdrawalNullifier, secret: withdrawalSecret };
 }

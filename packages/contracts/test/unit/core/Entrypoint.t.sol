@@ -907,6 +907,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_ETH));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.ENTRYPOINT.selector), abi.encode(address(_entrypoint)));
 
     // Expect pool registration event
     vm.expectEmit(address(_entrypoint));
@@ -943,6 +944,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.ASSET.selector), abi.encode(_asset));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.ENTRYPOINT.selector), abi.encode(address(_entrypoint)));
 
     // Mock ERC20 approval for non-ETH assets
     _mockAndExpect(_asset, abi.encodeWithSelector(IERC20.approve.selector, _pool, type(uint256).max), abi.encode(true));
@@ -1003,6 +1005,7 @@ contract UnitRegisterPool is UnitEntrypoint {
     _entrypoint.mockScopeToPool(_scope, _pool);
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.SCOPE.selector), abi.encode(_scope));
     _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.ENTRYPOINT.selector), abi.encode(address(_entrypoint)));
 
     // Expect revert when trying to register pool with existing scope
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.ScopePoolAlreadyRegistered.selector));
@@ -1051,6 +1054,30 @@ contract UnitRegisterPool is UnitEntrypoint {
 
     // Expect revert when trying to register a dead pool
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolIsDead.selector));
+    _entrypoint.registerPool(IERC20(_asset), IPrivacyPool(_pool), _minDeposit, _vettingFeeBPS, 500);
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the pools' Entrypoint address mismatches
+   */
+  function test_RegisterPoolWhenEntrypointMismatches(
+    address _pool,
+    address _notEntrypoint,
+    address _asset,
+    uint256 _minDeposit,
+    uint256 _vettingFeeBPS
+  ) external givenCallerHasOwnerRole {
+    vm.assume(_notEntrypoint != address(_entrypoint));
+    _assumeFuzzable(_pool);
+    _assumeFuzzable(_asset);
+    _vettingFeeBPS = bound(_vettingFeeBPS, 0, 10_000 - 1);
+
+    // Mock pool being dead
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.dead.selector), abi.encode(false));
+    _mockAndExpect(_pool, abi.encodeWithSelector(IState.ENTRYPOINT.selector), abi.encode(_notEntrypoint));
+
+    // Expect revert when trying to register an invalid Entrypoint address
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidEntrypointForPool.selector));
     _entrypoint.registerPool(IERC20(_asset), IPrivacyPool(_pool), _minDeposit, _vettingFeeBPS, 500);
   }
 }

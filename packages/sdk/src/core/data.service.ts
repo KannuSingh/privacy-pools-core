@@ -3,7 +3,6 @@ import {
   createPublicClient,
   http,
   parseAbiItem,
-  type Address,
 } from "viem";
 import {
   ChainConfig,
@@ -12,6 +11,7 @@ import {
   WithdrawalEvent,
   RagequitEvent,
 } from "../types/events.js";
+import { PoolInfo } from "../types/account.js";
 import { Hash } from "../types/commitment.js";
 import { Logger } from "../utils/logger.js";
 import { DataError } from "../errors/data.error.js";
@@ -74,18 +74,16 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getDeposits(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo
   ): Promise<DepositEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: DEPOSIT_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: pool.deploymentBlock ?? config.startBlock
       }).catch(error => {
         throw new DataError(
           "Failed to fetch deposit logs",
@@ -94,10 +92,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("deposit", "missing args");
           }
@@ -121,17 +117,16 @@ export class DataService {
             value,
             precommitment: precommitment as Hash,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("deposit", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -144,18 +139,17 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getWithdrawals(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo,
+    fromBlock: bigint = pool.deploymentBlock
   ): Promise<WithdrawalEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: WITHDRAWAL_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: fromBlock ?? config.startBlock,
       }).catch(error => {
         throw new DataError(
           "Failed to fetch withdrawal logs",
@@ -164,10 +158,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("withdrawal", "missing args");
           }
@@ -187,17 +179,16 @@ export class DataService {
             spentNullifier: spentNullifier as Hash,
             newCommitment: newCommitment as Hash,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("withdrawal", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -210,18 +201,17 @@ export class DataService {
    * @throws {DataError} If client is not configured, network error occurs, or event data is invalid
    */
   async getRagequits(
-    chainId: number,
-    options: EventFilterOptions = {},
+    pool: PoolInfo,
+    fromBlock: bigint = pool.deploymentBlock
   ): Promise<RagequitEvent[]> {
     try {
-      const client = this.getClientForChain(chainId);
-      const config = this.getConfigForChain(chainId);
+      const client = this.getClientForChain(pool.chainId);
+      const config = this.getConfigForChain(pool.chainId);
 
       const logs = await client.getLogs({
-        address: config.privacyPoolAddress,
+        address: pool.address,
         event: RAGEQUIT_EVENT,
-        fromBlock: options.fromBlock ?? config.startBlock,
-        toBlock: options.toBlock,
+        fromBlock: fromBlock ?? config.startBlock,
       }).catch(error => {
         throw new DataError(
           "Failed to fetch ragequit logs",
@@ -230,10 +220,8 @@ export class DataService {
         );
       });
 
-      return await Promise.all(logs.map(async (log) => {
+      return logs.map((log) => {
         try {
-          const block = await client.getBlock({ blockNumber: log.blockNumber });
-          
           if (!log.args) {
             throw DataError.invalidLog("ragequit", "missing args");
           }
@@ -255,17 +243,16 @@ export class DataService {
             label: label as Hash,
             value,
             blockNumber: BigInt(log.blockNumber),
-            timestamp: BigInt(block.timestamp),
             transactionHash: log.transactionHash,
           };
         } catch (error) {
           if (error instanceof DataError) throw error;
           throw DataError.invalidLog("ragequit", error instanceof Error ? error.message : "Unknown error");
         }
-      }));
+      });
     } catch (error) {
       if (error instanceof DataError) throw error;
-      throw DataError.networkError(chainId, error instanceof Error ? error : new Error(String(error)));
+      throw DataError.networkError(pool.chainId, error instanceof Error ? error : new Error(String(error)));
     }
   }
 

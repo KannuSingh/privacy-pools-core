@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
+// forgefmt: disable-start
 /*
     Copyright 2021 0KIMS association.
 
@@ -18,199 +19,173 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-// NOTE: this contract was generated using the Hermez Rollup precalculated Powers of Tau. This contract MUST be used for testing purposes only.
-
 pragma solidity >=0.7.0 <0.9.0;
 
 contract CommitmentVerifier {
-  // Scalar field size
-  uint256 constant r =
-    21_888_242_871_839_275_222_246_405_745_257_275_088_548_364_400_416_034_343_698_204_186_575_808_495_617;
-  // Base field size
-  uint256 constant q =
-    21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
+    // Scalar field size
+    uint256 constant r    = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    // Base field size
+    uint256 constant q   = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
-  // Verification Key data
-  uint256 constant alphax =
-    20_491_192_805_390_485_299_153_009_773_594_534_940_189_261_866_228_447_918_068_658_471_970_481_763_042;
-  uint256 constant alphay =
-    9_383_485_363_053_290_200_918_347_156_157_836_566_562_967_994_039_712_273_449_902_621_266_178_545_958;
-  uint256 constant betax1 =
-    4_252_822_878_758_300_859_123_897_981_450_591_353_533_073_413_197_771_768_651_442_665_752_259_397_132;
-  uint256 constant betax2 =
-    6_375_614_351_688_725_206_403_948_262_868_962_793_625_744_043_794_305_715_222_011_528_459_656_738_731;
-  uint256 constant betay1 =
-    21_847_035_105_528_745_403_288_232_691_147_584_728_191_162_732_299_865_338_377_159_692_350_059_136_679;
-  uint256 constant betay2 =
-    10_505_242_626_370_262_277_552_901_082_094_356_697_409_835_680_220_590_971_873_171_140_371_331_206_856;
-  uint256 constant gammax1 =
-    11_559_732_032_986_387_107_991_004_021_392_285_783_925_812_861_821_192_530_917_403_151_452_391_805_634;
-  uint256 constant gammax2 =
-    10_857_046_999_023_057_135_944_570_762_232_829_481_370_756_359_578_518_086_990_519_993_285_655_852_781;
-  uint256 constant gammay1 =
-    4_082_367_875_863_433_681_332_203_403_145_435_568_316_851_327_593_401_208_105_741_076_214_120_093_531;
-  uint256 constant gammay2 =
-    8_495_653_923_123_431_417_604_973_247_489_272_438_418_190_587_263_600_148_770_280_649_306_958_101_930;
-  uint256 constant deltax1 =
-    9_666_382_535_385_552_891_379_578_350_343_561_761_664_901_947_412_969_747_418_607_512_287_725_731_302;
-  uint256 constant deltax2 =
-    16_313_475_320_573_394_429_891_872_437_183_474_476_272_972_662_716_897_923_600_838_063_488_282_361_467;
-  uint256 constant deltay1 =
-    15_091_426_580_826_784_060_567_829_115_192_834_023_383_374_112_821_121_996_886_990_948_515_453_305_056;
-  uint256 constant deltay2 =
-    3_762_531_914_608_059_045_721_043_256_547_102_541_561_001_733_267_576_189_282_785_683_472_800_814_365;
+    // Verification Key data
+    uint256 constant alphax  = 16428432848801857252194528405604668803277877773566238944394625302971855135431;
+    uint256 constant alphay  = 16846502678714586896801519656441059708016666274385668027902869494772365009666;
+    uint256 constant betax1  = 3182164110458002340215786955198810119980427837186618912744689678939861918171;
+    uint256 constant betax2  = 16348171800823588416173124589066524623406261996681292662100840445103873053252;
+    uint256 constant betay1  = 4920802715848186258981584729175884379674325733638798907835771393452862684714;
+    uint256 constant betay2  = 19687132236965066906216944365591810874384658708175106803089633851114028275753;
+    uint256 constant gammax1 = 11559732032986387107991004021392285783925812861821192530917403151452391805634;
+    uint256 constant gammax2 = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
+    uint256 constant gammay1 = 4082367875863433681332203403145435568316851327593401208105741076214120093531;
+    uint256 constant gammay2 = 8495653923123431417604973247489272438418190587263600148770280649306958101930;
+    uint256 constant deltax1 = 14071349277984160738769650232570048842420599174481891079570637520850148195985;
+    uint256 constant deltax2 = 21776852187814503669288941195438703300133533055551110414135507755772009048755;
+    uint256 constant deltay1 = 17768817325504614104442767796226297300876042529701251019410487903768062418156;
+    uint256 constant deltay2 = 14829896038465638754619183039629777804281009075842360651276603555963792313589;
 
-  uint256 constant IC0x =
-    1_572_230_892_394_329_298_681_454_529_771_558_079_791_160_063_426_885_123_778_364_988_544_600_092_204;
-  uint256 constant IC0y =
-    10_907_590_284_113_869_617_484_274_240_268_476_524_847_769_824_791_981_908_687_430_628_861_786_438_015;
+    
+    uint256 constant IC0x = 19389685603863983493459600466245000912176323935722089191442216924893875659471;
+    uint256 constant IC0y = 21368310947604120084615976168620713319957912144314383367152441982584687704754;
+    
+    uint256 constant IC1x = 20480370908727861268768811690351970824724320271007139967515539994552383745448;
+    uint256 constant IC1y = 6543788534290546924704177190532160218635019071447323280686282609769447108534;
+    
+    uint256 constant IC2x = 6221997045242061390626775825094098886891157777390462309437733708122892686303;
+    uint256 constant IC2y = 2977171917149158683110905238240269877054732203916711132834349252293157981665;
+    
+    uint256 constant IC3x = 17383678627611548606682427983617497767432126302933563182026534678391392668921;
+    uint256 constant IC3y = 3215629258564266791517073142612182991488671524212271597007691057737644736842;
+    
+    uint256 constant IC4x = 8279881556386467131443125483794142587933910369215858657040335636659378561647;
+    uint256 constant IC4y = 13829047140424789745087385395711127297752590615995160902909738061982036826097;
+    
+ 
+    // Memory data
+    uint16 constant pVk = 0;
+    uint16 constant pPairing = 128;
 
-  uint256 constant IC1x =
-    10_474_414_297_782_319_012_492_981_593_026_892_901_081_275_462_495_776_991_555_687_221_816_541_216_900;
-  uint256 constant IC1y =
-    15_321_095_481_963_456_890_874_969_330_033_977_457_618_275_793_259_026_176_586_929_376_066_181_453_736;
+    uint16 constant pLastMem = 896;
 
-  uint256 constant IC2x =
-    7_167_757_742_959_859_522_698_341_494_851_878_743_413_875_657_020_912_040_299_669_857_452_661_163_359;
-  uint256 constant IC2y =
-    15_724_055_535_526_981_576_292_094_793_112_385_921_772_371_884_091_294_850_568_057_565_255_098_482_790;
+    function verifyProof(uint256[2] calldata _pA, uint256[2][2] calldata _pB, uint256[2] calldata _pC, uint256[4] calldata _pubSignals) public view returns (bool) {
+        assembly {
+            function checkField(v) {
+                if iszero(lt(v, r)) {
+                    mstore(0, 0)
+                    return(0, 0x20)
+                }
+            }
+            
+            // G1 function to multiply a G1 value(x,y) to value in an address
+            function g1_mulAccC(pR, x, y, s) {
+                let success
+                let mIn := mload(0x40)
+                mstore(mIn, x)
+                mstore(add(mIn, 32), y)
+                mstore(add(mIn, 64), s)
 
-  uint256 constant IC3x =
-    4_253_717_979_618_709_549_511_897_964_339_151_958_398_524_443_435_855_283_275_007_931_257_641_362_042;
-  uint256 constant IC3y =
-    13_089_251_678_429_301_842_185_423_084_234_296_438_125_447_237_586_343_714_423_671_687_573_864_414_557;
+                success := staticcall(sub(gas(), 2000), 7, mIn, 96, mIn, 64)
 
-  uint256 constant IC4x =
-    5_720_438_927_695_094_619_253_011_981_916_629_818_160_255_604_092_226_836_470_980_486_355_013_686_586;
-  uint256 constant IC4y =
-    10_706_881_117_441_550_589_757_930_942_070_042_747_676_062_817_527_420_799_708_567_442_202_684_614_153;
+                if iszero(success) {
+                    mstore(0, 0)
+                    return(0, 0x20)
+                }
 
-  // Memory data
-  uint16 constant pVk = 0;
-  uint16 constant pPairing = 128;
+                mstore(add(mIn, 64), mload(pR))
+                mstore(add(mIn, 96), mload(add(pR, 32)))
 
-  uint16 constant pLastMem = 896;
+                success := staticcall(sub(gas(), 2000), 6, mIn, 128, pR, 64)
 
-  function verifyProof(
-    uint256[2] calldata _pA,
-    uint256[2][2] calldata _pB,
-    uint256[2] calldata _pC,
-    uint256[4] calldata _pubSignals
-  ) public view returns (bool) {
-    assembly {
-      function checkField(v) {
-        if iszero(lt(v, r)) {
-          mstore(0, 0)
-          return(0, 0x20)
-        }
-      }
+                if iszero(success) {
+                    mstore(0, 0)
+                    return(0, 0x20)
+                }
+            }
 
-      // G1 function to multiply a G1 value(x,y) to value in an address
-      function g1_mulAccC(pR, x, y, s) {
-        let success
-        let mIn := mload(0x40)
-        mstore(mIn, x)
-        mstore(add(mIn, 32), y)
-        mstore(add(mIn, 64), s)
+            function checkPairing(pA, pB, pC, pubSignals, pMem) -> isOk {
+                let _pPairing := add(pMem, pPairing)
+                let _pVk := add(pMem, pVk)
 
-        success := staticcall(sub(gas(), 2000), 7, mIn, 96, mIn, 64)
+                mstore(_pVk, IC0x)
+                mstore(add(_pVk, 32), IC0y)
 
-        if iszero(success) {
-          mstore(0, 0)
-          return(0, 0x20)
-        }
+                // Compute the linear combination vk_x
+                
+                g1_mulAccC(_pVk, IC1x, IC1y, calldataload(add(pubSignals, 0)))
+                
+                g1_mulAccC(_pVk, IC2x, IC2y, calldataload(add(pubSignals, 32)))
+                
+                g1_mulAccC(_pVk, IC3x, IC3y, calldataload(add(pubSignals, 64)))
+                
+                g1_mulAccC(_pVk, IC4x, IC4y, calldataload(add(pubSignals, 96)))
+                
 
-        mstore(add(mIn, 64), mload(pR))
-        mstore(add(mIn, 96), mload(add(pR, 32)))
+                // -A
+                mstore(_pPairing, calldataload(pA))
+                mstore(add(_pPairing, 32), mod(sub(q, calldataload(add(pA, 32))), q))
 
-        success := staticcall(sub(gas(), 2000), 6, mIn, 128, pR, 64)
+                // B
+                mstore(add(_pPairing, 64), calldataload(pB))
+                mstore(add(_pPairing, 96), calldataload(add(pB, 32)))
+                mstore(add(_pPairing, 128), calldataload(add(pB, 64)))
+                mstore(add(_pPairing, 160), calldataload(add(pB, 96)))
 
-        if iszero(success) {
-          mstore(0, 0)
-          return(0, 0x20)
-        }
-      }
+                // alpha1
+                mstore(add(_pPairing, 192), alphax)
+                mstore(add(_pPairing, 224), alphay)
 
-      function checkPairing(pA, pB, pC, pubSignals, pMem) -> isOk {
-        let _pPairing := add(pMem, pPairing)
-        let _pVk := add(pMem, pVk)
+                // beta2
+                mstore(add(_pPairing, 256), betax1)
+                mstore(add(_pPairing, 288), betax2)
+                mstore(add(_pPairing, 320), betay1)
+                mstore(add(_pPairing, 352), betay2)
 
-        mstore(_pVk, IC0x)
-        mstore(add(_pVk, 32), IC0y)
+                // vk_x
+                mstore(add(_pPairing, 384), mload(add(pMem, pVk)))
+                mstore(add(_pPairing, 416), mload(add(pMem, add(pVk, 32))))
 
-        // Compute the linear combination vk_x
 
-        g1_mulAccC(_pVk, IC1x, IC1y, calldataload(add(pubSignals, 0)))
+                // gamma2
+                mstore(add(_pPairing, 448), gammax1)
+                mstore(add(_pPairing, 480), gammax2)
+                mstore(add(_pPairing, 512), gammay1)
+                mstore(add(_pPairing, 544), gammay2)
 
-        g1_mulAccC(_pVk, IC2x, IC2y, calldataload(add(pubSignals, 32)))
+                // C
+                mstore(add(_pPairing, 576), calldataload(pC))
+                mstore(add(_pPairing, 608), calldataload(add(pC, 32)))
 
-        g1_mulAccC(_pVk, IC3x, IC3y, calldataload(add(pubSignals, 64)))
+                // delta2
+                mstore(add(_pPairing, 640), deltax1)
+                mstore(add(_pPairing, 672), deltax2)
+                mstore(add(_pPairing, 704), deltay1)
+                mstore(add(_pPairing, 736), deltay2)
 
-        g1_mulAccC(_pVk, IC4x, IC4y, calldataload(add(pubSignals, 96)))
 
-        // -A
-        mstore(_pPairing, calldataload(pA))
-        mstore(add(_pPairing, 32), mod(sub(q, calldataload(add(pA, 32))), q))
+                let success := staticcall(sub(gas(), 2000), 8, _pPairing, 768, _pPairing, 0x20)
 
-        // B
-        mstore(add(_pPairing, 64), calldataload(pB))
-        mstore(add(_pPairing, 96), calldataload(add(pB, 32)))
-        mstore(add(_pPairing, 128), calldataload(add(pB, 64)))
-        mstore(add(_pPairing, 160), calldataload(add(pB, 96)))
+                isOk := and(success, mload(_pPairing))
+            }
 
-        // alpha1
-        mstore(add(_pPairing, 192), alphax)
-        mstore(add(_pPairing, 224), alphay)
+            let pMem := mload(0x40)
+            mstore(0x40, add(pMem, pLastMem))
 
-        // beta2
-        mstore(add(_pPairing, 256), betax1)
-        mstore(add(_pPairing, 288), betax2)
-        mstore(add(_pPairing, 320), betay1)
-        mstore(add(_pPairing, 352), betay2)
+            // Validate that all evaluations ∈ F
+            
+            checkField(calldataload(add(_pubSignals, 0)))
+            
+            checkField(calldataload(add(_pubSignals, 32)))
+            
+            checkField(calldataload(add(_pubSignals, 64)))
+            
+            checkField(calldataload(add(_pubSignals, 96)))
+            
 
-        // vk_x
-        mstore(add(_pPairing, 384), mload(add(pMem, pVk)))
-        mstore(add(_pPairing, 416), mload(add(pMem, add(pVk, 32))))
+            // Validate all evaluations
+            let isValid := checkPairing(_pA, _pB, _pC, _pubSignals, pMem)
 
-        // gamma2
-        mstore(add(_pPairing, 448), gammax1)
-        mstore(add(_pPairing, 480), gammax2)
-        mstore(add(_pPairing, 512), gammay1)
-        mstore(add(_pPairing, 544), gammay2)
-
-        // C
-        mstore(add(_pPairing, 576), calldataload(pC))
-        mstore(add(_pPairing, 608), calldataload(add(pC, 32)))
-
-        // delta2
-        mstore(add(_pPairing, 640), deltax1)
-        mstore(add(_pPairing, 672), deltax2)
-        mstore(add(_pPairing, 704), deltay1)
-        mstore(add(_pPairing, 736), deltay2)
-
-        let success := staticcall(sub(gas(), 2000), 8, _pPairing, 768, _pPairing, 0x20)
-
-        isOk := and(success, mload(_pPairing))
-      }
-
-      let pMem := mload(0x40)
-      mstore(0x40, add(pMem, pLastMem))
-
-      // Validate that all evaluations ∈ F
-
-      checkField(calldataload(add(_pubSignals, 0)))
-
-      checkField(calldataload(add(_pubSignals, 32)))
-
-      checkField(calldataload(add(_pubSignals, 64)))
-
-      checkField(calldataload(add(_pubSignals, 96)))
-
-      // Validate all evaluations
-      let isValid := checkPairing(_pA, _pB, _pC, _pubSignals, pMem)
-
-      mstore(0, isValid)
-      return(0, 0x20)
-    }
-  }
-}
+            mstore(0, isValid)
+             return(0, 0x20)
+         }
+     }
+ }
+// forgefmt: disable-end

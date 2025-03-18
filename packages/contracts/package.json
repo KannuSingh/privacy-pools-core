@@ -10,8 +10,9 @@
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",
-    "deploy:mainnet": "bash -c 'source .env && forge script Deploy --rpc-url $MAINNET_RPC --account $MAINNET_DEPLOYER_NAME --broadcast --verify --chain mainnet -vvvvv'",
-    "deploy:protocol:sepolia": "bash -c 'source .env && forge script script/Deploy.s.sol:EthereumSepolia --account $SEPOLIA_DEPLOYER_NAME --verify --rpc-url $SEPOLIA_RPC -vv $0'",
+    "deploy:mainnet": "bash -c 'source .env && forge script script/Deploy.s.sol:EthereumMainnet --account DEPLOYER --rpc-url $ETHEREUM_MAINNET_RPC --slow  -vv $0'",
+    "deploy:protocol:chiado": "bash -c 'source .env && forge script script/Deploy.s.sol:GnosisChiado --account DEPLOYER --rpc-url $GNOSIS_CHIADO_RPC --slow -vv $0'",
+    "deploy:protocol:sepolia": "bash -c 'source .env && forge script script/Deploy.s.sol:EthereumSepolia --verify --account DEPLOYER --rpc-url $ETHEREUM_SEPOLIA_RPC --slow -vv $0'",
     "lint:check": "yarn lint:sol && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol --fix",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
@@ -31,13 +32,13 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@0xbow/privacy-pools-core-sdk": "0.1.8",
+    "@0xbow/privacy-pools-core-sdk": "0.1.13",
     "@openzeppelin/contracts": "5.1.0",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@openzeppelin/foundry-upgrades": "0.3.6",
     "@zk-kit/lean-imt": "2.2.2",
     "@zk-kit/lean-imt.sol": "2.0.0",
-    "poseidon-solidity": "^0.0.5",
+    "poseidon-solidity": "0.0.5",
     "solc": "0.8.28",
     "viem": "^2.23.2"
   },

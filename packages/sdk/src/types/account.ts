@@ -1,10 +1,12 @@
 import { Hash, Secret } from "./commitment.js";
-import { Address, Hex } from "viem";
+import { Hex } from "viem";
+import { RagequitEvent } from "./events.js";
 
 export interface PoolAccount {
   label: Hash;
   deposit: AccountCommitment;
   children: AccountCommitment[];
+  ragequit?: RagequitEvent
 }
 
 export interface AccountCommitment {
@@ -14,20 +16,20 @@ export interface AccountCommitment {
   nullifier: Secret;
   secret: Secret;
   blockNumber: bigint;
-  timestamp: bigint;
+  timestamp?: bigint;
   txHash: Hex;
 }
 
 export interface PrivacyPoolAccount {
   masterKeys: [masterNullifier: Secret, masterSecret: Secret];
   poolAccounts: Map<Hash, PoolAccount[]>;
-  creationTimestamp: bigint;
-  lastUpdateTimestamp: bigint;
+  creationTimestamp?: bigint;
+  lastUpdateTimestamp?: bigint;
 }
 
 export interface PoolInfo {
   chainId: number;
-  address: string;
+  address: Hex;
   scope: Hash;
   deploymentBlock: bigint;
 }
