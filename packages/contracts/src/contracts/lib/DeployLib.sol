@@ -20,11 +20,12 @@ library DeployLib {
    * @dev Predefined salt values for each contract type
    * @notice These values ensure deterministic addresses across deployments
    */
-  bytes11 internal constant ENTRYPOINT_SALT = bytes11(keccak256('Entrypoint1'));
-  bytes11 internal constant SIMPLE_POOL_SALT = bytes11(keccak256(abi.encodePacked('PrivacyPoolSimple1')));
-  bytes11 internal constant COMPLEX_POOL_SALT = bytes11(keccak256(abi.encodePacked('PrivacyPoolComplex1')));
-  bytes11 internal constant WITHDRAWAL_VERIFIER_SALT = bytes11(keccak256(abi.encodePacked('WithdrawalVerifier1')));
-  bytes11 internal constant RAGEQUIT_VERIFIER_SALT = bytes11(keccak256(abi.encodePacked('RagequitVerifier1')));
+  bytes11 internal constant ENTRYPOINT_IMPL_SALT = bytes11(keccak256('EntrypointImplementation_1'));
+  bytes11 internal constant ENTRYPOINT_PROXY_SALT = bytes11(keccak256('EntrypointProxy_1'));
+  bytes11 internal constant SIMPLE_POOL_SALT = bytes11(keccak256(abi.encodePacked('PrivacyPoolSimple_1')));
+  bytes11 internal constant COMPLEX_POOL_SALT = bytes11(keccak256(abi.encodePacked('PrivacyPoolComplex_1')));
+  bytes11 internal constant WITHDRAWAL_VERIFIER_SALT = bytes11(keccak256(abi.encodePacked('WithdrawalVerifier_1')));
+  bytes11 internal constant RAGEQUIT_VERIFIER_SALT = bytes11(keccak256(abi.encodePacked('RagequitVerifier_1')));
 
   /**
    * @dev Creates a custom salt for deterministic deployments
