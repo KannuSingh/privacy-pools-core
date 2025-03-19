@@ -117,5 +117,109 @@ yarn test:unit
 
 ```bash
 # Run integration tests (with `ffi` enabled)
-yarn test:integraiton
+yarn test:integration
 ```
+
+## Deployment
+
+### Environment Setup
+
+1. Copy the `.env.example` file to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Configure the following environment variables in your `.env` file:
+   ```
+   # RPC endpoints
+   ETHEREUM_MAINNET_RPC=https://eth-mainnet.example.com
+   ETHEREUM_SEPOLIA_RPC=https://eth-sepolia.example.com
+   GNOSIS_RPC=https://gnosis.example.com
+   GNOSIS_CHIADO_RPC=https://gnosis-chiado.example.com
+   
+   # Etherscan API key for contract verification
+   ETHERSCAN_API_KEY=your_etherscan_api_key
+   
+   # Account addresses
+   DEPLOYER_ADDRESS=0x...
+   OWNER_ADDRESS=0x...
+   POSTMAN_ADDRESS=0x...
+   
+   # Only needed for role assignments and root updates
+   ENTRYPOINT_ADDRESS=0x...
+   ```
+
+3. Import your deployer account to the Foundry keystore:
+   ```bash
+   cast wallet import DEPLOYER --interactive
+   # Enter your private key when prompted
+   ```
+
+4. Optional: Import additional accounts if needed (for assigning roles or updating roots):
+   ```bash
+   cast wallet import SEPOLIA_DEPLOYER_NAME --interactive
+   cast wallet import SEPOLIA_POSTMAN --interactive
+   ```
+
+### Deploying the Protocol
+
+The project provides deployment scripts for various networks. Choose the appropriate command based on your target network:
+
+> **Important:** All forge script commands must include the `--broadcast` flag to actually send transactions to the network. Without this flag, transactions will only be simulated.
+
+#### Testnet Deployments
+
+**Ethereum Sepolia:**
+```bash
+yarn deploy:protocol:sepolia --broadcast
+```
+
+**Gnosis Chiado:**
+```bash
+yarn deploy:protocol:chiado --broadcast
+```
+
+#### Mainnet Deployment
+
+```bash
+yarn deploy:mainnet --broadcast
+```
+
+### Post-Deployment Operations
+
+#### Assigning Roles
+
+To assign roles (Owner or Postman) to accounts in the deployed protocol:
+
+```bash
+yarn assignrole:sepolia --broadcast
+```
+
+This will prompt you to enter:
+1. The account to assign the role to
+2. The role to assign (0 for Owner, 1 for Postman)
+
+#### Updating ASP Root
+
+To update the Approved Set of Participants (ASP) root:
+
+```bash
+yarn updateroot:sepolia --broadcast
+```
+
+This script builds the Merkle tree using the `script/utils/tree.mjs` utility and updates the root in the Entrypoint contract.
+
+#### Registering a New Pool
+
+To register a new pool with the Entrypoint:
+
+```bash
+source .env && forge script script/Entrypoint.s.sol:RegisterPool --account DEPLOYER --rpc-url $ETHEREUM_SEPOLIA_RPC --broadcast -vv
+```
+
+This will prompt you to enter:
+1. Asset address (empty for native asset)
+2. Pool address
+3. Minimum deposit amount
+4. Vetting fee in basis points
+5. Maximum relay fee in basis points
