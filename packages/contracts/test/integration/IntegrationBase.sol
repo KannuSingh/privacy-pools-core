@@ -160,7 +160,7 @@ contract IntegrationBase is Test {
     address _impl = address(new Entrypoint());
     bytes memory _intializationData = abi.encodeCall(Entrypoint.initialize, (_OWNER, _POSTMAN));
     address _entrypointAddr = _CREATEX.deployCreate2(
-      DeployLib.salt(_OWNER, DeployLib.ENTRYPOINT_SALT),
+      DeployLib.salt(_OWNER, DeployLib.ENTRYPOINT_PROXY_SALT),
       abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
     );
     _entrypoint = Entrypoint(payable(_entrypointAddr));

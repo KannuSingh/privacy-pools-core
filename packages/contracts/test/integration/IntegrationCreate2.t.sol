@@ -168,11 +168,13 @@ contract IntegrationDeploy is Test {
   function _deployEntrypoint() private returns (address) {
     address _owner = makeAddr('OWNER');
     address _postman = makeAddr('POSTMAN');
-    address _impl = address(new Entrypoint());
     bytes memory _intializationData = abi.encodeCall(Entrypoint.initialize, (_owner, _postman));
 
+    address _impl =
+      _CREATEX.deployCreate2(DeployLib.salt(_DEPLOYER, DeployLib.ENTRYPOINT_IMPL_SALT), type(Entrypoint).creationCode);
+
     return _CREATEX.deployCreate2(
-      DeployLib.salt(_DEPLOYER, DeployLib.ENTRYPOINT_SALT),
+      DeployLib.salt(_DEPLOYER, DeployLib.ENTRYPOINT_PROXY_SALT),
       abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
     );
   }
