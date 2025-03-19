@@ -147,8 +147,10 @@ abstract contract DeployProtocol is Script {
 
   function _deployComplexPool(PoolConfig memory _config) private {
     // Deploy pool with Create2
+    bytes11 _tokenSalt = bytes11(keccak256(abi.encodePacked(DeployLib.COMPLEX_POOL_SALT, _config.symbol)));
+
     address _pool = CreateX.deployCreate2(
-      DeployLib.salt(deployer, DeployLib.COMPLEX_POOL_SALT),
+      DeployLib.salt(deployer, _tokenSalt),
       abi.encodePacked(
         type(PrivacyPoolComplex).creationCode,
         abi.encode(address(entrypoint), withdrawalVerifier, ragequitVerifier, address(_config.asset))
