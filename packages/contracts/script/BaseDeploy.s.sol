@@ -106,15 +106,16 @@ abstract contract DeployProtocol is Script {
   }
 
   function _deployEntrypoint() private {
-    // Deploy implementation at any address
-    address _impl = address(new Entrypoint());
+    // Deploy Entrypoint implementation
+    address _impl =
+      CreateX.deployCreate2(DeployLib.salt(deployer, DeployLib.ENTRYPOINT_IMPL_SALT), type(Entrypoint).creationCode);
 
     // Encode `initialize` call data
     bytes memory _intializationData = abi.encodeCall(Entrypoint.initialize, (owner, postman));
 
     // Deploy proxy and initialize
     address _entrypoint = CreateX.deployCreate2(
-      DeployLib.salt(deployer, DeployLib.ENTRYPOINT_SALT),
+      DeployLib.salt(deployer, DeployLib.ENTRYPOINT_PROXY_SALT),
       abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_impl, _intializationData))
     );
 
