@@ -68,12 +68,41 @@ export class PrivacyPoolRelayer {
         requestId,
       };
     } catch (error) {
-      const message: string =
-        error instanceof RelayerError ? error.message : JSON.stringify(error);
-      await this.db.updateFailedRequest(requestId, message);
+      let errorMessage: string;
+
+      if (error instanceof RelayerError) {
+        errorMessage = error.message;
+      } else {
+        try {
+          // Convert to string to handle both Error objects and other types
+          const errorStr = typeof error === 'object' ? JSON.stringify(error, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value) : String(error);
+
+          // Try to parse the error if it's JSON
+          const errorObj = JSON.parse(errorStr);
+
+          // Extract contract error message if available
+          if (errorObj.cause?.metaMessages && errorObj.cause.metaMessages.length > 0) {
+            // First message is usually the contract error
+            const contractError = errorObj.cause.metaMessages[0].trim();
+            errorMessage = contractError.startsWith('Error:')
+              ? contractError.substring(6).trim()
+              : contractError;
+          } else if (errorObj.shortMessage) {
+            errorMessage = errorObj.shortMessage;
+          } else {
+            errorMessage = "Unknown contract error";
+          }
+        } catch {
+          // If we can't parse the error, just use the string representation
+          errorMessage = String(error);
+        }
+      }
+
+      await this.db.updateFailedRequest(requestId, errorMessage);
       return {
         success: false,
-        error: message,
+        error: errorMessage,
         timestamp,
         requestId,
       };
@@ -117,7 +146,7 @@ export class PrivacyPoolRelayer {
   protected async validateWithdrawal(wp: WithdrawalPayload, chainId: number) {
     const entrypointAddress = getEntrypointAddress(chainId);
     const feeReceiverAddress = getFeeReceiverAddress(chainId);
-    
+
     const { feeRecipient, relayFeeBPS } = decodeWithdrawalData(
       wp.withdrawal.data,
     );
@@ -145,22 +174,22 @@ export class PrivacyPoolRelayer {
     }
 
     const { assetAddress } = await this.sdkProvider.scopeData(wp.scope, chainId);
-    
+
     // Get asset configuration for this chain and asset
     const assetConfig = getAssetConfig(chainId, assetAddress);
-    
+
     if (!assetConfig) {
       throw WithdrawalValidationError.assetNotSupported(
         `Asset ${assetAddress} is not supported on chain ${chainId}.`
       );
     }
-    
+
     if (relayFeeBPS !== assetConfig.fee_bps) {
       throw WithdrawalValidationError.feeMismatch(
         `Relay fee mismatch: expected "${assetConfig.fee_bps}", got "${relayFeeBPS}".`,
       );
     }
-    
+
     if (proofSignals.withdrawnValue < assetConfig.min_withdraw_amount) {
       throw WithdrawalValidationError.withdrawnValueTooSmall(
         `Withdrawn value too small: expected minimum "${assetConfig.min_withdraw_amount}", got "${proofSignals.withdrawnValue}".`,
