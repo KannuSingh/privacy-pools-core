@@ -7,7 +7,6 @@ import {
 import {
   ChainConfig,
   DepositEvent,
-  EventFilterOptions,
   WithdrawalEvent,
   RagequitEvent,
 } from "../types/events.js";
@@ -233,7 +232,7 @@ export class DataService {
             _value: value,
           } = log.args;
 
-          if (!ragequitter || !commitment || !label || !value || !log.blockNumber || !log.transactionHash) {
+          if (!ragequitter || !commitment || !label || !log.blockNumber || !log.transactionHash) {
             throw DataError.invalidLog("ragequit", "missing required fields");
           }
 
@@ -241,7 +240,7 @@ export class DataService {
             ragequitter: ragequitter.toLowerCase(),
             commitment: commitment as Hash,
             label: label as Hash,
-            value,
+            value: value || BigInt(0),
             blockNumber: BigInt(log.blockNumber),
             transactionHash: log.transactionHash,
           };
