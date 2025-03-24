@@ -59,3 +59,19 @@ contract EthereumMainnet is DeployProtocol {
     super.setUp();
   }
 }
+
+// @notice Protocol configuration for Gnosis
+contract Gnosis is DeployProtocol {
+  function setUp() public override chainId(100) {
+    // Native asset pool
+    _nativePoolConfig = PoolConfig({
+      symbol: 'xDAI',
+      asset: IERC20(Constants.NATIVE_ASSET),
+      minimumDepositAmount: 100 ether, // 18 decimals -> 100 xDAI
+      vettingFeeBPS: 100,
+      maxRelayFeeBPS: 100
+    });
+
+    super.setUp();
+  }
+}
