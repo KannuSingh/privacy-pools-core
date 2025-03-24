@@ -35,3 +35,4 @@ gnosis = "${GNOSIS_RPC}"
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+gnosis = { key = "${ETHERSCAN_API_KEY}" }
