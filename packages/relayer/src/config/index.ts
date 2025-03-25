@@ -48,16 +48,16 @@ export function getChainConfig(chainId: number): ChainConfig {
   if (!chainConfig) {
     throw ConfigError.default(`Chain with ID ${chainId} not supported.`);
   }
-  
+
   // Log warnings for implicit defaults
   if (!chainConfig.fee_receiver_address && CONFIG.defaults.fee_receiver_address) {
     console.warn(`[CONFIG WARNING] Using default fee_receiver_address for chain ${chainId}`);
   }
-  
+
   if (!chainConfig.signer_private_key && CONFIG.defaults.signer_private_key) {
     console.warn(`[CONFIG WARNING] Using default signer_private_key for chain ${chainId}`);
   }
-  
+
   if (!chainConfig.entrypoint_address && CONFIG.defaults.entrypoint_address) {
     console.warn(`[CONFIG WARNING] Using default entrypoint_address for chain ${chainId}`);
   }
@@ -65,7 +65,7 @@ export function getChainConfig(chainId: number): ChainConfig {
   if (!chainConfig.max_gas_price) {
     console.warn(`[CONFIG WARNING] There's no max_gas_price set for chain ${chainId}`);
   }
-  
+
   return chainConfig;
 }
 
@@ -117,7 +117,7 @@ export function getAssetConfig(chainId: number, assetAddress: string): AssetConf
   if (!chainConfig.supported_assets) {
     return undefined;
   }
-  
+
   return chainConfig.supported_assets.find(
     asset => asset.asset_address.toLowerCase() === assetAddress.toLowerCase()
   );

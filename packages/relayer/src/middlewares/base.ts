@@ -36,16 +36,15 @@ export function errorHandlerMiddleware(
   res: Response,
   next: NextFunction,
 ) {
-  console.error("Error in request handler:", err);
-  
   if (err instanceof RelayerError) {
     if (err instanceof ConfigError) {
-      res.status(400).json({ 
+      res.status(400).json({
         error: err.message,
-        code: err.code
+        code: err.code,
+        details: err.details
       });
     } else if (err instanceof ValidationError) {
-      res.status(400).json({ 
+      res.status(400).json({
         error: err.message,
         code: err.code,
         details: err.details

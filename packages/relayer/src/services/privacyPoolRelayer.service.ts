@@ -152,6 +152,7 @@ export class PrivacyPoolRelayer {
     );
     const proofSignals = parseSignals(wp.proof.publicSignals);
 
+
     if (wp.withdrawal.processooor !== entrypointAddress) {
       throw WithdrawalValidationError.processooorMismatch(
         `Processooor mismatch: expected "${entrypointAddress}", got "${wp.withdrawal.processooor}".`,
