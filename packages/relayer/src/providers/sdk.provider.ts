@@ -19,33 +19,7 @@ import {
 import { WithdrawalPayload } from "../interfaces/relayer/request.js";
 import { RelayerError, SdkError, ConfigError } from "../exceptions/base.exception.js";
 import { SdkProviderInterface } from "../types/sdk.types.js";
-
-/**
- * Creates a Chain object for the given chain configuration
- * 
- * @param {object} chainConfig - The chain configuration
- * @returns {Chain} - The Chain object
- */
-function createChainObject(chainConfig: { 
-  chain_id: number; 
-  chain_name: string; 
-  rpc_url: string;
-  native_currency?: { name: string; symbol: string; decimals: number };
-}): Chain {
-  return {
-    id: chainConfig.chain_id,
-    name: chainConfig.chain_name,
-    nativeCurrency: chainConfig.native_currency || {
-      name: "Ether",
-      symbol: "ETH",
-      decimals: 18
-    },
-    rpcUrls: {
-      default: { http: [chainConfig.rpc_url] },
-      public: { http: [chainConfig.rpc_url] },
-    },
-  };
-}
+import { createChainObject } from "../utils.js";
 
 /**
  * Class representing the SDK provider for interacting with Privacy Pool SDK.
