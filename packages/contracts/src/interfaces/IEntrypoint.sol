@@ -43,7 +43,9 @@ interface IEntrypoint {
   /**
    * @notice Struct for the onchain association set data
    * @param root The ASP root
-   * @param ipfsCID The IPFS v1 CID of the ASP data
+   * @param ipfsCID The IPFS v1 CID of the ASP data. A content-addressed identifier computed by hashing
+   *                the content with SHA-256, adding multicodec/multihash prefixes, and encoding in base32/58.
+   *                This uniquely identifies data by its content rather than location.
    * @param timestamp The timestamp on which the root was updated
    */
   struct AssociationSetData {

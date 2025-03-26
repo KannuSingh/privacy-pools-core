@@ -68,7 +68,7 @@ contract UpdateRoot is Script {
   Entrypoint public entrypoint;
 
   // @notice Placeholder IPFS CID
-  string public IPFS_CID = 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa';
+  string public IPFS_CID = 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_';
   // @notice New computed root
   uint256 public newRoot;
 
