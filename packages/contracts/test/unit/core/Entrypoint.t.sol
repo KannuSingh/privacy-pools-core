@@ -241,9 +241,9 @@ contract UnitRootUpdate is UnitEntrypoint {
     assertEq(_index, 0, 'First root update should have index 0');
 
     vm.expectEmit(address(_entrypoint));
-    emit IEntrypoint.RootUpdated(_root, 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa', _timestamp);
+    emit IEntrypoint.RootUpdated(_root, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid', _timestamp);
 
-    _index = _entrypoint.updateRoot(_root, 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
+    _index = _entrypoint.updateRoot(_root, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
     assertEq(_index, 1, 'Second root update should have index 1');
   }
 
@@ -1458,7 +1458,7 @@ contract UnitViewMethods is UnitEntrypoint {
    */
   function test_LatestRootGivenAssociationSetsExist() external {
     // Mock association set with root value 1
-    _entrypoint.mockAssociationSets(1, 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
+    _entrypoint.mockAssociationSets(1, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Verify latest root is returned correctly
     assertEq(_entrypoint.latestRoot(), 1, 'Latest root should be 1');
@@ -1469,8 +1469,8 @@ contract UnitViewMethods is UnitEntrypoint {
    */
   function test_RootByIndexGivenValidIndex() external {
     // Mock multiple association sets with different roots
-    _entrypoint.mockAssociationSets(1, 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
-    _entrypoint.mockAssociationSets(2, 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
+    _entrypoint.mockAssociationSets(1, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
+    _entrypoint.mockAssociationSets(2, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Verify roots are returned correctly by index
     assertEq(_entrypoint.rootByIndex(0), 1, 'First root should be 1');
