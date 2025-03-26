@@ -23,7 +23,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Bob withdraws the total amount of Alice's commitment
     _selfWithdraw(
@@ -49,7 +49,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Bob receives withdraws total amount of Alice's commitment through a relayer
     _withdrawThroughRelayer(
@@ -75,7 +75,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Bob withdraws the total amount of Alice's commitment
     _selfWithdraw(
@@ -101,7 +101,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Withdraw 20 ETH to Bob
     _commitment = _selfWithdraw(
@@ -175,7 +175,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Bob receives the total amount of Alice's commitment through a relayer
     _withdrawThroughRelayer(
@@ -201,7 +201,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Withdraw 20 ETH to Bob
     _commitment = _withdrawThroughRelayer(
@@ -275,7 +275,9 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root without label
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(
+      uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid'
+    );
 
     // Fail to withdraw because the label is not included in the latest ASP root
     _withdrawThroughRelayer(
@@ -304,7 +306,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Withdraw 40 ETH through relayer
     _commitment = _withdrawThroughRelayer(
@@ -320,7 +322,9 @@ contract IntegrationNative is IntegrationBase {
 
     // Remove label from ASP
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(
+      uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid'
+    );
 
     // Fail to withdraw because label is not included in the latest ASP root
     _withdrawThroughRelayer(
@@ -349,7 +353,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Fully spend commitment
     _selfWithdraw(
@@ -390,7 +394,7 @@ contract IntegrationNative is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Fail to withdraw commitment that was already ragequitted
     _selfWithdraw(

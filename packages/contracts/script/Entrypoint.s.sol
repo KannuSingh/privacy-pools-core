@@ -67,8 +67,8 @@ contract UpdateRoot is Script {
   // @notice The deployed Entrypoint
   Entrypoint public entrypoint;
 
-  // @notice Placeholder IPFS hash
-  bytes32 public IPFS_HASH = keccak256('ipfs_hash');
+  // @notice Placeholder IPFS CID
+  string public IPFS_CID = 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_';
   // @notice New computed root
   uint256 public newRoot;
 
@@ -96,7 +96,7 @@ contract UpdateRoot is Script {
     vm.startBroadcast();
 
     // Update root
-    entrypoint.updateRoot(newRoot, IPFS_HASH);
+    entrypoint.updateRoot(newRoot, IPFS_CID);
 
     vm.stopBroadcast();
   }

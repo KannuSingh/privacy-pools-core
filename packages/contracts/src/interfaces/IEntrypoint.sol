@@ -43,12 +43,14 @@ interface IEntrypoint {
   /**
    * @notice Struct for the onchain association set data
    * @param root The ASP root
-   * @param ipfsHash The IPFS hash of the ASP data
+   * @param ipfsCID The IPFS v1 CID of the ASP data. A content-addressed identifier computed by hashing
+   *                the content with SHA-256, adding multicodec/multihash prefixes, and encoding in base32/58.
+   *                This uniquely identifies data by its content rather than location.
    * @param timestamp The timestamp on which the root was updated
    */
   struct AssociationSetData {
     uint256 root;
-    bytes32 ipfsHash;
+    string ipfsCID;
     uint256 timestamp;
   }
 
@@ -59,10 +61,10 @@ interface IEntrypoint {
   /**
    * @notice Emitted when pushing a new root to the association root set
    * @param _root The latest ASP root
-   * @param _ipfsHash The IPFS hash of the association set data
+   * @param _ipfsCID The IPFS CID of the association set data
    * @param _timestamp The timestamp of root update
    */
-  event RootUpdated(uint256 _root, bytes32 _ipfsHash, uint256 _timestamp);
+  event RootUpdated(uint256 _root, string _ipfsCID, uint256 _timestamp);
 
   /**
    * @notice Emitted when pushing a new root to the association root set
@@ -186,9 +188,9 @@ interface IEntrypoint {
   error InvalidPoolState();
 
   /**
-   * @notice Thrown when trying to push a root with an empty IPFS hash
+   * @notice Thrown when trying to push a an IPFS CID with an invalid length
    */
-  error EmptyIPFSHash();
+  error InvalidIPFSCIDLength();
 
   /**
    * @notice Thrown when trying to push a root with an empty root
@@ -244,10 +246,10 @@ interface IEntrypoint {
   /**
    * @notice Push a new root to the association root set
    * @param _root The new ASP root
-   * @param _ipfsHash The IPFS hash of the association set data
+   * @param _ipfsCID The IPFS v1 CID of the association set data
    * @return _index The index of the newly added root
    */
-  function updateRoot(uint256 _root, bytes32 _ipfsHash) external returns (uint256 _index);
+  function updateRoot(uint256 _root, string memory _ipfsCID) external returns (uint256 _index);
 
   /**
    * @notice Make a native asset deposit into the Privacy Pool
@@ -354,10 +356,13 @@ interface IEntrypoint {
    * @notice Returns the association set data at an index
    * @param _index The index of the array
    * @return _root The updated ASP root
-   * @return _ipfsHash The IPFS hash for the association set data
+   * @return _ipfsCID The IPFS v1 CID for the association set data
    * @return _timestamp The timestamp of the root update
    */
-  function associationSets(uint256 _index) external view returns (uint256 _root, bytes32 _ipfsHash, uint256 _timestamp);
+  function associationSets(uint256 _index)
+    external
+    view
+    returns (uint256 _root, string memory _ipfsCID, uint256 _timestamp);
 
   /**
    * @notice Returns the latest ASP root

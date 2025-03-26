@@ -90,8 +90,8 @@ contract EntrypointForTest is Entrypoint {
     scopeToPool[_scope] = IPrivacyPool(_pool);
   }
 
-  function mockAssociationSets(uint256 _root, bytes32 _ipfsHash) external {
-    associationSets.push(IEntrypoint.AssociationSetData({root: _root, ipfsHash: _ipfsHash, timestamp: block.timestamp}));
+  function mockAssociationSets(uint256 _root, string memory _ipfsCID) external {
+    associationSets.push(IEntrypoint.AssociationSetData({root: _root, ipfsCID: _ipfsCID, timestamp: block.timestamp}));
   }
 
   function mockMaxRelayFeeBPS(IERC20 _asset, uint256 _maxRelayFeeBPS) external {
@@ -220,49 +220,66 @@ contract UnitRootUpdate is UnitEntrypoint {
    */
   function test_UpdateRootGivenValidRootAndIpfsHash(
     uint256 _root,
-    bytes32 _ipfsHash,
+    string memory _ipfsCID,
     uint256 _timestamp
   ) external givenCallerHasPostmanRole {
     vm.assume(_root != 0);
-    vm.assume(_ipfsHash != 0);
+    uint256 _length = bytes(_ipfsCID).length;
+    vm.assume(_length >= 32 && _length <= 64);
 
     vm.warp(_timestamp);
 
     vm.expectEmit(address(_entrypoint));
-    emit IEntrypoint.RootUpdated(_root, _ipfsHash, _timestamp);
+    emit IEntrypoint.RootUpdated(_root, _ipfsCID, _timestamp);
 
-    uint256 _index = _entrypoint.updateRoot(_root, _ipfsHash);
-    (uint256 _retrievedRoot, bytes32 _retrievedIpfsHash, uint256 _retrievedTimestamp) = _entrypoint.associationSets(0);
+    uint256 _index = _entrypoint.updateRoot(_root, _ipfsCID);
+    (uint256 _retrievedRoot, string memory _retrievedIpfsCID, uint256 _retrievedTimestamp) =
+      _entrypoint.associationSets(0);
     assertEq(_retrievedRoot, _root, 'Retrieved root should match input root');
-    assertEq(_retrievedIpfsHash, _ipfsHash, 'Retrieved IPFS hash should match input hash');
+    assertEq(_retrievedIpfsCID, _ipfsCID, 'Retrieved IPFS CID should match input CID');
     assertEq(_retrievedTimestamp, _timestamp, 'Retrieved timestamp should match block timestamp');
     assertEq(_index, 0, 'First root update should have index 0');
 
-    _index = _entrypoint.updateRoot(_root, _ipfsHash);
+    vm.expectEmit(address(_entrypoint));
+    emit IEntrypoint.RootUpdated(_root, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid', _timestamp);
+
+    _index = _entrypoint.updateRoot(_root, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
     assertEq(_index, 1, 'Second root update should have index 1');
   }
 
-  function test_UpdateRootWhenRootIsZero(bytes32 _ipfsHash) external givenCallerHasPostmanRole {
-    vm.assume(_ipfsHash != 0);
+  function test_UpdateRootWhenRootIsZero(string memory _ipfsCID) external givenCallerHasPostmanRole {
+    uint256 _length = bytes(_ipfsCID).length;
+    vm.assume(_length >= 32 && _length <= 64);
 
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.EmptyRoot.selector));
-    _entrypoint.updateRoot(0, _ipfsHash);
+    _entrypoint.updateRoot(0, _ipfsCID);
   }
 
   /**
    * @notice Test that the Entrypoint reverts when the IPFS hash is zero
    */
-  function test_UpdateRootWhenIpfsHashIsZero(uint256 _root) external givenCallerHasPostmanRole {
+  function test_UpdateRootWhenIpfsCIDHasInvalidLength(uint256 _root) external givenCallerHasPostmanRole {
     vm.assume(_root != 0);
-    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.EmptyIPFSHash.selector));
-    _entrypoint.updateRoot(_root, 0);
+    string memory _shortCID = 'This is a 31-byte string exampl';
+    assertEq(bytes(_shortCID).length, 31);
+
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidIPFSCIDLength.selector));
+    _entrypoint.updateRoot(_root, _shortCID);
+
+    string memory _longCID = 'This string contains exactly sixty-five bytes for your testing ne';
+    assertEq(bytes(_longCID).length, 65);
+
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.InvalidIPFSCIDLength.selector));
+    _entrypoint.updateRoot(_root, _longCID);
   }
 
   /**
    * @notice Test that the Entrypoint reverts when the caller lacks the postman role
    */
-  function test_UpdateRootWhenCallerLacksPostmanRole(address _caller, uint256 _root, bytes32 _ipfsHash) external {
+  function test_UpdateRootWhenCallerLacksPostmanRole(address _caller, uint256 _root, string memory _ipfsCID) external {
     vm.assume(_caller != _POSTMAN);
+    uint256 _length = bytes(_ipfsCID).length;
+    vm.assume(_length >= 32 && _length <= 64);
 
     vm.expectRevert(
       abi.encodeWithSelector(
@@ -270,7 +287,7 @@ contract UnitRootUpdate is UnitEntrypoint {
       )
     );
     vm.prank(_caller);
-    _entrypoint.updateRoot(_root, _ipfsHash);
+    _entrypoint.updateRoot(_root, _ipfsCID);
   }
 }
 
@@ -1441,7 +1458,7 @@ contract UnitViewMethods is UnitEntrypoint {
    */
   function test_LatestRootGivenAssociationSetsExist() external {
     // Mock association set with root value 1
-    _entrypoint.mockAssociationSets(1, keccak256('ipfsHash'));
+    _entrypoint.mockAssociationSets(1, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Verify latest root is returned correctly
     assertEq(_entrypoint.latestRoot(), 1, 'Latest root should be 1');
@@ -1452,8 +1469,8 @@ contract UnitViewMethods is UnitEntrypoint {
    */
   function test_RootByIndexGivenValidIndex() external {
     // Mock multiple association sets with different roots
-    _entrypoint.mockAssociationSets(1, keccak256('ipfsHash'));
-    _entrypoint.mockAssociationSets(2, keccak256('ipfsHash'));
+    _entrypoint.mockAssociationSets(1, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
+    _entrypoint.mockAssociationSets(2, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     // Verify roots are returned correctly by index
     assertEq(_entrypoint.rootByIndex(0), 1, 'First root should be 1');

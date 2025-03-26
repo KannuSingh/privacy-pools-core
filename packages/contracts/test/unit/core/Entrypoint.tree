@@ -20,8 +20,8 @@ Entrypoint::updateRoot
 │   │   └── It emits RootUpdated event
 │   ├── When root is zero
 │   │   └── It reverts with EmptyRoot
-│   └── When ipfs hash is zero
-│       └── It reverts with EmptyIPFSHash
+│   └── When ipfs CID is longer or shorter than expected
+│       └── It reverts with InvalidIPFSCIDLength
 └── When caller lacks postman role
     └── It reverts with AccessControlUnauthorizedAccount
 

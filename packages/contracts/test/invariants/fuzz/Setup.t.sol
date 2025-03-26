@@ -59,7 +59,7 @@ contract Setup is HandlerActors, GhostStorage, FuzzUtils {
     entrypoint.registerPool(token, IPrivacyPool(tokenPool), MIN_DEPOSIT, FEE_VETTING, MAX_RELAY_FEE);
 
     vm.prank(POSTMAN);
-    entrypoint.updateRoot(1, 'a');
+    entrypoint.updateRoot(1, 'ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid_ipfs_cid');
 
     createNewActors(5);
 
