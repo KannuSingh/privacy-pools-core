@@ -27,7 +27,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Bob withdraws the total amount of Alice's commitment
     _selfWithdraw(
@@ -53,7 +53,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Bob receives the total amount of Alice's commitment
     _withdrawThroughRelayer(
@@ -79,7 +79,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Bob withdraws 2000 DAI of Alice's commitment
     _selfWithdraw(
@@ -105,7 +105,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Withdraw 2000 DAI to Bob
     _commitment = _selfWithdraw(
@@ -167,7 +167,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Bob receives half of Alice's commitment
     _withdrawThroughRelayer(
@@ -193,7 +193,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Withdraw 2000 DAI to Bob
     _commitment = _withdrawThroughRelayer(
@@ -255,7 +255,10 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root without label
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(
+      uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD,
+      'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa'
+    );
 
     // Fail to withdraw
     _withdrawThroughRelayer(
@@ -284,7 +287,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Withdraw 4000 DAI through relayer
     _commitment = _withdrawThroughRelayer(
@@ -300,7 +303,10 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Remove label from ASP
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD, bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(
+      uint256(keccak256('some_root')) % SNARK_SCALAR_FIELD,
+      'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa'
+    );
 
     // Fail to withdraw
     _withdrawThroughRelayer(
@@ -329,7 +335,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Fully spend child commitment
     _selfWithdraw(
@@ -370,7 +376,7 @@ contract IntegrationERC20 is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     // Fail to withdraw commitment that was already ragequitted
     _selfWithdraw(

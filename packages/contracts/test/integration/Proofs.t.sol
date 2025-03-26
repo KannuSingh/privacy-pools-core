@@ -25,7 +25,7 @@ contract IntegrationProofs is IntegrationBase {
 
     // Push ASP root with label included
     vm.prank(_POSTMAN);
-    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), bytes32('IPFS_HASH'));
+    _entrypoint.updateRoot(_shadowASPMerkleTree._root(), 'bafkreidigpgsqmyq7f3c56a6yojlxjfpqs7l44uke6q3i63qznatnoiywa');
 
     _withdrawal = IPrivacyPool.Withdrawal({processooor: _BOB, data: abi.encode(_BOB, address(0), 0)});
 

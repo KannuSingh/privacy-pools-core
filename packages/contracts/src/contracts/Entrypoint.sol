@@ -87,16 +87,17 @@ contract Entrypoint is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc IEntrypoint
-  function updateRoot(uint256 _root, bytes32 _ipfsHash) external onlyRole(_ASP_POSTMAN) returns (uint256 _index) {
+  function updateRoot(uint256 _root, string memory _ipfsCID) external onlyRole(_ASP_POSTMAN) returns (uint256 _index) {
     // Check provided values are non-zero
     if (_root == 0) revert EmptyRoot();
-    if (_ipfsHash == 0) revert EmptyIPFSHash();
+    uint256 _cidLength = bytes(_ipfsCID).length;
+    if (_cidLength < 32 || _cidLength > 64) revert InvalidIPFSCIDLength();
 
     // Push new association set and update index
-    associationSets.push(AssociationSetData(_root, _ipfsHash, block.timestamp));
+    associationSets.push(AssociationSetData(_root, _ipfsCID, block.timestamp));
     _index = associationSets.length - 1;
 
-    emit RootUpdated(_root, _ipfsHash, block.timestamp);
+    emit RootUpdated(_root, _ipfsCID, block.timestamp);
   }
 
   /*///////////////////////////////////////////////////////////////
