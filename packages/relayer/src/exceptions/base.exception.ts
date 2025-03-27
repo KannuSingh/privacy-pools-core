@@ -20,12 +20,14 @@ export enum ErrorCode {
   INVALID_CONFIG = "INVALID_CONFIG",
   FEE_BPS_OUT_OF_BOUNDS = "FEE_BPS_OUT_OF_BOUNDS",
   CHAIN_NOT_SUPPORTED = "CHAIN_NOT_SUPPORTED",
+  MAX_GAS_PRICE = "MAX_GAS_PRICE",
 
   // Proof errors
   INVALID_PROOF = "INVALID_PROOF",
 
   // Contract errors
   CONTRACT_ERROR = "CONTRACT_ERROR",
+  TRANSACTION_ERROR = "TRANSACTION_ERROR",
 
   // SDK error. Wrapper for sdk's native errors
   SDK_ERROR = "SDK_ERROR",
@@ -58,6 +60,18 @@ export class RelayerError extends Error {
       code: this.code,
       details: this.details,
     };
+  }
+
+  public toPrettyString(): string {
+    let details: string;
+    if (typeof this.details === "object") {
+      details = JSON.stringify(this.details);
+    } else if (typeof this.details === "string") {
+      details = this.details;
+    } else {
+      details = "";
+    }
+    return `${this.name}::${this.code}(${this.message}, ${this.details})`
   }
 
   public static unknown(message?: string): RelayerError {
@@ -124,6 +138,15 @@ export class ConfigError extends RelayerError {
     details?: Record<string, unknown> | string,
   ): ConfigError {
     return new ConfigError("Invalid config", ErrorCode.INVALID_CONFIG, details);
+  }
+
+  /**
+   * Creates an error for gas price spikes
+   */
+  public static maxGasPrice(
+    details?: Record<string, unknown> | string,
+  ): ConfigError {
+    return new ConfigError("Gas price too high", ErrorCode.MAX_GAS_PRICE, details)
   }
 }
 
@@ -209,4 +232,17 @@ export class SdkError extends RelayerError {
   public static scopeDataError(error: Error) {
     return new SdkError(`SdkError: SCOPE_DATA_ERROR ${error.message}`);
   }
+}
+
+export class BlockchainError extends RelayerError {
+  constructor(message: string, code: ErrorCode = ErrorCode.CONTRACT_ERROR, details?: Record<string, unknown> | string) {
+    super(message, ErrorCode.TRANSACTION_ERROR, details);
+    this.name = this.constructor.name;
+  }
+
+  public static txError(
+    details?: Record<string, unknown> | string) {
+    return new BlockchainError("Transaction failed", ErrorCode.TRANSACTION_ERROR, details);
+  }
+
 }
