@@ -1,8 +1,9 @@
+import { Hash, Withdrawal } from "@0xbow/privacy-pools-core-sdk";
 import { encodeAbiParameters, getAddress, Hex } from "viem";
 import { request } from "./api-test.js";
-import { deposit, proveWithdrawal } from "./create-withdrawal.js";
-import { Hash, Withdrawal } from "@0xbow/privacy-pools-core-sdk";
+import { anvilChain, pool } from "./chain.js";
 import { ENTRYPOINT_ADDRESS } from "./constants.js";
+import { deposit, proveWithdrawal } from "./create-withdrawal.js";
 
 const FeeDataAbi = [
   {
@@ -31,9 +32,8 @@ async function depositEth() {
 }
 
 (async () => {
-  const scope = BigInt(
-    "0x2b85ec3a046efd3b9e0d715cc2f6b08fd973c5831c2cb30b906ec57c4479f455",
-  ) as Hash;
+
+  const scope = await pool.read.SCOPE() as Hash;
   const data = encodeAbiParameters(FeeDataAbi, [
     {
       recipient,
@@ -50,6 +50,7 @@ async function depositEth() {
   const { proof, publicSignals } = await prove(withdrawal, scope);
   const requestBody = {
     scope: scope.toString(),
+    chainId: anvilChain.id,
     withdrawal,
     publicSignals,
     proof,
