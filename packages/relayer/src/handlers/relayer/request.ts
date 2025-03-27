@@ -9,7 +9,8 @@ import {
 import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
 import { PrivacyPoolRelayer } from "../../services/index.js";
 import { RequestMashall } from "../../types.js";
-import { CONFIG } from "../../config/index.js";
+import { CONFIG, getChainConfig } from "../../config/index.js";
+import { web3Provider } from "../../providers/index.js";
 
 /**
  * Converts a RelayRequestBody into a WithdrawalPayload.
@@ -68,7 +69,7 @@ function parseWithdrawal(body: Request["body"]): { payload: WithdrawalPayload, c
       
       // Check if the chain is supported early
       if (!isChainSupported(chainId)) {
-        throw ConfigError.default(`Chain with ID ${chainId} not supported.`);
+        throw ValidationError.invalidInput({ message: `Chain with ID ${chainId} not supported.` });
       }
       
       return { payload, chainId };
@@ -104,6 +105,11 @@ export async function relayRequestHandler(
     const { payload: withdrawalPayload, chainId } = parseWithdrawal(req.body);
     
     const privacyPoolRelayer = new PrivacyPoolRelayer();
+    const maxGasPrice = getChainConfig(chainId)?.max_gas_price;
+    const currentGasPrice = await web3Provider.getGasPrice(chainId);
+    if (maxGasPrice !== undefined && currentGasPrice > maxGasPrice) {
+      throw ConfigError.maxGasPrice(`Current gas price ${currentGasPrice} is higher than max price ${maxGasPrice}`)
+    }
     const requestResponse: RelayerResponse =
       await privacyPoolRelayer.handleRequest(withdrawalPayload, chainId);
       
