@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
-import { validateDetailsQuerystring } from "../../schemes/relayer/details.scheme.js";
 import { ValidationError } from "../../exceptions/base.exception.js";
+import { validateDetailsQuerystring } from "../../schemes/relayer/details.scheme.js";
+import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
 
 // Middleware to validate the details querying
 export function validateDetailsMiddleware(
@@ -27,10 +27,9 @@ export function validateRelayRequestMiddleware(
 ) {
   const isValid = validateRelayRequestBody(req.body);
   if (!isValid) {
-    res.status(400).json({
-      error: "Validation Error",
-      details: validateRelayRequestBody.errors,
-    });
+    const messages: string[] = [];
+    validateRelayRequestBody.errors?.forEach(e => e?.message ? messages.push(e.message) : undefined);
+    next(ValidationError.invalidInput({ message: messages.join("\n") }));
     return;
   }
   next();

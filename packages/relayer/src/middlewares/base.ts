@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { RelayerError } from "../exceptions/base.exception.js";
+import { RelayerError, WithdrawalValidationError } from "../exceptions/base.exception.js";
 import { RelayerMarshall } from "../types.js";
 import { ConfigError, ValidationError } from "../exceptions/base.exception.js";
 
@@ -37,18 +37,14 @@ export function errorHandlerMiddleware(
   next: NextFunction,
 ) {
   if (err instanceof RelayerError) {
+    const { message, code, details } = err;
+    const errorResponse = { message, code, details }
     if (err instanceof ConfigError) {
-      res.status(400).json({
-        error: err.message,
-        code: err.code,
-        details: err.details
-      });
+      res.status(400).json(errorResponse);
     } else if (err instanceof ValidationError) {
-      res.status(400).json({
-        error: err.message,
-        code: err.code,
-        details: err.details
-      });
+      res.status(400).json(errorResponse);
+    } else if (err instanceof WithdrawalValidationError) {
+      res.status(422).json(errorResponse);
     } else {
       // Handle other RelayerError types
       res.status(400).json({ error: err.toJSON() });
