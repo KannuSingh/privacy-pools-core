@@ -7,7 +7,7 @@ import {
   WithdrawalPayload,
 } from "../../interfaces/relayer/request.js";
 import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
-import { PrivacyPoolRelayer } from "../../services/index.js";
+import { privacyPoolRelayer } from "../../services/index.js";
 import { RequestMashall } from "../../types.js";
 import { CONFIG, getChainConfig } from "../../config/index.js";
 import { web3Provider } from "../../providers/index.js";
@@ -104,7 +104,6 @@ export async function relayRequestHandler(
   try {
     const { payload: withdrawalPayload, chainId } = parseWithdrawal(req.body);
     
-    const privacyPoolRelayer = new PrivacyPoolRelayer();
     const maxGasPrice = getChainConfig(chainId)?.max_gas_price;
     const currentGasPrice = await web3Provider.getGasPrice(chainId);
     if (maxGasPrice !== undefined && currentGasPrice > maxGasPrice) {
