@@ -6,33 +6,23 @@ export abstract class RelayerMarshall {
 }
 
 export class DetailsMarshall extends RelayerMarshall {
-  constructor(
-    private feeBPS: bigint,
-    private feeReceiverAddress: Address,
-    private chainId?: number,
-    private assetAddress?: Address,
-    private minWithdrawAmount?: bigint,
-  ) {
+  constructor(private details: {
+    feeBPS: bigint,
+    feeReceiverAddress: Address,
+    chainId?: number,
+    assetAddress?: Address,
+    minWithdrawAmount?: bigint,
+  }) {
     super();
   }
   override toJSON(): object {
     const result: Record<string, string | number | undefined> = {
-      feeBPS: this.feeBPS.toString(),
-      feeReceiverAddress: this.feeReceiverAddress.toString(),
+      feeBPS: this.details.feeBPS.toString(),
+      feeReceiverAddress: this.details.feeReceiverAddress.toString(),
+      chainId: this.details.chainId,
+      assetAddress: this.details.assetAddress?.toString(),
+      minWithdrawAmount: this.details.minWithdrawAmount?.toString(),
     };
-    
-    if (this.chainId !== undefined) {
-      result.chainId = this.chainId;
-    }
-    
-    if (this.assetAddress !== undefined) {
-      result.assetAddress = this.assetAddress.toString();
-    }
-    
-    if (this.minWithdrawAmount !== undefined) {
-      result.minWithdrawAmount = this.minWithdrawAmount.toString();
-    }
-    
     return result;
   }
 }
