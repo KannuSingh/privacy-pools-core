@@ -34,3 +34,13 @@ export function validateRelayRequestMiddleware(
   }
   next();
 }
+
+
+// Middleware to validate the quote
+export function validateQuoteMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  next();
+}
