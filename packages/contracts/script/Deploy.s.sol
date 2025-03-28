@@ -51,8 +51,8 @@ contract EthereumMainnet is DeployProtocol {
     _nativePoolConfig = PoolConfig({
       symbol: 'ETH',
       asset: IERC20(Constants.NATIVE_ASSET),
-      minimumDepositAmount: 0.001 ether,
-      vettingFeeBPS: 100, // 1%
+      minimumDepositAmount: 0.01 ether, // ~$200
+      vettingFeeBPS: 50, // 0.5%
       maxRelayFeeBPS: 100 // 1%
     });
 
@@ -67,7 +67,7 @@ contract Gnosis is DeployProtocol {
     _nativePoolConfig = PoolConfig({
       symbol: 'xDAI',
       asset: IERC20(Constants.NATIVE_ASSET),
-      minimumDepositAmount: 100 ether, // 18 decimals -> 100 xDAI
+      minimumDepositAmount: 0.1 ether, // 18 decimals -> 100 xDAI
       vettingFeeBPS: 100,
       maxRelayFeeBPS: 100
     });
