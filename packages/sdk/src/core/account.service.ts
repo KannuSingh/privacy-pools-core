@@ -550,12 +550,12 @@ export class AccountService {
         this.logger.info(
           `Found ${foundDeposits.length} deposits for pool ${pool.address}`,
         );
-
-        // Process withdrawals and ragequits for all pools
-        // This is done after all deposits are processed to ensure we have the complete account state
-        await this._processWithdrawalsAndRagequits(pools);
-      }),
+      })
     );
+
+    // Process withdrawals and ragequits for all pools
+    // This is done after all deposits are processed to ensure we have the complete account state
+    await this._processWithdrawalsAndRagequits(pools);
   }
 
   /**
