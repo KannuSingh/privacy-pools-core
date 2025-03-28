@@ -5,6 +5,8 @@ import {
 import { createChainObject } from "../utils.js";
 
 interface IWeb3Provider {
+  client(chainId: number): PublicClient;
+  getGasPrice(chainId: number): Promise<bigint>;
 }
 
 /**

@@ -75,10 +75,10 @@ const withdrawalPayload = {
 function newResMock() {
   const obj = vi.fn();
   const attrs = {
-    status: vi.fn((number) => newResMock()),
-    json: vi.fn((body) => newResMock()),
+    status: vi.fn(() => newResMock()),
+    json: vi.fn(() => newResMock()),
     locals: {
-      marshalResponse: vi.fn((toMarshall) => newResMock()),
+      marshalResponse: vi.fn(() => newResMock()),
     }
   };
   return Object.assign(obj, attrs);
@@ -86,7 +86,7 @@ function newResMock() {
 
 describe("relayRequestHandler", () => {
 
-  let resMock = newResMock() as any;
+  let resMock = newResMock();
   let nextMock= vi.fn();
 
   afterEach(() => {
@@ -94,29 +94,29 @@ describe("relayRequestHandler", () => {
   })
 
   beforeEach(() => {
-    resMock = newResMock() as any;
+    resMock = newResMock();
     nextMock = vi.fn();
   });
 
   it("empty body raises validation error", async () => {
-    const req = { body: {} } as any;
+    const req = { body: {} };
     await relayRequestHandler(req, resMock, nextMock);
     expect(nextMock.mock.calls[0][0]).toBeInstanceOf(ValidationError)
   });
 
   it("gas price below max is ok", async () => {
-    const req = { body: { ...withdrawalPayload } } as any;
+    const req = { body: { ...withdrawalPayload } };
     vi.spyOn(web3Provider, "getGasPrice").mockResolvedValue(2n);  // max_gas_price == 5
-    vi.spyOn(privacyPoolRelayer, "handleRequest").mockReturnValue(undefined);
+    vi.spyOn(privacyPoolRelayer, "handleRequest").mockResolvedValue(undefined);
     await relayRequestHandler(req, resMock, nextMock);
     expect(nextMock.mock.calls[0][0]).toEqual(undefined)
     expect(resMock.status.mock.calls[0][0]).toEqual(200)
   });
 
   it("gas price above max is rejected", async () => {
-    const req = { body: { ...withdrawalPayload } } as any;
+    const req = { body: { ...withdrawalPayload } };
     vi.spyOn(web3Provider, "getGasPrice").mockResolvedValue(10n);  // max_gas_price == 5
-    vi.spyOn(privacyPoolRelayer, "handleRequest").mockReturnValue(undefined);
+    vi.spyOn(privacyPoolRelayer, "handleRequest").mockResolvedValue(undefined);
     await relayRequestHandler(req, resMock, nextMock);
     const error = nextMock.mock.calls[0][0]
     expect(error).toBeInstanceOf(ConfigError)

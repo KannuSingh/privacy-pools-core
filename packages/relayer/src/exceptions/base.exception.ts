@@ -71,7 +71,7 @@ export class RelayerError extends Error {
     } else {
       details = "";
     }
-    return `${this.name}::${this.code}(${this.message}, ${this.details})`
+    return `${this.name}::${this.code}(${this.message}, ${details})`
   }
 
   public static unknown(message?: string): RelayerError {
@@ -236,7 +236,7 @@ export class SdkError extends RelayerError {
 
 export class BlockchainError extends RelayerError {
   constructor(message: string, code: ErrorCode = ErrorCode.CONTRACT_ERROR, details?: Record<string, unknown> | string) {
-    super(message, ErrorCode.TRANSACTION_ERROR, details);
+    super(message, code, details);
     this.name = this.constructor.name;
   }
 

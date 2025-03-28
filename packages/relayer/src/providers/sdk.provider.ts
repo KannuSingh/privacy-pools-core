@@ -12,7 +12,7 @@ import {
   SDKError,
   type Hash,
 } from "@0xbow/privacy-pools-core-sdk";
-import { Address, Chain } from "viem";
+import { Address } from "viem";
 import {
   CONFIG
 } from "../config/index.js";
