@@ -82,7 +82,7 @@ export function createChainObject(chainConfig: {
   };
 }
 
-export function isViemError(error: any): error is ViemError {
+export function isViemError(error: Error): error is ViemError {
   const viemErrorNames = [
     ContractFunctionExecutionError.prototype.constructor.name,
     ContractFunctionRevertedError.prototype.constructor.name,

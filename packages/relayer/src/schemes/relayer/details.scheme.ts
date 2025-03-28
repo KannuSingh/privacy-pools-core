@@ -1,5 +1,4 @@
 import { Ajv, JSONSchemaType } from "ajv";
-import { RelayRequestBody } from "../../interfaces/relayer/request.js";
 
 // AJV schema for validation
 const ajv = new Ajv();
