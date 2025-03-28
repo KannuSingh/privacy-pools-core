@@ -85,9 +85,9 @@ export const IEntrypointABI = [
         "internalType": "uint256"
       },
       {
-        "name": "ipfsHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "ipfsCID",
+        "type": "string",
+        "internalType": "string"
       },
       {
         "name": "timestamp",
@@ -484,9 +484,9 @@ export const IEntrypointABI = [
         "internalType": "uint256"
       },
       {
-        "name": "_ipfsHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "_ipfsCID",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [
@@ -802,10 +802,10 @@ export const IEntrypointABI = [
         "internalType": "uint256"
       },
       {
-        "name": "_ipfsHash",
-        "type": "bytes32",
+        "name": "_ipfsCID",
+        "type": "string",
         "indexed": false,
-        "internalType": "bytes32"
+        "internalType": "string"
       },
       {
         "name": "_timestamp",
@@ -926,11 +926,6 @@ export const IEntrypointABI = [
   },
   {
     "type": "error",
-    "name": "EmptyIPFSHash",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "EmptyRoot",
     "inputs": []
   },
@@ -947,6 +942,11 @@ export const IEntrypointABI = [
   {
     "type": "error",
     "name": "InvalidFeeBPS",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidIPFSCIDLength",
     "inputs": []
   },
   {
@@ -1055,5 +1055,5 @@ export const IEntrypointABI = [
     "type": "error",
     "name": "ZeroAddress",
     "inputs": []
-  },
+  }
 ] as const;
