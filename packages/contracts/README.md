@@ -8,8 +8,11 @@ The protocol enables users to deposit assets publicly and withdraw them privatel
 
 ## Ethereum Mainnet Deployed Contracts
 
-[Entrypoint](https://etherscan.io/txs?a=0x6818809EefCe719E480a7526D76bD3e561526b46) deployed at: `0x6818809EefCe719E480a7526D76bD3e561526b46`
-[ETH Pool](https://etherscan.io/address/0xF241d57C6DebAe225c0F2e6eA1529373C9A9C9fB) deployed at: `0xF241d57C6DebAe225c0F2e6eA1529373C9A9C9fB`
+Entrypoint (Proxy): `0x6818809EefCe719E480a7526D76bD3e561526b46` 
+
+Entrypoint (Implementation): `0xdD8aA0560a08E39C0b3A84BBa356Bc025AfbD4C1`
+
+ETH Pool: `0xF241d57C6DebAe225c0F2e6eA1529373C9A9C9fB`
 
 ### Deposit Flow
 
