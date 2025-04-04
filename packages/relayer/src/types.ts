@@ -42,6 +42,10 @@ export class QuoteMarshall extends RelayerMarshall {
     super();
   }
   override toJSON(): object {
-    return this.response;
+    return {
+      feeBPS: this.response.feeBPS.toString(),
+      expiration: this.response.expiration,
+      relayToken: this.response.relayToken
+    }
   }
 }
