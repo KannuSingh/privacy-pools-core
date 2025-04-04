@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
 import { getAssetConfig } from "../../config/index.js";
-import { RelayerError } from "../../exceptions/base.exception.js";
+import { QuoterError } from "../../exceptions/base.exception.js";
 import { web3Provider } from "../../providers/index.js";
 import { QuoteProvider } from "../../providers/quote.provider.js";
 import { QuoteMarshall } from "../../types.js";
@@ -20,7 +20,7 @@ export async function relayQuoteHandler(
 
   const config = getAssetConfig(chainId, tokenAddress);
   if (config === undefined)
-    throw RelayerError.unknown(`Asset ${tokenAddress} for chain ${chainId} is not supported`)
+    return next(QuoterError.assetNotSupported(`Asset ${tokenAddress} for chain ${chainId} is not supported`));
 
   const quoteProvider = new QuoteProvider(config.fee_bps);
   const gasPrice = await web3Provider.getGasPrice(chainId);

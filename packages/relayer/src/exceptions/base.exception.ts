@@ -31,6 +31,9 @@ export enum ErrorCode {
 
   // SDK error. Wrapper for sdk's native errors
   SDK_ERROR = "SDK_ERROR",
+
+  // Quote errors
+  QUOTE_ERROR = "QUOTE_ERROR",
 }
 
 /**
@@ -254,6 +257,19 @@ export class BlockchainError extends RelayerError {
   public static txError(
     details?: Record<string, unknown> | string) {
     return new BlockchainError("Transaction failed", ErrorCode.TRANSACTION_ERROR, details);
+  }
+
+}
+
+export class QuoterError extends RelayerError {
+  constructor(message: string, code: ErrorCode = ErrorCode.QUOTE_ERROR, details?: Record<string, unknown> | string) {
+    super(message, code, details);
+    this.name = this.constructor.name;
+  }
+
+  public static assetNotSupported(
+    details?: Record<string, unknown> | string) {
+    return new QuoterError("Asset is not supported", ErrorCode.ASSET_NOT_SUPPORTED, details);
   }
 
 }
