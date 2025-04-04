@@ -1,8 +1,11 @@
 import {
+  Address,
   Chain,
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,
   decodeAbiParameters, DecodeAbiParametersErrorType,
+  encodeAbiParameters,
+  EncodeAbiParametersErrorType,
   BaseError as ViemError
 } from "viem";
 import {
@@ -15,7 +18,13 @@ import {
 } from "./interfaces/relayer/request.js";
 import { FeeDataAbi } from "./types/abi.types.js";
 
-export function decodeWithdrawalData(data: `0x${string}`) {
+interface WithdrawalData {
+  recipient: Address,
+  feeRecipient: Address,
+  relayFeeBPS: bigint
+}
+
+export function decodeWithdrawalData(data: `0x${string}`): WithdrawalData {
   try {
     const [{ recipient, feeRecipient, relayFeeBPS }] = decodeAbiParameters(
       FeeDataAbi,
@@ -24,6 +33,18 @@ export function decodeWithdrawalData(data: `0x${string}`) {
     return { recipient, feeRecipient, relayFeeBPS };
   } catch (e) {
     const error = e as DecodeAbiParametersErrorType;
+    throw WithdrawalValidationError.invalidWithdrawalAbi({
+      name: error.name,
+      message: error.message,
+    });
+  }
+}
+
+export function encodeWithdrawalData(withdrawalData: WithdrawalData): `0x${string}` {
+  try {
+    return encodeAbiParameters(FeeDataAbi, [withdrawalData])
+  } catch (e) {
+    const error = e as EncodeAbiParametersErrorType;
     throw WithdrawalValidationError.invalidWithdrawalAbi({
       name: error.name,
       message: error.message,
@@ -61,9 +82,9 @@ export function parseSignals(
  * @param {object} chainConfig - The chain configuration
  * @returns {Chain} - The Chain object
  */
-export function createChainObject(chainConfig: { 
-  chain_id: number; 
-  chain_name: string; 
+export function createChainObject(chainConfig: {
+  chain_id: number;
+  chain_name: string;
   rpc_url: string;
   native_currency?: { name: string; symbol: string; decimals: number };
 }): Chain {
