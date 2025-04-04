@@ -7,19 +7,12 @@ const ajv = new Ajv();
 const quoteSchema: JSONSchemaType<QuotetBody> = {
   type: "object",
   properties: {
-    withdrawal: {
-      type: "object",
-      properties: {
-        processooor: { type: "string" },
-        data: { type: "string", pattern: "0x[0-9a-fA-F]+" },
-      },
-      required: ["processooor", "data"],
-    },
-    scope: { type: "string" },
     chainId: { type: ["string", "number"] },
-    balance: { type: ["string", "number"] },
+    amount: { type: ["string"] },
+    asset: { type: ["string"] },
+    address: { type: ["string"], nullable: true },
   },
-  required: ["withdrawal", "scope", "chainId", "balance"],
+  required: ["chainId", "amount", "asset"],
 } as const;
 
 export const validateQuoteBody = ajv.compile(quoteSchema);
