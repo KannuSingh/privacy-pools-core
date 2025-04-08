@@ -70,7 +70,8 @@ export function relayerDetailsHandler(
         getAddress(feeReceiverAddress) as Address,
         chainId,
         normalizedAssetAddress as Address,
-        assetConfig.min_withdraw_amount
+        assetConfig.min_withdraw_amount,
+        chainConfig.max_gas_price,
       )
     )
   );

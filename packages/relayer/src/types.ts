@@ -12,6 +12,7 @@ export class DetailsMarshall extends RelayerMarshall {
     private chainId?: number,
     private assetAddress?: Address,
     private minWithdrawAmount?: bigint,
+    private maxGasPrice?: bigint,
   ) {
     super();
   }
@@ -31,6 +32,13 @@ export class DetailsMarshall extends RelayerMarshall {
     
     if (this.minWithdrawAmount !== undefined) {
       result.minWithdrawAmount = this.minWithdrawAmount.toString();
+    }
+    
+    if (this.maxGasPrice !== undefined) {
+      result.maxGasPrice = this.maxGasPrice.toString(10);
+    }
+    else {
+      result.maxGasPrice = "0";
     }
     
     return result;
