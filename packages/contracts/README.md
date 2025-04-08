@@ -6,6 +6,14 @@ This package contains the smart contract implementations for the Privacy Pool pr
 
 The protocol enables users to deposit assets publicly and withdraw them privately, provided they can prove membership in an approved set of addresses. Each supported asset (native or ERC20) has its own dedicated pool contract that inherits from a common `PrivacyPool` implementation.
 
+## Ethereum Mainnet Deployed Contracts
+
+Entrypoint (Proxy): `0x6818809EefCe719E480a7526D76bD3e561526b46` 
+
+Entrypoint (Implementation): `0xdD8aA0560a08E39C0b3A84BBa356Bc025AfbD4C1`
+
+ETH Pool: `0xF241d57C6DebAe225c0F2e6eA1529373C9A9C9fB`
+
 ### Deposit Flow
 
 When a user deposits funds, they:
