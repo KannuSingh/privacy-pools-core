@@ -17,7 +17,7 @@ export class DetailsMarshall extends RelayerMarshall {
     super();
   }
   override toJSON(): object {
-    const result: Record<string, string | number | undefined> = {
+    const result: Record<string, string | number | undefined | null> = {
       feeBPS: this.feeBPS.toString(),
       feeReceiverAddress: this.feeReceiverAddress.toString(),
     };
@@ -38,7 +38,7 @@ export class DetailsMarshall extends RelayerMarshall {
       result.maxGasPrice = this.maxGasPrice.toString(10);
     }
     else {
-      result.maxGasPrice = "0";
+      result.maxGasPrice = null;
     }
     
     return result;
