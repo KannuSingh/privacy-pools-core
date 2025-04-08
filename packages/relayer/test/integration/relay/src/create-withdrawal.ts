@@ -12,13 +12,12 @@ import {
   WithdrawalProofInput,
   Hash,
 } from "@0xbow/privacy-pools-core-sdk";
-import { defineChain } from "viem";
-import { localhost } from "viem/chains";
 import {
   ENTRYPOINT_ADDRESS,
   LOCAL_ANVIL_RPC,
   PRIVATE_KEY,
 } from "./constants.js";
+import { anvilChain } from "./chain.js";
 
 /*
   TestToken deployed at: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
@@ -28,8 +27,6 @@ import {
   ETH Pool deployed at: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
   TST Pool deployed at: 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
 */
-
-const anvilChain = defineChain({ ...localhost, id: 31337 });
 
 const sdk = new PrivacyPoolSDK(new Circuits({ browser: false }));
 

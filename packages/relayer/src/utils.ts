@@ -1,4 +1,4 @@
-import { decodeAbiParameters, DecodeAbiParametersErrorType } from "viem";
+import { Chain, decodeAbiParameters, DecodeAbiParametersErrorType } from "viem";
 import {
   ValidationError,
   WithdrawalValidationError,
@@ -46,5 +46,32 @@ export function parseSignals(
     ASPRoot: BigInt(signals[5]!),
     ASPTreeDepth: BigInt(signals[6]!),
     context: BigInt(signals[7]!),
+  };
+}
+
+/**
+ * Creates a Chain object for the given chain configuration
+ * 
+ * @param {object} chainConfig - The chain configuration
+ * @returns {Chain} - The Chain object
+ */
+export function createChainObject(chainConfig: { 
+  chain_id: number; 
+  chain_name: string; 
+  rpc_url: string;
+  native_currency?: { name: string; symbol: string; decimals: number };
+}): Chain {
+  return {
+    id: chainConfig.chain_id,
+    name: chainConfig.chain_name,
+    nativeCurrency: chainConfig.native_currency || {
+      name: "Ether",
+      symbol: "ETH",
+      decimals: 18
+    },
+    rpcUrls: {
+      default: { http: [chainConfig.rpc_url] },
+      public: { http: [chainConfig.rpc_url] },
+    },
   };
 }

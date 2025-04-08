@@ -61,6 +61,10 @@ export function getChainConfig(chainId: number): ChainConfig {
   if (!chainConfig.entrypoint_address && CONFIG.defaults.entrypoint_address) {
     console.warn(`[CONFIG WARNING] Using default entrypoint_address for chain ${chainId}`);
   }
+
+  if (!chainConfig.max_gas_price) {
+    console.warn(`[CONFIG WARNING] There's no max_gas_price set for chain ${chainId}`);
+  }
   
   return chainConfig;
 }

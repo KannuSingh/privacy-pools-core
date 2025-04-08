@@ -14,6 +14,18 @@
     typescript "^5.7.3"
     viem "2.22.14"
 
+"@0xbow/privacy-pools-core-sdk@0.1.17":
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/@0xbow/privacy-pools-core-sdk/-/privacy-pools-core-sdk-0.1.17.tgz#88a4e456bd8f03a1466d634b72918d6c8893d202"
+  integrity sha512-Jsf85/wYBnIhmMxmjNw1neuv3/Oign7ajjiozE+yXEuAHalihnF1x6qU4bgsoenWWqDUEGJZTiOZWRcyXQ7+Dw==
+  dependencies:
+    "@types/snarkjs" "0.7.9"
+    "@zk-kit/lean-imt" "2.2.2"
+    maci-crypto "2.5.0"
+    snarkjs "0.7.5"
+    typescript "^5.7.3"
+    viem "2.22.14"
+
 "@adraffy/ens-normalize@1.10.1":
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.1.tgz#63430d04bd8c5e74f8d7d049338f1cd9d4f02069"

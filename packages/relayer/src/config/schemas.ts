@@ -2,6 +2,11 @@ import { z } from "zod";
 import { getAddress } from "viem";
 import path from "node:path";
 
+const zNonNegativeBigInt = z
+  .string()
+  .or(z.number())
+  .pipe(z.coerce.bigint().nonnegative());
+
 // Address validation schema
 export const zAddress = z
   .string()
@@ -48,6 +53,7 @@ export const zChainConfig = z.object({
   chain_id: z.string().or(z.number()).pipe(z.coerce.number().positive()),
   chain_name: z.string(),
   rpc_url: z.string().url(),
+  max_gas_price: zNonNegativeBigInt.optional(),
   fee_receiver_address: zAddress.optional(),
   signer_private_key: zPkey.optional(),
   entrypoint_address: zAddress.optional(),
@@ -79,4 +85,4 @@ export const zConfig = z
     allowed_domains: zCommonConfig.shape.allowed_domains,
   })
   .strict()
-  .readonly(); 
+  .readonly();
