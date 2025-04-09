@@ -12,7 +12,6 @@ export interface QuotetBody {
 }
 
 export interface QuoteResponse {
+  baseFeeBPS: bigint,
   feeBPS: bigint,
-  expiration: number,
-  relayToken: string
 }

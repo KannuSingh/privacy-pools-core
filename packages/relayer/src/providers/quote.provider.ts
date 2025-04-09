@@ -3,9 +3,10 @@ import { uniswapProvider } from "./index.js";
 
 export class QuoteProvider {
 
+  // a typical withdrawal costs between 450k-650k gas
   static txCost: bigint = 700_000n;
 
-  constructor(readonly baseFee: bigint) {
+  constructor() {
   }
 
   async quoteNativeTokenInERC20(chainId: number, addressIn: Address, amountIn: bigint): Promise<{ num: bigint, den: bigint }> {
@@ -13,9 +14,9 @@ export class QuoteProvider {
     return { num: out.amount, den: in_.amount };
   }
 
-  async quoteFeeBPSNative(balance: bigint, nativeQuote: { num: bigint, den: bigint }, gasPrice: bigint, value: bigint): Promise<bigint> {
+  async quoteFeeBPSNative(baseFee: bigint, balance: bigint, nativeQuote: { num: bigint, den: bigint }, gasPrice: bigint, value: bigint): Promise<bigint> {
     const nativeCosts = (1n * gasPrice * QuoteProvider.txCost + value)
-    return this.baseFee + nativeQuote.den * 10_000n * nativeCosts / balance / nativeQuote.num;
+    return baseFee + nativeQuote.den * 10_000n * nativeCosts / balance / nativeQuote.num;
   }
 
 }
