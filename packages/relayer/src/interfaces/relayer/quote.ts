@@ -8,10 +8,15 @@ export interface QuotetBody {
   /** Asset address */
   asset: string;
   /** Asset address */
-  address?: string;
+  recipient?: string;
 }
 
 export interface QuoteResponse {
   baseFeeBPS: bigint,
   feeBPS: bigint,
+  feeCommitment?: {
+    expiration: number,
+    withdrawalData: string
+    signedRelayerCommitment: string
+  }
 }

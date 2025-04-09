@@ -41,10 +41,20 @@ export class QuoteMarshall extends RelayerMarshall {
   constructor(readonly response: QuoteResponse) {
     super();
   }
+
+  addFeeCommitment(feeCommitment: {
+    expiration: number
+    withdrawalData: string,
+    signedRelayerCommitment: string
+  }) {
+    this.response.feeCommitment = feeCommitment;
+  }
+
   override toJSON(): object {
     return {
       baseFeeBPS: this.response.baseFeeBPS.toString(),
       feeBPS: this.response.feeBPS.toString(),
+      feeCommitment: this.response.feeCommitment
     }
   }
 }

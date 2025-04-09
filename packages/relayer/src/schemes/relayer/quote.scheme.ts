@@ -10,7 +10,7 @@ const quoteSchema: JSONSchemaType<QuotetBody> = {
     chainId: { type: ["string", "number"] },
     amount: { type: ["string"] },
     asset: { type: ["string"] },
-    address: { type: ["string"], nullable: true },
+    recipient: { type: ["string"], nullable: true },
   },
   required: ["chainId", "amount", "asset"],
 } as const;
