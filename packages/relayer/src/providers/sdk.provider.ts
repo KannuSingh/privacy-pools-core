@@ -112,6 +112,28 @@ export class SdkProvider implements SdkProviderInterface {
   }
 
   /**
+   * Simulates a withdrawal transaction to estimate gas usage and validate execution success.
+   *
+   * This method allows relayers to safely simulate the outcome of a withdrawal transaction
+   * before broadcasting it to the network. 
+   *
+   * @param {WithdrawalPayload} withdrawalPayload - The withdrawal payload to simulate.
+   * @param {number} chainId - The chain ID to simulate the transaction on.
+   * @returns {Promise<{ success: boolean; gasEstimate?: bigint; error?: string }>} - A result indicating whether the transaction would succeed, along with gas estimate or error.
+   */
+  async simulateWithdrawal(
+    withdrawalPayload: WithdrawalPayload,
+    chainId: number,
+  ): Promise<{ success: boolean; gasEstimate?: bigint; error?: string }> {
+    const contracts = this.getContractsForChain(chainId);
+    return contracts.simulateRelay(
+      withdrawalPayload.withdrawal,
+      withdrawalPayload.proof,
+      withdrawalPayload.scope as Hash,
+    );
+  }
+
+  /**
    * Calculates the context for a withdrawal.
    *
    * @param {Withdrawal} withdrawal - The withdrawal object.

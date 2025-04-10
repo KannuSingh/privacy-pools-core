@@ -11,6 +11,10 @@ export interface SdkProviderInterface {
     withdrawalPayload: WithdrawalPayload,
     chainId: number,
   ): Promise<{ hash: string }>;
+  simulateWithdrawal(
+    withdrawalPayload: WithdrawalPayload,
+    chainId: number,
+  ): Promise<{ success: boolean; gasEstimate?: bigint; error?: string }>;
   calculateContext(withdrawal: Withdrawal, scope: bigint): string;
   scopeData(
     scope: bigint,
