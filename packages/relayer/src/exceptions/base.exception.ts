@@ -101,6 +101,17 @@ export class ValidationError extends RelayerError {
       details,
     );
   }
+
+  public static invalidQuerystring(
+    details?: Record<string, unknown>,
+  ): ValidationError {
+    return new ValidationError(
+      "Failed to parse request parameters",
+      ErrorCode.INVALID_INPUT,
+      details,
+    );
+  }
+
 }
 
 export class ZkError extends RelayerError {

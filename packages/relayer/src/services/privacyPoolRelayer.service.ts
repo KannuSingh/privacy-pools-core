@@ -3,11 +3,12 @@
  */
 import { getAddress } from "viem";
 import {
+  getAssetConfig,
   getEntrypointAddress,
-  getFeeReceiverAddress,
-  getAssetConfig
+  getFeeReceiverAddress
 } from "../config/index.js";
 import {
+  BlockchainError,
   RelayerError,
   WithdrawalValidationError,
   ZkError,
@@ -18,8 +19,8 @@ import {
 } from "../interfaces/relayer/request.js";
 import { db, SdkProvider } from "../providers/index.js";
 import { RelayerDatabase } from "../types/db.types.js";
-import { decodeWithdrawalData, parseSignals } from "../utils.js";
 import { SdkProviderInterface } from "../types/sdk.types.js";
+import { decodeWithdrawalData, isViemError, parseSignals } from "../utils.js";
 
 /**
  * Class representing the Privacy Pool Relayer, responsible for processing withdrawal requests.
@@ -69,10 +70,10 @@ export class PrivacyPoolRelayer {
       };
     } catch (error) {
       let errorMessage: string;
-
       if (error instanceof RelayerError) {
-        errorMessage = error.message;
+        errorMessage = error.toPrettyString();
       } else {
+        // TODO: we might want to remove all this section or refactor it for a cleaner web3 error parser into RelayerError types
         try {
           // Convert to string to handle both Error objects and other types
           const errorStr = typeof error === 'object' ? JSON.stringify(error, (key, value) =>
@@ -132,7 +133,16 @@ export class PrivacyPoolRelayer {
     withdrawal: WithdrawalPayload,
     chainId: number,
   ): Promise<{ hash: string }> {
-    return this.sdkProvider.broadcastWithdrawal(withdrawal, chainId);
+    try {
+      return await this.sdkProvider.broadcastWithdrawal(withdrawal, chainId);
+    } catch (error) {
+      if (isViemError(error)) {
+        const { metaMessages, shortMessage } = error;
+        throw BlockchainError.txError((metaMessages ? metaMessages[0] : undefined) || shortMessage)
+      } else {
+        throw RelayerError.unknown("Something went wrong while broadcasting Tx")
+      }
+    }
   }
 
   /**
@@ -151,6 +161,7 @@ export class PrivacyPoolRelayer {
       wp.withdrawal.data,
     );
     const proofSignals = parseSignals(wp.proof.publicSignals);
+
 
     if (wp.withdrawal.processooor !== entrypointAddress) {
       throw WithdrawalValidationError.processooorMismatch(
