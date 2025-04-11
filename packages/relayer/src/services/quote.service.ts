@@ -1,18 +1,22 @@
-import { uniswapService } from "./index.js";
+import { Address } from "viem";
+import { quoteProvider, web3Provider } from "../providers/index.js";
+
+interface QuoteFeeBPSParams {
+  chainId: number,
+  assetAddress: Address,
+  amountIn: bigint,
+  value: bigint,
+  baseFeeBPS: bigint
+};
 
 export class QuoteService {
 
-  static feeNet: bigint = 100n;
-  static txCost: bigint = 700_000n;
-
-  static async quoteFeeBPSNative(balance: bigint, nativeQuote: bigint, gasPrice: bigint, value: bigint): Promise<bigint> {
-    let tokenQuote = await uniswapService.quote({
-      chainId: 137,
-      inToken: "0x0000000000000000000000000000000000000000",
-      outToken: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-      inAmount: 10000000000000000000n
-    });
-    console.log(tokenQuote)
-    return 0n
+  async quoteFeeBPSNative(quoteParams: QuoteFeeBPSParams): Promise<bigint> {
+    const { chainId, assetAddress, amountIn, baseFeeBPS, value } = quoteParams;
+    const gasPrice = await web3Provider.getGasPrice(chainId);
+    const quote = await quoteProvider.quoteNativeTokenInERC20(chainId, assetAddress, amountIn);
+    const feeBPS = await quoteProvider.quoteFeeBPSNative(baseFeeBPS, amountIn, quote, gasPrice, value);
+    return feeBPS
   }
+
 }

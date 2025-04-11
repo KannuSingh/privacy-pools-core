@@ -2,7 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { getAddress } from "viem";
 import { getAssetConfig, getFeeReceiverAddress } from "../../config/index.js";
 import { QuoterError } from "../../exceptions/base.exception.js";
-import { quoteProvider, web3Provider } from "../../providers/index.js";
+import { web3Provider } from "../../providers/index.js";
+import { quoteService } from "../../services/index.js";
 import { QuoteMarshall } from "../../types.js";
 import { encodeWithdrawalData } from "../../utils.js";
 
@@ -16,17 +17,15 @@ export async function relayQuoteHandler(
 
   const chainId = Number(req.body.chainId!);
   const amountIn = BigInt(req.body.amount!.toString());
-  const tokenAddress = getAddress(req.body.asset!.toString())
+  const assetAddress = getAddress(req.body.asset!.toString())
 
-  const config = getAssetConfig(chainId, tokenAddress);
+  const config = getAssetConfig(chainId, assetAddress);
   if (config === undefined)
-    return next(QuoterError.assetNotSupported(`Asset ${tokenAddress} for chain ${chainId} is not supported`));
+    return next(QuoterError.assetNotSupported(`Asset ${assetAddress} for chain ${chainId} is not supported`));
 
-  const gasPrice = await web3Provider.getGasPrice(chainId);
-  const value = 0n;  // for future features
-
-  const quote = await quoteProvider.quoteNativeTokenInERC20(chainId, tokenAddress, amountIn);
-  const feeBPS = await quoteProvider.quoteFeeBPSNative(config.fee_bps, amountIn, quote, gasPrice, value);
+  const feeBPS = await quoteService.quoteFeeBPSNative({
+    chainId, amountIn, assetAddress, baseFeeBPS: config.fee_bps, value: 0n
+  });
 
   const recipient = req.body.recipient ? getAddress(req.body.recipient.toString()) : undefined
 
