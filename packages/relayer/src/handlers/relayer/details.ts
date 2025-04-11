@@ -20,17 +20,8 @@ export function relayerDetailsHandler(
   next: NextFunction,
 ) {
   // Get query parameters
-  const chainIdParam = req.query.chainId as string | undefined;
-  const assetAddressParam = req.query.assetAddress as string | undefined;
-
-  // Both parameters must be provided
-  if (!chainIdParam) {
-    throw ValidationError.invalidInput({ message: "Chain ID is required" });
-  }
-
-  if (!assetAddressParam) {
-    throw ValidationError.invalidInput({ message: "Asset address is required" });
-  }
+  const chainIdParam = req.query.chainId as string;
+  const assetAddressParam = req.query.assetAddress as string;
 
   // Parse chain ID
   const parsedChainId = parseInt(chainIdParam, 10);
@@ -65,13 +56,13 @@ export function relayerDetailsHandler(
   // Return details for the specific asset
   res.status(200).json(
     res.locals.marshalResponse(
-      new DetailsMarshall(
-        assetConfig.fee_bps,
-        getAddress(feeReceiverAddress) as Address,
+      new DetailsMarshall({
+        feeBPS: assetConfig.fee_bps,
+        feeReceiverAddress: getAddress(feeReceiverAddress),
         chainId,
-        normalizedAssetAddress as Address,
-        assetConfig.min_withdraw_amount
-      )
+        assetAddress: normalizedAssetAddress as Address,
+        minWithdrawAmount: assetConfig.min_withdraw_amount
+      })
     )
   );
 

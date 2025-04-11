@@ -62,16 +62,16 @@ function parseWithdrawal(body: Request["body"]): { payload: WithdrawalPayload, c
     try {
       const payload = relayRequestBodyToWithdrawalPayload(body);
       const chainId = typeof body.chainId === 'string' ? parseInt(body.chainId, 10) : body.chainId;
-      
+
       if (isNaN(chainId)) {
         throw ValidationError.invalidInput({ message: "Invalid chain ID format" });
       }
-      
+
       // Check if the chain is supported early
       if (!isChainSupported(chainId)) {
         throw ValidationError.invalidInput({ message: `Chain with ID ${chainId} not supported.` });
       }
-      
+
       return { payload, chainId };
     } catch (error) {
       console.error(error);
@@ -103,7 +103,6 @@ export async function relayRequestHandler(
 ) {
   try {
     const { payload: withdrawalPayload, chainId } = parseWithdrawal(req.body);
-    
     const maxGasPrice = getChainConfig(chainId)?.max_gas_price;
     const currentGasPrice = await web3Provider.getGasPrice(chainId);
     if (maxGasPrice !== undefined && currentGasPrice > maxGasPrice) {
@@ -111,7 +110,7 @@ export async function relayRequestHandler(
     }
     const requestResponse: RelayerResponse =
       await privacyPoolRelayer.handleRequest(withdrawalPayload, chainId);
-      
+
     res
       .status(200)
       .json(res.locals.marshalResponse(new RequestMashall(requestResponse)));

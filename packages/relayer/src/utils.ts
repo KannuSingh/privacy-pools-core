@@ -1,13 +1,19 @@
-import { Chain, decodeAbiParameters, DecodeAbiParametersErrorType } from "viem";
+import {
+  Chain,
+  ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
+  decodeAbiParameters, DecodeAbiParametersErrorType,
+  BaseError as ViemError
+} from "viem";
 import {
   ValidationError,
   WithdrawalValidationError,
 } from "./exceptions/base.exception.js";
-import { FeeDataAbi } from "./types/abi.types.js";
 import {
   RelayRequestBody,
   WithdrawPublicSignals,
 } from "./interfaces/relayer/request.js";
+import { FeeDataAbi } from "./types/abi.types.js";
 
 export function decodeWithdrawalData(data: `0x${string}`) {
   try {
@@ -74,4 +80,12 @@ export function createChainObject(chainConfig: {
       public: { http: [chainConfig.rpc_url] },
     },
   };
+}
+
+export function isViemError(error: unknown): error is ViemError {
+  const viemErrorNames = [
+    ContractFunctionExecutionError.prototype.constructor.name,
+    ContractFunctionRevertedError.prototype.constructor.name,
+  ]
+  return viemErrorNames.includes(error?.constructor?.name || "");
 }
