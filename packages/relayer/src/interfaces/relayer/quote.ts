@@ -1,4 +1,4 @@
-import { WithdrawalRelayerPayload } from "./request.js";
+import { FeeCommitment } from "./common.js";
 
 export interface QuotetBody {
   /** Chain ID to process the request on */
@@ -14,9 +14,5 @@ export interface QuotetBody {
 export interface QuoteResponse {
   baseFeeBPS: bigint,
   feeBPS: bigint,
-  feeCommitment?: {
-    expiration: number,
-    withdrawalData: string
-    signedRelayerCommitment: string
-  }
+  feeCommitment?: FeeCommitment
 }
