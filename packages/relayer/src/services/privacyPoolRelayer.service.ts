@@ -17,10 +17,13 @@ import {
   RelayerResponse,
   WithdrawalPayload,
 } from "../interfaces/relayer/request.js";
-import { db, SdkProvider } from "../providers/index.js";
+import { db, SdkProvider, web3Provider } from "../providers/index.js";
 import { RelayerDatabase } from "../types/db.types.js";
 import { SdkProviderInterface } from "../types/sdk.types.js";
 import { decodeWithdrawalData, isViemError, parseSignals } from "../utils.js";
+import { quoteService } from "./index.js";
+import { Web3Provider } from "../providers/web3.provider.js";
+import { FeeCommitment } from "../interfaces/relayer/common.js";
 
 /**
  * Class representing the Privacy Pool Relayer, responsible for processing withdrawal requests.
@@ -28,8 +31,10 @@ import { decodeWithdrawalData, isViemError, parseSignals } from "../utils.js";
 export class PrivacyPoolRelayer {
   /** Database instance for storing and updating request states. */
   protected db: RelayerDatabase;
-  /** SDK provider for handling blockchain interactions. */
+  /** SDK provider for handling contract interactions. */
   protected sdkProvider: SdkProviderInterface;
+  /** Web3 provider for handling blockchain interactions. */
+  protected web3Provider: Web3Provider;
 
   /**
    * Initializes a new instance of the Privacy Pool Relayer.
@@ -37,6 +42,7 @@ export class PrivacyPoolRelayer {
   constructor() {
     this.db = db;
     this.sdkProvider = new SdkProvider();
+    this.web3Provider = web3Provider;
   }
 
   /**
@@ -162,7 +168,6 @@ export class PrivacyPoolRelayer {
     );
     const proofSignals = parseSignals(wp.proof.publicSignals);
 
-
     if (wp.withdrawal.processooor !== entrypointAddress) {
       throw WithdrawalValidationError.processooorMismatch(
         `Processooor mismatch: expected "${entrypointAddress}", got "${wp.withdrawal.processooor}".`,
@@ -195,10 +200,32 @@ export class PrivacyPoolRelayer {
       );
     }
 
-    if (relayFeeBPS !== assetConfig.fee_bps) {
-      throw WithdrawalValidationError.feeMismatch(
-        `Relay fee mismatch: expected "${assetConfig.fee_bps}", got "${relayFeeBPS}".`,
-      );
+    if (wp.feeCommitment) {
+
+      if (commitmentExpired(wp.feeCommitment)) {
+        throw WithdrawalValidationError.relayerCommitmentRejected(
+          `Relay fee commitment expired, please quote again`,
+        );
+      }
+
+      if (!await validFeeCommitment(chainId, wp.feeCommitment)) {
+        throw WithdrawalValidationError.relayerCommitmentRejected(
+          `Invalid relayer commitment`,
+        );
+      }
+
+    } else {
+
+      const currentFeeBPS = await quoteService.quoteFeeBPSNative({
+        chainId, amountIn: proofSignals.withdrawnValue, assetAddress, baseFeeBPS: assetConfig.fee_bps, value: 0n
+      });
+
+      if (relayFeeBPS < currentFeeBPS) {
+        throw WithdrawalValidationError.feeTooLow(
+          `Relay fee too low: expected at least "${currentFeeBPS}", got "${relayFeeBPS}".`,
+        );
+      }
+
     }
 
     if (proofSignals.withdrawnValue < assetConfig.min_withdraw_amount) {
@@ -206,5 +233,15 @@ export class PrivacyPoolRelayer {
         `Withdrawn value too small: expected minimum "${assetConfig.min_withdraw_amount}", got "${proofSignals.withdrawnValue}".`,
       );
     }
+
   }
+
+}
+
+function commitmentExpired(feeCommitment: FeeCommitment): boolean {
+  return feeCommitment.expiration > Number(new Date())
+}
+
+async function validFeeCommitment(chainId: number, feeCommitment: FeeCommitment): Promise<boolean> {
+  return web3Provider.verifyRelayerCommitment(chainId, feeCommitment)
 }
