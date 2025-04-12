@@ -72,4 +72,20 @@ export class Web3Provider implements IWeb3Provider {
     })
   }
 
+  async verifyRelayerCommitment(chainId: number, commitment: FeeCommitment): Promise<boolean> {
+    const signer = privateKeyToAccount(getSignerPrivateKey(chainId) as Hex);
+    const { withdrawalData, expiration, signedRelayerCommitment } = commitment;
+    return verifyTypedData({
+      address: signer.address,
+      domain: domain(chainId),
+      types: RelayerCommitmentTypes,
+      primaryType: 'RelayerCommitment',
+      message: {
+        withdrawalData,
+        expiration: BigInt(expiration)
+      },
+      signature: signedRelayerCommitment
+    })
+  }
+
 }
