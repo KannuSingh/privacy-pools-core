@@ -1,10 +1,11 @@
-import { Chain, createPublicClient, Hex, http, PublicClient } from "viem";
+import { Chain, createPublicClient, Hex, http, PublicClient, verifyTypedData } from "viem";
 import {
   CONFIG,
   getSignerPrivateKey
 } from "../config/index.js";
 import { createChainObject } from "../utils.js";
 import { privateKeyToAccount } from "viem/accounts";
+import { FeeCommitment } from "../interfaces/relayer/common.js";
 
 interface IWeb3Provider {
   client(chainId: number): PublicClient;
@@ -57,10 +58,9 @@ export class Web3Provider implements IWeb3Provider {
     return await this.client(chainId).getGasPrice()
   }
 
-  async signRelayerCommitment(chainId: number, commitment: { withdrawalData: `0x${string}`, expiration: number }) {
-    const pk = getSignerPrivateKey(chainId) as Hex;
-    const signer = privateKeyToAccount(pk);
-    const {withdrawalData, expiration} = commitment;
+  async signRelayerCommitment(chainId: number, commitment: Omit<FeeCommitment, 'signedRelayerCommitment'>) {
+    const signer = privateKeyToAccount(getSignerPrivateKey(chainId) as Hex);
+    const { withdrawalData, expiration } = commitment;
     return signer.signTypedData({
       domain: domain(chainId),
       types: RelayerCommitmentTypes,

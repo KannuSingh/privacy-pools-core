@@ -1,7 +1,8 @@
 import {
-  Withdrawal,
+  Withdrawal as SdkWithdrawal,
   WithdrawalProof,
 } from "@0xbow/privacy-pools-core-sdk";
+import { FeeCommitment } from "./common.js";
 
 /**
  * Represents the proof payload for a relayer request.
@@ -35,25 +36,17 @@ export interface WithdrawPublicSignals {
 }
 
 /**
- * Represents the payload for a withdrawal relayer request.
- */
-export interface WithdrawalRelayerPayload {
-  /** Relayer address (0xAdDrEsS) */
-  processooor: string;
-  /** Transaction data (hex encoded) */
-  data: string;
-}
-
-/**
  * Represents the request body for a relayer operation.
  */
 export interface RelayRequestBody {
   /** Withdrawal details */
-  withdrawal: WithdrawalRelayerPayload;
+  withdrawal: SdkWithdrawal;
   /** Public signals as string array */
   publicSignals: string[];
   /** Proof details */
   proof: ProofRelayerPayload;
+  /** Fee commitment */
+  feeCommitment?: FeeCommitment;
   /** Pool scope */
   scope: string;
   /** Chain ID to process the request on */
@@ -65,8 +58,9 @@ export interface RelayRequestBody {
  */
 export interface WithdrawalPayload {
   readonly proof: WithdrawalProof;
-  readonly withdrawal: Withdrawal;
+  readonly withdrawal: SdkWithdrawal;
   readonly scope: bigint;
+  readonly feeCommitment?: FeeCommitment;
 }
 
 /**
