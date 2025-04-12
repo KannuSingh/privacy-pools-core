@@ -44,8 +44,8 @@ export class QuoteMarshall extends RelayerMarshall {
 
   addFeeCommitment(feeCommitment: {
     expiration: number
-    withdrawalData: string,
-    signedRelayerCommitment: string
+    withdrawalData: `0x${string}`,
+    signedRelayerCommitment: `0x${string}`
   }) {
     this.response.feeCommitment = feeCommitment;
   }
