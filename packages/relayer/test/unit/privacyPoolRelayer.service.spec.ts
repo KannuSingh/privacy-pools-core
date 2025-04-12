@@ -469,6 +469,12 @@ describe("PrivacyPoolRelayer", () => {
       );
     });
 
+    it.skip("throws when feeCommitment has expired", async () => {})
+
+    it.skip("throws when feeCommitment is not verified", async () => {})
+
+    it.skip("throws when there is no feeCommitment and fee is lower than calculated", async () => {})
+
     it("passes when all checks pass", async () => {
       const withdrawalPayload: WithdrawalPayload = {
         withdrawal: {
