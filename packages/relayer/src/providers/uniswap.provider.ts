@@ -66,7 +66,8 @@ export class UniswapProvider {
         sqrtPriceLimitX96: 0n,
       }])
 
-      const [amount, sqrtPriceX96After, tickAfter, gasEstimate] = quotedAmountOut.result;
+      // amount, sqrtPriceX96After, tickAfter, gasEstimate
+      const [amount, , , ] = quotedAmountOut.result;
       return {
         in: {
           amount: amountIn, decimals: tokenIn.decimals
