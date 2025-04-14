@@ -182,11 +182,7 @@ describe("ContractInteractionsService", () => {
   it("should simulate relay successfully", async () => {
     const mockGasEstimate = 21000n;
   
-    mockPublicClient.simulateContract.mockResolvedValue({
-      request: {},
-      result: {},
-      gas: mockGasEstimate,
-    });
+    mockPublicClient.estimateContractGas = vi.fn().mockResolvedValue(mockGasEstimate);
   
     const result = await service.simulateRelay(
       mockWithdrawal,
@@ -196,13 +192,14 @@ describe("ContractInteractionsService", () => {
   
     expect(result.success).toBe(true);
     expect(result.gasEstimate).toBe(mockGasEstimate);
-    expect(mockPublicClient.simulateContract).toHaveBeenCalled();
+    expect(mockPublicClient.estimateContractGas).toHaveBeenCalled();
   });
 
   it("should fail to simulate relay and return error", async () => {
-    mockPublicClient.simulateContract.mockRejectedValue(
+    mockPublicClient.estimateContractGas = vi.fn().mockRejectedValue(
       new Error("Simulation failed"),
     );
+  
     const result = await service.simulateRelay(
       mockWithdrawal,
       mockWithdrawalProof,
