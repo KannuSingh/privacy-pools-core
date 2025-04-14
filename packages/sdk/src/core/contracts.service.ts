@@ -364,7 +364,7 @@ export class ContractInteractionsService implements ContractInteractions {
     }
   }
 
-  /*
+  /**
    * Simulates a relay transaction to estimate gas and check if execution would succeed.
    *
    * @param withdrawal - The Withdrawal struct (processor + data).
@@ -379,29 +379,20 @@ export class ContractInteractionsService implements ContractInteractions {
   ): Promise<{ success: boolean; gasEstimate?: bigint; error?: string }> {
     try {
       const formattedProof = this.formatProof(withdrawalProof);
- 
-      const { request, result, gas } = await this.publicClient.simulateContract({
+  
+      const gasEstimate = await this.publicClient.estimateContractGas({
         address: this.entrypointAddress,
         abi: [...(IEntrypointABI as Abi), ...(IPrivacyPoolABI as Abi)],
         functionName: "relay",
-        account: this.account,
         args: [withdrawal, formattedProof, scope],
+        account: this.account,
       });
- 
-      return {
-        success: true,
-        gasEstimate: gas,
-      };
+  
+      return { success: true, gasEstimate };
     } catch (error: any) {
-      let errorMsg = "Simulation failed";
- 
-      if (error?.shortMessage) errorMsg = error.shortMessage;
-      else if (error?.message) errorMsg = error.message;
- 
-      return {
-        success: false,
-        error: errorMsg,
-      };
+      const errorMsg =
+        error?.shortMessage || error?.message || "Simulation failed";
+      return { success: false, error: errorMsg };
     }
   }
 
