@@ -37,6 +37,12 @@ export interface ContractInteractions {
     withdrawalProof: WithdrawalProof,
     scope: Hash,
   ): Promise<TransactionResponse>;
+  
+  simulateRelay(
+    withdrawal: Withdrawal,
+    withdrawalProof: WithdrawalProof,
+    scope: Hash
+  ): Promise<{ success: boolean; gasEstimate?: bigint; error?: string }>;
 
   ragequit(
     commitmentProof: CommitmentProof,
