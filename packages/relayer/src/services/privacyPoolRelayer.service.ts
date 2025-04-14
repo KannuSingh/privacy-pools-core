@@ -58,6 +58,14 @@ export class PrivacyPoolRelayer {
       if (!isValidWithdrawalProof) {
         throw ZkError.invalidProof();
       }
+   
+      // simulate tx before broadcasting
+      const simulationResult = await this.sdkProvider.simulateWithdrawal(req, chainId);
+
+      if (!simulationResult.success) {
+        const simulationError = simulationResult.error || "Unknown simulation failure";
+        throw BlockchainError.txSimulationError(`Relay simulation failed: ${simulationError}`);
+      }
 
       const response = await this.broadcastWithdrawal(req, chainId);
       await this.db.updateBroadcastedRequest(requestId, response.hash);
