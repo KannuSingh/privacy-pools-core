@@ -239,7 +239,7 @@ export class PrivacyPoolRelayer {
 }
 
 function commitmentExpired(feeCommitment: FeeCommitment): boolean {
-  return feeCommitment.expiration > Number(new Date())
+  return feeCommitment.expiration < Number(new Date())
 }
 
 async function validFeeCommitment(chainId: number, feeCommitment: FeeCommitment): Promise<boolean> {
