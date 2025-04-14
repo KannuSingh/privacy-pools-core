@@ -179,6 +179,37 @@ describe("ContractInteractionsService", () => {
     ).rejects.toThrow(Error);
   });
 
+  it("should simulate relay successfully", async () => {
+    const mockGasEstimate = 21000n;
+  
+    mockPublicClient.estimateContractGas = vi.fn().mockResolvedValue(mockGasEstimate);
+  
+    const result = await service.simulateRelay(
+      mockWithdrawal,
+      mockWithdrawalProof,
+      mockScope as Hash,
+    );
+  
+    expect(result.success).toBe(true);
+    expect(result.gasEstimate).toBe(mockGasEstimate);
+    expect(mockPublicClient.estimateContractGas).toHaveBeenCalled();
+  });
+
+  it("should fail to simulate relay and return error", async () => {
+    mockPublicClient.estimateContractGas = vi.fn().mockRejectedValue(
+      new Error("Simulation failed"),
+    );
+  
+    const result = await service.simulateRelay(
+      mockWithdrawal,
+      mockWithdrawalProof,
+      mockScope as Hash,
+    );
+  
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch("Simulation failed");
+  });
+
   it("should execute ragequit successfully", async () => {
     const mockCommitmentProof: CommitmentProof = {
       proof: mockWithdrawalProof.proof,
