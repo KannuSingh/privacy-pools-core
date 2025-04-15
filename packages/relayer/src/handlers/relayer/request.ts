@@ -35,6 +35,7 @@ function relayRequestBodyToWithdrawalPayload(
     },
     withdrawal,
     scope,
+    feeCommitment: body.feeCommitment
   };
   return wp;
 }
