@@ -10,6 +10,7 @@ const mockPublicClient = {
   simulateContract: vi.fn(),
   readContract: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
+  estimateContractGas: vi.fn(),
 };
 const mockWalletClient = {
   writeContract: vi.fn(),
