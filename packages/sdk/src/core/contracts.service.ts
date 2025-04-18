@@ -13,6 +13,7 @@ import {
 } from "viem";
 import { Withdrawal, WithdrawalProof } from "../types/withdrawal.js";
 import {
+  AssetConfig,
   ContractInteractions,
   TransactionResponse,
 } from "../interfaces/contracts.interface.js";
@@ -281,6 +282,40 @@ export class ContractInteractionsService implements ContractInteractions {
     });
 
     return BigInt(stateSize as string);
+  }
+
+
+  /**
+   * Retrieves data from the corresponding asset
+   *
+   * @param assetAddress - The asset contract address.
+   * @returns AssetConfig - An object containing the privacy pool address, minimum deposit amount, vetting fee and maximum relaying fee.
+   * @throws ContractError if the asset does not exist in the pool.
+   */
+  async getAssetConfig(assetAddress: Address): Promise<AssetConfig> {
+    const assetConfig = await this.publicClient.readContract({
+      address: this.entrypointAddress,
+      abi: IEntrypointABI as Abi,
+      account: this.account,
+      args: [assetAddress],
+      functionName: "assetConfig",
+    });
+    const [pool, minimumDepositAmount, vettingFeeBPS, maxRelayFeeBPS] = assetConfig as [string, bigint, bigint, bigint];
+
+    // if no pool throw error
+    if (
+      !pool ||
+      pool === "0x0000000000000000000000000000000000000000"
+    ) {
+      throw ContractError.assetNotFound(assetAddress);
+    }
+
+    return {
+      pool: getAddress(pool),
+      minimumDepositAmount,
+      vettingFeeBPS,
+      maxRelayFeeBPS
+    }
   }
 
   /**
