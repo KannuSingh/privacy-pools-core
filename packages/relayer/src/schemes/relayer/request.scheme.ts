@@ -42,6 +42,16 @@ const relayRequestSchema: JSONSchemaType<RelayRequestBody> = {
     },
     scope: { type: "string" },
     chainId: { type: ["string", "number"] },
+    feeCommitment: {
+      type: "object",
+      properties: {
+        expiration: { type: "number" },
+        withdrawalData: { type: "string", pattern: "0x[0-9a-fA-F]+" },
+        signedRelayerCommitment: { type: "string", pattern: "0x[0-9a-fA-F]+" }
+      },
+      nullable: true,
+      required: ["expiration", "signedRelayerCommitment"]
+    }
   },
   required: ["withdrawal", "proof", "publicSignals", "scope", "chainId"],
 } as const;

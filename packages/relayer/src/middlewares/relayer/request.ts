@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ValidationError } from "../../exceptions/base.exception.js";
 import { validateDetailsQuerystring } from "../../schemes/relayer/details.scheme.js";
 import { validateRelayRequestBody } from "../../schemes/relayer/request.scheme.js";
+import { validateQuoteBody } from "../../schemes/relayer/quote.scheme.js";
 
 // Middleware to validate the details querying
 export function validateDetailsMiddleware(
@@ -29,6 +30,23 @@ export function validateRelayRequestMiddleware(
   if (!isValid) {
     const messages: string[] = [];
     validateRelayRequestBody.errors?.forEach(e => e?.message ? messages.push(e.message) : undefined);
+    next(ValidationError.invalidInput({ message: messages.join("\n") }));
+    return;
+  }
+  next();
+}
+
+
+// Middleware to validate the quote
+export function validateQuoteMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const isValid = validateQuoteBody(req.body);
+  if (!isValid) {
+    const messages: string[] = [];
+    validateQuoteBody.errors?.forEach(e => e?.message ? messages.push(e.message) : undefined);
     next(ValidationError.invalidInput({ message: messages.join("\n") }));
     return;
   }

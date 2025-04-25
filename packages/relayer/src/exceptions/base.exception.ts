@@ -12,7 +12,9 @@ export enum ErrorCode {
   PROCESSOOOR_MISMATCH = "PROCESSOOOR_MISMATCH",
   FEE_RECEIVER_MISMATCH = "FEE_RECEIVER_MISMATCH",
   FEE_MISMATCH = "FEE_MISMATCH",
+  FEE_TOO_LOW = "FEE_TOO_LOW",
   CONTEXT_MISMATCH = "CONTEXT_MISMATCH",
+  RELAYER_COMMITMENT_REJECTED = "RELAYER_COMMITMENT_REJECTED",
   INSUFFICIENT_WITHDRAWN_VALUE = "INSUFFICIENT_WITHDRAWN_VALUE",
   ASSET_NOT_SUPPORTED = "ASSET_NOT_SUPPORTED",
 
@@ -31,6 +33,9 @@ export enum ErrorCode {
 
   // SDK error. Wrapper for sdk's native errors
   SDK_ERROR = "SDK_ERROR",
+
+  // Quote errors
+  QUOTE_ERROR = "QUOTE_ERROR",
 }
 
 /**
@@ -201,10 +206,26 @@ export class WithdrawalValidationError extends RelayerError {
     );
   }
 
+  public static feeTooLow(details: string) {
+    return new WithdrawalValidationError(
+      "Fee is lower than required by relayer",
+      ErrorCode.FEE_TOO_LOW,
+      details,
+    );
+  }
+
   public static feeMismatch(details: string) {
     return new WithdrawalValidationError(
       "Fee does not match relayer fee",
       ErrorCode.FEE_MISMATCH,
+      details,
+    );
+  }
+
+  public static relayerCommitmentRejected(details: string) {
+    return new WithdrawalValidationError(
+      "Relayer commitment is too old or invalid",
+      ErrorCode.RELAYER_COMMITMENT_REJECTED,
       details,
     );
   }
@@ -254,6 +275,19 @@ export class BlockchainError extends RelayerError {
   public static txError(
     details?: Record<string, unknown> | string) {
     return new BlockchainError("Transaction failed", ErrorCode.TRANSACTION_ERROR, details);
+  }
+
+}
+
+export class QuoterError extends RelayerError {
+  constructor(message: string, code: ErrorCode = ErrorCode.QUOTE_ERROR, details?: Record<string, unknown> | string) {
+    super(message, code, details);
+    this.name = this.constructor.name;
+  }
+
+  public static assetNotSupported(
+    details?: Record<string, unknown> | string) {
+    return new QuoterError("Asset is not supported", ErrorCode.ASSET_NOT_SUPPORTED, details);
   }
 
 }

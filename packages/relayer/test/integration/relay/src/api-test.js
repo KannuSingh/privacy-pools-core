@@ -29,3 +29,16 @@ export const request = async (requestBody) => {
   });
   console.log(JSON.stringify(await r.json(), null, 2));
 };
+
+export const quote = async (quoteBody) => {
+  let r = await fetch("http://localhost:3000/relayer/quote", {
+    method: "post",
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(quoteBody)
+  })
+  const quoteResponse = await r.json();
+  console.log(JSON.stringify(quoteResponse, null, 2))
+  return quoteResponse;
+}

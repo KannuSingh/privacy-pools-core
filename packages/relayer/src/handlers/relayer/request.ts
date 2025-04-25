@@ -35,6 +35,7 @@ function relayRequestBodyToWithdrawalPayload(
     },
     withdrawal,
     scope,
+    feeCommitment: body.feeCommitment
   };
   return wp;
 }
@@ -108,6 +109,7 @@ export async function relayRequestHandler(
     if (maxGasPrice !== undefined && currentGasPrice > maxGasPrice) {
       throw ConfigError.maxGasPrice(`Current gas price ${currentGasPrice} is higher than max price ${maxGasPrice}`)
     }
+
     const requestResponse: RelayerResponse =
       await privacyPoolRelayer.handleRequest(withdrawalPayload, chainId);
 

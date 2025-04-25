@@ -1,5 +1,6 @@
 import { Address } from "viem/accounts";
 import { RelayerResponse } from "./interfaces/relayer/request.js";
+import { QuoteResponse } from "./interfaces/relayer/quote.js";
 
 export abstract class RelayerMarshall {
   abstract toJSON(): object;
@@ -43,5 +44,27 @@ export class RequestMashall extends RelayerMarshall {
   }
   override toJSON(): object {
     return this.response;
+  }
+}
+
+export class QuoteMarshall extends RelayerMarshall {
+  constructor(readonly response: QuoteResponse) {
+    super();
+  }
+
+  addFeeCommitment(feeCommitment: {
+    expiration: number
+    withdrawalData: `0x${string}`,
+    signedRelayerCommitment: `0x${string}`
+  }) {
+    this.response.feeCommitment = feeCommitment;
+  }
+
+  override toJSON(): object {
+    return {
+      baseFeeBPS: this.response.baseFeeBPS.toString(),
+      feeBPS: this.response.feeBPS.toString(),
+      feeCommitment: this.response.feeCommitment
+    }
   }
 }
