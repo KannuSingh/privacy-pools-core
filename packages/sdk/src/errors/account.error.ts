@@ -33,6 +33,13 @@ export class AccountError extends SDKError {
     );
   }
 
+  public static duplicatePools(scope: bigint): AccountError {
+    return new AccountError(
+      `Duplicate pools found for scope: ${scope.toString()}`,
+      ErrorCode.INVALID_INPUT,
+    );
+  }
+
   public static invalidIndex(index: bigint): AccountError {
     return new AccountError(
       `Invalid index: ${index.toString()}`,
