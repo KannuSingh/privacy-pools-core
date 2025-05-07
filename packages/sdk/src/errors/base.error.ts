@@ -117,4 +117,9 @@ export class ContractError extends SDKError {
   public static scopeNotFound(scope: bigint): ContractError {
     return new ContractError(`No pool found for scope ${scope.toString()}`, ErrorCode.CONTRACT_ERROR);
   }
+
+  public static assetNotFound(address: string): ContractError {
+    return new ContractError(`Asset ${address} has no pool`, ErrorCode.CONTRACT_ERROR);
+  }
+
 }

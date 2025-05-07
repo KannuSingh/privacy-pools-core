@@ -9,6 +9,13 @@ export interface SolidityGroth16Proof {
   pubSignals: bigint[];
 }
 
+export interface AssetConfig {
+  pool: Address,
+  minimumDepositAmount: bigint,
+  vettingFeeBPS: bigint,
+  maxRelayFeeBPS: bigint
+}
+
 export interface TransactionResponse {
   hash: string;
   wait: () => Promise<void>;
@@ -46,6 +53,7 @@ export interface ContractInteractions {
   getScope(privacyPoolAddress: Address): Promise<bigint>;
   getStateRoot(privacyPoolAddress: Address): Promise<bigint>;
   getStateSize(privacyPoolAddress: Address): Promise<bigint>;
+  getAssetConfig(assetAddress: Address): Promise<AssetConfig>;
   getScopeData(
     scope: bigint,
   ): Promise<{ poolAddress: Address | null; assetAddress: Address | null }>;
