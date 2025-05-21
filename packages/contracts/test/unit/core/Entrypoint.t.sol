@@ -98,6 +98,10 @@ contract EntrypointForTest is Entrypoint {
     assetConfig[_asset].maxRelayFeeBPS = _maxRelayFeeBPS;
   }
 
+  function mockUsedPrecommitment(uint256 _precommitment) external {
+    usedPrecommitments[_precommitment] = true;
+  }
+
   bytes32 public constant OWNER_ROLE = keccak256('OWNER_ROLE');
 
   bytes32 public constant ASP_POSTMAN = keccak256('ASP_POSTMAN');
@@ -227,6 +231,8 @@ contract UnitRootUpdate is UnitEntrypoint {
     uint256 _length = bytes(_ipfsCID).length;
     vm.assume(_length >= 32 && _length <= 64);
 
+    _timestamp = bound(_timestamp, 1, type(uint64).max - 1);
+
     vm.warp(_timestamp);
 
     vm.expectEmit(address(_entrypoint));
@@ -332,7 +338,7 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _depositorBalanceBefore = _depositor.balance;
 
     vm.expectEmit(address(_entrypoint));
-    emit IEntrypoint.Deposited(_depositor, _pool, _commitment, _amountAfterFees);
+    emit IEntrypoint.Deposited(_depositor, IPrivacyPool(_params.pool), _commitment, _amountAfterFees);
 
     vm.prank(_depositor);
     _entrypoint.deposit{value: _amount}(_precommitment);
@@ -375,6 +381,7 @@ contract UnitDeposit is UnitEntrypoint {
   }
 
   function test_DepositETHWhenPoolNotFound(address _depositor, uint256 _amount, uint256 _precommitment) external {
+    vm.assume(_depositor != address(0));
     vm.deal(_depositor, _amount);
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
     vm.prank(_depositor);
@@ -391,6 +398,7 @@ contract UnitDeposit is UnitEntrypoint {
     uint256 _commitment,
     PoolParams memory _params
   ) external givenPoolExists(_params) {
+    _assumeFuzzable(_depositor);
     vm.assume(_depositor != address(0));
 
     // Can't be too big, otherwise overflows
@@ -449,7 +457,6 @@ contract UnitDeposit is UnitEntrypoint {
   ) external {
     _assumeFuzzable(_asset);
     vm.assume(_depositor != address(0));
-    vm.assume(_asset != address(0));
     vm.assume(_asset != _ETH);
 
     _mockAndExpect(
@@ -461,6 +468,68 @@ contract UnitDeposit is UnitEntrypoint {
     vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PoolNotFound.selector));
     vm.prank(_depositor);
     _entrypoint.deposit(IERC20(_asset), _amount, _precommitment);
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the precommitment has already been used for ETH deposits
+   */
+  function test_DepositETHWhenPrecommitmentAlreadyUsed(
+    address _depositor,
+    uint256 _amount,
+    uint256 _precommitment,
+    PoolParams memory _params
+  )
+    external
+    givenPoolExists(
+      PoolParams({
+        pool: _params.pool,
+        asset: _ETH,
+        minDeposit: _params.minDeposit,
+        vettingFeeBPS: _params.vettingFeeBPS,
+        maxRelayFeeBPS: 500 // Default to 5%
+      })
+    )
+  {
+    _assumeFuzzable(_depositor);
+    vm.assume(_depositor != address(_entrypoint));
+
+    (, uint256 _minDeposit,,) = _entrypoint.assetConfig(IERC20(_ETH));
+    _amount = bound(_amount, _minDeposit, 1e30);
+    deal(_depositor, _amount);
+
+    // Mark the precommitment as used
+    _entrypoint.mockUsedPrecommitment(_precommitment);
+
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PrecommitmentAlreadyUsed.selector));
+    vm.prank(_depositor);
+    _entrypoint.deposit{value: _amount}(_precommitment);
+  }
+
+  /**
+   * @notice Test that the Entrypoint reverts when the precommitment has already been used for ERC20 deposits
+   */
+  function test_DepositERC20WhenPrecommitmentAlreadyUsed(
+    address _depositor,
+    uint256 _amount,
+    uint256 _precommitment,
+    PoolParams memory _params
+  ) external givenPoolExists(_params) {
+    vm.assume(_depositor != address(0));
+
+    _amount = bound(_amount, _params.minDeposit, 1e30);
+
+    // Mark the precommitment as used
+    _entrypoint.mockUsedPrecommitment(_precommitment);
+
+    _mockAndExpect(
+      _params.asset,
+      abi.encodeWithSignature('transferFrom(address,address,uint256)', _depositor, address(_entrypoint), _amount),
+      abi.encode(true)
+    );
+
+    vm.expectRevert(abi.encodeWithSelector(IEntrypoint.PrecommitmentAlreadyUsed.selector));
+    vm.prank(_depositor);
+    _entrypoint.deposit(IERC20(_params.asset), _amount, _precommitment);
   }
 }
 
