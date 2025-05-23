@@ -31,6 +31,7 @@ contract MassDeposit is Script {
 
   function run() public {
     // Set minimum deposit amount to zero
+    // NOTE: this step will be removed once the configuration update is manually done
     vm.prank(owner);
     ENTRYPOINT.updatePoolConfiguration(IERC20(Constants.NATIVE_ASSET), 0, 0, 0);
 
