@@ -489,7 +489,9 @@ export class AccountService {
         // Create a map of deposits by precommitment for efficient lookup
         const depositMap = new Map<Hash, DepositEvent>();
         for (const deposit of deposits) {
-          depositMap.set(deposit.precommitment, deposit);
+          if (!depositMap.has(deposit.precommitment)) {
+            depositMap.set(deposit.precommitment, deposit);
+          }
         }
 
         // Track found deposits for logging and debugging
