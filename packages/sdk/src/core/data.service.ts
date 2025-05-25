@@ -104,7 +104,7 @@ export class DataService {
             _merkleRoot: precommitment,
           } = log.args;
 
-          if (!depositor || !commitment || !label || !value || !precommitment || !log.blockNumber || !log.transactionHash) {
+          if (!depositor || !commitment || !label || !precommitment || !log.blockNumber || !log.transactionHash) {
             throw DataError.invalidLog("deposit", "missing required fields");
           }
 
@@ -112,7 +112,7 @@ export class DataService {
             depositor: depositor.toLowerCase(),
             commitment: commitment as Hash,
             label: label as Hash,
-            value,
+            value: value || BigInt(0),
             precommitment: precommitment as Hash,
             blockNumber: BigInt(log.blockNumber),
             transactionHash: log.transactionHash,
