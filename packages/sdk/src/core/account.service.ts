@@ -24,11 +24,11 @@ import { EventError } from "../errors/events.error.js";
 
 type AccountServiceConfig =
   | {
-      mnemonic: string;
-    }
+    mnemonic: string;
+  }
   | {
-      account: PrivacyPoolAccount;
-    };
+    account: PrivacyPoolAccount;
+  };
 
 /**
  * Service responsible for managing privacy pool accounts and their associated commitments.
@@ -781,11 +781,11 @@ export class AccountService {
     dataService: DataService,
     source:
       | {
-          mnemonic: string;
-        }
+        mnemonic: string;
+      }
       | {
-          service: AccountService;
-        },
+        service: AccountService;
+      },
     pools: PoolInfo[]
   ): Promise<{ account: AccountService; errors: PoolEventsError[] }> {
     // Log the start of the history retrieval process
@@ -876,7 +876,9 @@ export class AccountService {
         // Create a map of deposits by precommitment for efficient lookup
         const depositMap = new Map<Hash, DepositEvent>();
         for (const deposit of deposits) {
-          depositMap.set(deposit.precommitment, deposit);
+          if (!depositMap.has(deposit.precommitment)) {
+            depositMap.set(deposit.precommitment, deposit);
+          }
         }
 
         // Track found deposits for logging and debugging
