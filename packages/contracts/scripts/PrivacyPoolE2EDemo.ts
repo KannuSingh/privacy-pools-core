@@ -1,11 +1,11 @@
 /**
- * Privacy Pool E2E Test Script with Real ZK Proofs
+ * Privacy Pool End-to-End Demonstration Script
  *
  * This script demonstrates a complete end-to-end flow for Privacy Pool with Account Abstraction:
  * 1. Deploy fresh contracts (Entrypoint, Privacy Pool, Paymaster)
  * 2. Create commitment and deposit funds to privacy pool
  * 3. Setup ASP (Approved Set of Participants) tree with approved labels
- * 4. Generate real ZK withdrawal proof using Privacy Pool SDK
+ * 4. Generate real ZK withdrawal proof using circuit infrastructure
  * 5. Test paymaster validation with UserOperation
  * 6. Execute withdrawal transaction via paymaster (not relayer)
  *
@@ -43,7 +43,7 @@ import { LeanIMT } from "@zk-kit/lean-imt";
 import * as snarkjs from "snarkjs";
 import { WithdrawalProofGenerator } from "./WithdrawalProofGenerator";
 
-// Import Privacy Pool SDK for proper ZK proof generation
+// Import Privacy Pool SDK for proper ZK proof generation (optional)
 // The SDK handles circuit compilation, proof generation, and commitment computation correctly
 let PrivacyPoolSDK, Circuits, getCommitment;
 try {
@@ -53,7 +53,7 @@ try {
     getCommitment = sdk.getCommitment;
     console.log("  ✅ Privacy Pool SDK imported successfully");
 } catch (e) {
-    console.log("  ❌ SDK import failed:", e.message);
+    console.log("  ⚠️ SDK import failed, using local proof generator:", e.message);
 }
 
 // ============ CONFIGURATION ============
@@ -118,43 +118,6 @@ const PRIVACY_POOL_ABI = parseAbi([
     "event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _precommitmentHash)",
 ]);
 
-// // WITHDRAWAL_VERIFIER_ABI
-// const WITHDRAWAL_VERIFIER_ABI = [
-//     {
-//         type: "function",
-//         name: "verifyProof",
-//         inputs: [
-//             {
-//                 name: "_pA",
-//                 type: "uint256[2]",
-//                 internalType: "uint256[2]",
-//             },
-//             {
-//                 name: "_pB",
-//                 type: "uint256[2][2]",
-//                 internalType: "uint256[2][2]",
-//             },
-//             {
-//                 name: "_pC",
-//                 type: "uint256[2]",
-//                 internalType: "uint256[2]",
-//             },
-//             {
-//                 name: "_pubSignals",
-//                 type: "uint256[8]",
-//                 internalType: "uint256[8]",
-//             },
-//         ],
-//         outputs: [
-//             {
-//                 name: "",
-//                 type: "bool",
-//                 internalType: "bool",
-//             },
-//         ],
-//         stateMutability: "view",
-//     },
-// ] as const;
 
 // ============ UTILITY FUNCTIONS ============
 /**
@@ -273,11 +236,11 @@ async function deployContracts() {
 
 // ============ MAIN E2E TEST FUNCTION ============
 /**
- * Main end-to-end test function that demonstrates the complete Privacy Pool flow
+ * Main demonstration function that shows the complete Privacy Pool flow
  * with Account Abstraction paymaster integration
  */
-async function runE2E() {
-    console.log("🚀 Privacy Pool E2E Test\n");
+async function runPrivacyPoolDemo() {
+    console.log("🚀 Privacy Pool E2E Demonstration\n");
 
     // STEP 0: Setup blockchain clients and account
     console.log("Setting up blockchain clients...");
@@ -460,35 +423,6 @@ async function runE2E() {
         aspTreeLabels: aspStateTree,
     });
 
-    // console.log("verifying the withdrawal proof onchain");
-
-    // const isValid = await publicClient.readContract({
-    //     address: addresses.WITHDRAWAL_VERIFIER,
-    //     abi: WITHDRAWAL_VERIFIER_ABI,
-    //     functionName: "verifyProof",
-    //     args: [
-    //         [BigInt(withdrawalProof.proof.pi_a[0]), BigInt(withdrawalProof.proof.pi_a[1])],
-    //         [
-    //             // Swap coordinates for pi_b - this is required for compatibility between snarkjs and Solidity verifier
-    //             [BigInt(withdrawalProof.proof.pi_b[0][1]), BigInt(withdrawalProof.proof.pi_b[0][0])],
-    //             [BigInt(withdrawalProof.proof.pi_b[1][1]), BigInt(withdrawalProof.proof.pi_b[1][0])],
-    //         ],
-    //         [BigInt(withdrawalProof.proof.pi_c[0]), BigInt(withdrawalProof.proof.pi_c[1])],
-    //         [
-    //             BigInt(withdrawalProof.publicSignals[0]),
-    //             BigInt(withdrawalProof.publicSignals[1]),
-    //             BigInt(withdrawalProof.publicSignals[2]),
-    //             BigInt(withdrawalProof.publicSignals[3]),
-    //             BigInt(withdrawalProof.publicSignals[4]),
-    //             BigInt(withdrawalProof.publicSignals[5]),
-    //             BigInt(withdrawalProof.publicSignals[6]),
-    //             BigInt(withdrawalProof.publicSignals[7]),
-    //         ],
-    //     ],
-    // });
-    // if (!isValid) {
-    //     throw new Error("onchain withdrawal proof verification failed");
-    // }
     console.log("  Bundler client created for UserOperation submission");
 
     // Create smart account client with paymaster integration
@@ -604,8 +538,6 @@ async function runE2E() {
             scope,
         ],
     });
-    // console.log("Privacy pool EntryPoint Address: ", addresses.ENTRYPOINT);
-    // console.log("Calldata: ", { relayCallData });
     const preparedUserOperation = await smartAccountClient.prepareUserOperation({
         account: smartAccount,
         calls: [
@@ -623,8 +555,7 @@ async function runE2E() {
         functionName: "balanceOf",
         args: [addresses.PAYMASTER],
     });
-    console.log(`{ paymasterDeposit before submiting userOp }`);
-    console.log({ paymasterDepositBeforeUserOp });
+    console.log(`  Paymaster deposit before UserOp: ${formatEther(paymasterDepositBeforeUserOp)} ETH`);
 
     const signature = await smartAccount.signUserOperation(preparedUserOperation);
     const userOpHash = await smartAccountClient.sendUserOperation({
@@ -635,29 +566,46 @@ async function runE2E() {
 
     const receipt = await smartAccountClient.waitForUserOperationReceipt({ hash: userOpHash });
     if (receipt.success) {
-        // console.log(`✅ ${userOpHash}`);
-        // console.log({ receipt });
-
+        console.log(`\nSTEP 5: Withdrawal completed successfully!`);
+        console.log(`  UserOperation hash: ${userOpHash}`);
+        
         const poolBalance = await publicClient.getBalance({ address: addresses.PRIVACY_POOL });
-        console.log(`  Pool balance: ${formatEther(poolBalance)} ETH`);
-        //Add retreiving paymaster deposit value
+        console.log(`  Pool balance after withdrawal: ${formatEther(poolBalance)} ETH`);
+        
         const paymasterDeposit = await publicClient.readContract({
-            address: CONFIG.ERC4337_ENTRYPOINT, // EntryPoint address
+            address: CONFIG.ERC4337_ENTRYPOINT,
             abi: parseAbi(["function balanceOf(address account) external view returns (uint256)"]),
             functionName: "balanceOf",
             args: [addresses.PAYMASTER],
         });
-        console.log(`  Paymaster Deposit: ${formatEther(paymasterDeposit)} ETH`);
-        console.log(`  Paymaster Paid: ${formatEther(paymasterDepositBeforeUserOp - paymasterDeposit)} ETH`);
+        console.log(`  Paymaster deposit remaining: ${formatEther(paymasterDeposit)} ETH`);
+        console.log(`  Gas paid by paymaster: ${formatEther(paymasterDepositBeforeUserOp - paymasterDeposit)} ETH`);
 
         const paymasterNativeBalance = await publicClient.getBalance({
             address: addresses.PAYMASTER,
         });
         console.log(`  Paymaster native balance: ${formatEther(paymasterNativeBalance)} ETH`);
+    } else {
+        throw new Error(`UserOperation failed: ${userOpHash}`);
     }
 }
 
-// ============ RUN ============
+// ============ MAIN EXECUTION ============
+/**
+ * Execute the Privacy Pool demonstration when script is run directly
+ */
+async function main() {
+    try {
+        await runPrivacyPoolDemo();
+        console.log("\n🎉 Privacy Pool demonstration completed successfully!");
+        process.exit(0);
+    } catch (error) {
+        console.error("\n❌ Demonstration failed:", error);
+        process.exit(1);
+    }
+}
+
+// Run the demonstration if this script is executed directly
 if (require.main === module) {
-    runE2E().catch(console.error);
+    main();
 }
