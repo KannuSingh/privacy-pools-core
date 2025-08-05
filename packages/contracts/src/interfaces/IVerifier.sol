@@ -19,7 +19,7 @@ interface IVerifier {
     uint256[2][2] memory _pB,
     uint256[2] memory _pC,
     uint256[8] memory _pubSignals
-  ) external returns (bool _valid);
+  ) external view returns (bool _valid);
 
   /**
    * @notice Verifies a Ragequit Proof
@@ -34,5 +34,5 @@ interface IVerifier {
     uint256[2][2] memory _pB,
     uint256[2] memory _pC,
     uint256[4] memory _pubSignals
-  ) external returns (bool _valid);
+  ) external view returns (bool _valid);
 }
