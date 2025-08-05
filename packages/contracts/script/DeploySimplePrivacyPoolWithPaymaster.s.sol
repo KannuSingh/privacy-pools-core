@@ -22,7 +22,7 @@ import {IERC20} from "@oz/interfaces/IERC20.sol";
 
 import {Constants} from "src/contracts/lib/Constants.sol";
 
-contract DeploySimplePrivacyPoolE2E is Script {
+contract DeploySimplePrivacyPoolWithPaymaster is Script {
     // ERC-4337 EntryPoint (Base Sepolia)
     address constant ERC4337_ENTRYPOINT =
         0x0000000071727De22E5E9d8BAf0edAc6f37da032;
@@ -37,11 +37,6 @@ contract DeploySimplePrivacyPoolE2E is Script {
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
-
-        console.log("=== SIMPLE PRIVACY POOL E2E DEPLOYMENT ===");
-        console.log("Deployer:", deployer);
-        console.log("Deployer will be both OWNER and POSTMAN for simplicity");
-        console.log("");
 
         // 1. Deploy verifiers
         console.log("1. Deploying Verifiers...");
@@ -81,17 +76,14 @@ contract DeploySimplePrivacyPoolE2E is Script {
             VETTING_FEE_BPS,
             MAX_RELAY_FEE_BPS
         );
-        console.log("   Privacy Pool registered successfully");
 
         // 5. Deploy Paymaster
-        console.log("5. Deploying Privacy Pool Paymaster...");
+        console.log("5. Deploying SimplePrivacyPoolPaymaster...");
         SimplePrivacyPoolPaymaster paymaster = new SimplePrivacyPoolPaymaster(
             IERC4337EntryPoint(ERC4337_ENTRYPOINT),
             IEntrypoint(address(entrypoint)),
             IPrivacyPool(address(privacyPool))
         );
-
-        console.log("   SimplePrivacyPoolPaymaster:", address(paymaster));
 
         // 6. Fund paymaster for gas sponsorship
         console.log("6. Funding Paymaster...");

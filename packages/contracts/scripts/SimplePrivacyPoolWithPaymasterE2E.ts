@@ -162,7 +162,7 @@ async function deployContracts() {
             "forge",
             [
                 "script",
-                "script/DeploySimplePrivacyPoolE2E.s.sol:DeploySimplePrivacyPoolE2E", // E2E deployment script
+                "script/DeploySimplePrivacyPoolWithPaymaster.s.sol:DeploySimplePrivacyPoolWithPaymaster", // E2E deployment script
                 "--rpc-url",
                 CONFIG.RPC_URL, // Local Anvil RPC
                 "--private-key",
