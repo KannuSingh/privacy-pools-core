@@ -1,17 +1,15 @@
 /**
  * Withdrawal Proof Generator for Privacy Pool
- * 
+ *
  * This module provides utilities for generating real zero-knowledge proofs
  * for Privacy Pool withdrawal operations using snarkjs and circuit files.
- * 
+ *
  * Features:
  * - Real ZK proof generation using withdrawal circuits
  * - Merkle tree construction for state and ASP trees
  * - Proof verification using verification keys
- * - Test scenario creation for development
  */
 
-import { parseEther } from "viem";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT } from "@zk-kit/lean-imt";
 import * as snarkjs from "snarkjs";
@@ -56,11 +54,6 @@ export interface WithdrawalProofArgs {
     aspTreeLabels: bigint[];
 }
 
-export interface TestScenario {
-    deposits: Commitment[];
-    stateTreeCommitments: bigint[];
-    aspTreeLabels: bigint[];
-}
 
 // ============ CONFIGURATION ============
 
@@ -74,13 +67,13 @@ const getDefaultCircuitsPath = (): string => {
         resolve(process.cwd(), "packages/circuits"),
         resolve(process.cwd(), "../circuits"),
     ];
-    
+
     for (const path of possiblePaths) {
         if (fs.existsSync(path)) {
             return path;
         }
     }
-    
+
     throw new Error("Cannot find circuits directory. Please specify CIRCUITS_PATH environment variable.");
 };
 
@@ -109,7 +102,7 @@ export function hashCommitment(input: Commitment): [bigint, bigint] {
 
 export function getCircuitPaths(circuitsBasePath?: string): CircuitPaths {
     const basePath = circuitsBasePath || process.env.CIRCUITS_PATH || getDefaultCircuitsPath();
-    
+
     return {
         wasmPath: join(basePath, "build/withdraw/withdraw_js/withdraw.wasm"),
         zkeyPath: join(basePath, "trusted-setup/final-keys/withdraw.zkey"),
@@ -150,7 +143,7 @@ export class WithdrawalProofGenerator {
      */
     async generateWithdrawalProof(args: WithdrawalProofArgs): Promise<WithdrawalProofData> {
         console.log("🔧 Generating withdrawal proof...");
-        
+
         const {
             existingCommitmentHash,
             withdrawalValue,
@@ -203,11 +196,7 @@ export class WithdrawalProofGenerator {
         const startTime = Date.now();
         console.log("   🚀 Generating proof with snarkjs...");
 
-        const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-            circuitInputs,
-            this.circuitPaths.wasmPath,
-            this.circuitPaths.zkeyPath
-        );
+        const { proof, publicSignals } = await snarkjs.groth16.fullProve(circuitInputs, this.circuitPaths.wasmPath, this.circuitPaths.zkeyPath);
 
         const endTime = Date.now();
         console.log(`   ✅ Proof generated in ${endTime - startTime}ms`);
@@ -239,44 +228,6 @@ export class WithdrawalProofGenerator {
             console.error("   ❌ Verification failed:", error instanceof Error ? error.message : String(error));
             return false;
         }
-    }
-
-    /**
-     * Create a test scenario with sample deposits
-     */
-    createTestScenario(): TestScenario {
-        console.log("🧪 Creating test scenario...");
-
-        // Create sample deposits
-        const deposits: Commitment[] = [
-            {
-                value: parseEther("5"),
-                label: randomBigInt(),
-                nullifier: randomBigInt(),
-                secret: randomBigInt(),
-            },
-            {
-                value: parseEther("3"),
-                label: randomBigInt(),
-                nullifier: randomBigInt(),
-                secret: randomBigInt(),
-            },
-        ];
-
-        // Hash commitments for state tree
-        const stateTreeCommitments = deposits.map(deposit => hashCommitment(deposit)[0]);
-        
-        // Extract labels for ASP tree
-        const aspTreeLabels = deposits.map(deposit => deposit.label);
-
-        console.log("   ✅ Test scenario created");
-        console.log(`   ${deposits.length} deposits with ${stateTreeCommitments.length} state commitments and ${aspTreeLabels.length} ASP labels`);
-
-        return {
-            deposits,
-            stateTreeCommitments,
-            aspTreeLabels,
-        };
     }
 
     // ============ PRIVATE METHODS ============
@@ -342,4 +293,3 @@ export class WithdrawalProofGenerator {
         };
     }
 }
-
