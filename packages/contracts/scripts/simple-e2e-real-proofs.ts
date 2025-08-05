@@ -41,7 +41,7 @@ import { createSmartAccountClient } from "permissionless";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT } from "@zk-kit/lean-imt";
 import * as snarkjs from "snarkjs";
-import { PrivacyPoolNodeProver } from "./privacy-pool-node-prover";
+import { WithdrawalProofGenerator } from "./WithdrawalProofGenerator";
 
 // Import Privacy Pool SDK for proper ZK proof generation
 // The SDK handles circuit compilation, proof generation, and commitment computation correctly
@@ -440,7 +440,7 @@ async function runE2E() {
         encodeAbiParameters([{ type: "tuple", components: [{ type: "address" }, { type: "bytes" }] }, { type: "uint256" }], [withdrawalData, scope])
     );
 
-    const prover = new PrivacyPoolNodeProver();
+    const prover = new WithdrawalProofGenerator();
     const newNullifier = randomBigInt();
     const newSecret = randomBigInt();
     const depositStateTree = [commitment.commitmentHash]; //[actualCommitmentHash];
