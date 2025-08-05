@@ -1,8 +1,8 @@
-# PrivacyPoolPaymaster Documentation
+# SimplePrivacyPoolPaymaster Documentation
 
 ## Overview
 
-The `PrivacyPoolPaymaster` is an ERC-4337 paymaster contract designed to sponsor Privacy Pool withdrawal operations. It performs comprehensive validation to ensure it only sponsors UserOperations that will succeed in actual execution, preventing gas waste and potential exploits.
+The `SimplePrivacyPoolPaymaster` is an ERC-4337 paymaster contract designed to sponsor Privacy Pool withdrawal operations. It performs comprehensive validation to ensure it only sponsors UserOperations that will succeed in actual execution, preventing gas waste and potential exploits.
 
 ## Architecture
 
@@ -301,4 +301,4 @@ The paymaster is designed for specific Privacy Pool deployments and should be up
 
 ## Conclusion
 
-The `PrivacyPoolPaymaster` provides a secure, comprehensive validation layer that guarantees successful Privacy Pool withdrawals while protecting against various attack vectors. By replicating the exact validation logic of both Entrypoint and Privacy Pool contracts, it ensures reliable transaction sponsorship without risk of gas waste or economic exploitation.
+The `SimplePrivacyPoolPaymaster` provides a secure, comprehensive validation layer that guarantees successful Privacy Pool withdrawals while protecting against various attack vectors. By replicating the exact validation logic of both Entrypoint and Privacy Pool contracts, it ensures reliable transaction sponsorship without risk of gas waste or economic exploitation.

@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 // Privacy Pool contracts
 import {Entrypoint} from "src/contracts/Entrypoint.sol";
 import {PrivacyPoolSimple} from "src/contracts/implementations/PrivacyPoolSimple.sol";
-import {PrivacyPoolPaymaster} from "src/contracts/PrivacyPoolPaymaster.sol";
+import {SimplePrivacyPoolPaymaster} from "src/contracts/SimplePrivacyPoolPaymaster.sol";
 import {CommitmentVerifier} from "src/contracts/verifiers/CommitmentVerifier.sol";
 import {WithdrawalVerifier} from "src/contracts/verifiers/WithdrawalVerifier.sol";
 
@@ -85,13 +85,13 @@ contract DeployCompleteE2E is Script {
 
         // 5. Deploy Paymaster
         console.log("5. Deploying Privacy Pool Paymaster...");
-        PrivacyPoolPaymaster paymaster = new PrivacyPoolPaymaster(
+        SimplePrivacyPoolPaymaster paymaster = new SimplePrivacyPoolPaymaster(
             IERC4337EntryPoint(ERC4337_ENTRYPOINT),
             IEntrypoint(address(entrypoint)),
             IPrivacyPool(address(privacyPool))
         );
 
-        console.log("   PrivacyPoolPaymaster:", address(paymaster));
+        console.log("   SimplePrivacyPoolPaymaster:", address(paymaster));
 
         // 6. Fund paymaster for gas sponsorship
         console.log("6. Funding Paymaster...");

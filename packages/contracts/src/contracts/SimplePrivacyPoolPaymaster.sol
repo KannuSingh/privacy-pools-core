@@ -15,11 +15,11 @@ import {IERC20} from "@oz/interfaces/IERC20.sol";
 import {Constants} from "./lib/Constants.sol";
 
 /**
- * @title PrivacyPoolPaymaster
+ * @title SimplePrivacyPoolPaymaster
  * @notice ERC-4337 Paymaster for Privacy Pool withdrawals
  * @dev This paymaster performs comprehensive validation to ensure it only sponsors successful withdrawals
  */
-contract PrivacyPoolPaymaster is BasePaymaster {
+contract SimplePrivacyPoolPaymaster is BasePaymaster {
     using ProofLib for ProofLib.WithdrawProof;
 
     /*//////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ contract PrivacyPoolPaymaster is BasePaymaster {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Deploy Privacy Pool Paymaster
+     * @notice Deploy Simple Privacy Pool Paymaster
      * @param _entryPoint ERC-4337 EntryPoint contract
      * @param _privacyEntrypoint Privacy Pool Entrypoint contract
      * @param _ethPrivacyPool ETH Privacy Pool contract

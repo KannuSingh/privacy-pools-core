@@ -5,7 +5,7 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 
 import {PrivacyPoolSimple} from "src/contracts/implementations/PrivacyPoolSimple.sol";
-import {PrivacyPoolPaymaster} from "src/contracts/PrivacyPoolPaymaster.sol";
+import {SimplePrivacyPoolPaymaster} from "src/contracts/SimplePrivacyPoolPaymaster.sol";
 import {IEntryPoint as IERC4337EntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {IEntrypoint} from "src/interfaces/IEntrypoint.sol";
 import {IPrivacyPool} from "src/interfaces/IPrivacyPool.sol";
@@ -38,19 +38,19 @@ contract DeployPrivacyPoolForAA is Script {
 
         console.log("SimplePrivacyPool deployed to:", address(ethPrivacyPool));
 
-        // Deploy PrivacyPoolPaymaster
-        PrivacyPoolPaymaster paymaster = new PrivacyPoolPaymaster(
+        // Deploy SimplePrivacyPoolPaymaster
+        SimplePrivacyPoolPaymaster paymaster = new SimplePrivacyPoolPaymaster(
             IERC4337EntryPoint(ERC4337_ENTRYPOINT),
             IEntrypoint(ENTRYPOINT),
             IPrivacyPool(address(ethPrivacyPool))
         );
 
-        console.log("PrivacyPoolPaymaster deployed to:", address(paymaster));
+        console.log("SimplePrivacyPoolPaymaster deployed to:", address(paymaster));
 
         vm.stopBroadcast();
 
         console.log("=== DEPLOYMENT COMPLETE ===");
         console.log("SimplePrivacyPool:", address(ethPrivacyPool));
-        console.log("PrivacyPoolPaymaster:", address(paymaster));
+        console.log("SimplePrivacyPoolPaymaster:", address(paymaster));
     }
 }

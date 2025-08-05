@@ -8,7 +8,7 @@ import {console} from "forge-std/console.sol";
 import {IPrivacyPool} from "interfaces/IPrivacyPool.sol";
 import {IState} from "interfaces/IState.sol";
 import {IEntrypoint} from "interfaces/IEntrypoint.sol";
-import {PrivacyPoolPaymaster} from "contracts/PrivacyPoolPaymaster.sol";
+import {SimplePrivacyPoolPaymaster} from "contracts/SimplePrivacyPoolPaymaster.sol";
 
 // Privacy Pool contracts
 import {Entrypoint} from "contracts/Entrypoint.sol";
@@ -31,7 +31,7 @@ import {IERC20} from "@oz/interfaces/IERC20.sol";
  * @notice End-to-end test for Privacy Pool Paymaster integration with ERC-4337
  * @dev Tests the complete flow: deposit → generate proof → create UserOp → execute via paymaster
  */
-contract PrivacyPoolPaymasterE2E is IntegrationBase {
+contract SimplePrivacyPoolPaymasterE2E is IntegrationBase {
     using InternalLeanIMT for LeanIMTData;
     using ProofLib for ProofLib.WithdrawProof;
 
@@ -41,7 +41,7 @@ contract PrivacyPoolPaymasterE2E is IntegrationBase {
 
     // ERC-4337 Infrastructure
     IEntryPoint internal erc4337EntryPoint;
-    PrivacyPoolPaymaster internal paymaster;
+    SimplePrivacyPoolPaymaster internal paymaster;
 
     // Test accounts
     SimpleAccount internal userAccount;
@@ -129,7 +129,7 @@ contract PrivacyPoolPaymasterE2E is IntegrationBase {
         userAccount = SimpleAccount(payable(makeAddr("USER_ACCOUNT")));
 
         // Deploy Privacy Pool Paymaster (this is the main component we're testing)
-        paymaster = new PrivacyPoolPaymaster(
+        paymaster = new SimplePrivacyPoolPaymaster(
             erc4337EntryPoint,
             _entrypoint,
             _ethPool

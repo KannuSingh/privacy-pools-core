@@ -69,7 +69,7 @@ Standard Operations:
 - Ragequit mechanism for non-approved withdrawals
 - Abstract methods for asset transfers
 
-**`PrivacyPoolPaymaster.sol`**
+**`SimplePrivacyPoolPaymaster.sol`**
 ERC-4337 paymaster contract that sponsors Privacy Pool withdrawal operations:
 - Comprehensive validation mirroring both `Entrypoint.relay()` and `PrivacyPool.withdraw()`
 - Complete security checks including context, nullifier, and proof validation
@@ -126,11 +126,11 @@ After cloning the repository, you need to install the required dependencies:
 # Install Node.js dependencies
 yarn install
 
-# Install Foundry dependencies (required for PrivacyPoolPaymaster)
+# Install Foundry dependencies (required for SimplePrivacyPoolPaymaster)
 forge install eth-infinitism/account-abstraction@v0.7.0 --no-commit
 ```
 
-**Note**: The `account-abstraction` library is required for the PrivacyPoolPaymaster contract and ERC-4337 integration. It will be automatically installed in the `lib/` directory when you run the forge install command.
+**Note**: The `account-abstraction` library is required for the SimplePrivacyPoolPaymaster contract and ERC-4337 integration. It will be automatically installed in the `lib/` directory when you run the forge install command.
 
 ### Building
 
@@ -153,7 +153,7 @@ yarn test:integration
 
 ```bash
 # Run paymaster-specific tests
-forge test --match-contract PrivacyPoolPaymaster --ffi -vv
+forge test --match-contract SimplePrivacyPoolPaymaster --ffi -vv
 ```
 
 **Note**: Paymaster tests require the `--ffi` flag for external proof generation and the `account-abstraction` dependency to be installed.
