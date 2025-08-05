@@ -35,26 +35,12 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 // Account Abstraction imports for UserOperation and Smart Account setup
-import { BundlerClient, createBundlerClient, entryPoint07Address, SmartAccount, UserOperation } from "viem/account-abstraction";
+import { entryPoint07Address } from "viem/account-abstraction";
 import { toSimpleSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { poseidon } from "maci-crypto/build/ts/hashing.js";
 import { LeanIMT } from "@zk-kit/lean-imt";
-import * as snarkjs from "snarkjs";
 import { WithdrawalProofGenerator } from "./WithdrawalProofGenerator";
-
-// Import Privacy Pool SDK for proper ZK proof generation (optional)
-// The SDK handles circuit compilation, proof generation, and commitment computation correctly
-let PrivacyPoolSDK, Circuits, getCommitment;
-try {
-    const sdk = require("@0xbow/privacy-pools-core-sdk");
-    PrivacyPoolSDK = sdk.PrivacyPoolSDK;
-    Circuits = sdk.Circuits;
-    getCommitment = sdk.getCommitment;
-    console.log("  ✅ Privacy Pool SDK imported successfully");
-} catch (e) {
-    console.log("  ⚠️ SDK import failed, using local proof generator:", e.message);
-}
 
 // ============ CONFIGURATION ============
 /**
@@ -117,7 +103,6 @@ const PRIVACY_POOL_ABI = parseAbi([
     // Event with detailed deposit information including label and precommitment
     "event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _precommitmentHash)",
 ]);
-
 
 // ============ UTILITY FUNCTIONS ============
 /**
@@ -568,10 +553,10 @@ async function runPrivacyPoolDemo() {
     if (receipt.success) {
         console.log(`\nSTEP 5: Withdrawal completed successfully!`);
         console.log(`  UserOperation hash: ${userOpHash}`);
-        
+
         const poolBalance = await publicClient.getBalance({ address: addresses.PRIVACY_POOL });
         console.log(`  Pool balance after withdrawal: ${formatEther(poolBalance)} ETH`);
-        
+
         const paymasterDeposit = await publicClient.readContract({
             address: CONFIG.ERC4337_ENTRYPOINT,
             abi: parseAbi(["function balanceOf(address account) external view returns (uint256)"]),
