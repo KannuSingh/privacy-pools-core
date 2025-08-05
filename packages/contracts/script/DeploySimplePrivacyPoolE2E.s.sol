@@ -22,7 +22,7 @@ import {IERC20} from "@oz/interfaces/IERC20.sol";
 
 import {Constants} from "src/contracts/lib/Constants.sol";
 
-contract DeployCompleteE2E is Script {
+contract DeploySimplePrivacyPoolE2E is Script {
     // ERC-4337 EntryPoint (Base Sepolia)
     address constant ERC4337_ENTRYPOINT =
         0x0000000071727De22E5E9d8BAf0edAc6f37da032;
@@ -38,7 +38,7 @@ contract DeployCompleteE2E is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        console.log("=== COMPLETE E2E DEPLOYMENT ===");
+        console.log("=== SIMPLE PRIVACY POOL E2E DEPLOYMENT ===");
         console.log("Deployer:", deployer);
         console.log("Deployer will be both OWNER and POSTMAN for simplicity");
         console.log("");
