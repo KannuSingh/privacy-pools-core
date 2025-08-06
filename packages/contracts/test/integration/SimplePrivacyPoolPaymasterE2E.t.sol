@@ -342,7 +342,13 @@ contract SimplePrivacyPoolPaymasterE2E is IntegrationBase {
             )
         );
 
-        // Create UserOperation
+        // Create UserOperation with proper paymasterAndData format
+        bytes memory paymasterAndData = abi.encodePacked(
+            address(paymaster), // paymaster address (20 bytes)
+            uint128(300000), // verificationGasLimit for paymaster (16 bytes)
+            uint128(30000) // postOpGasLimit (16 bytes) - sufficient for validation
+        );
+
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(userAccount),
             nonce: 0,
@@ -353,7 +359,7 @@ contract SimplePrivacyPoolPaymasterE2E is IntegrationBase {
             ), // verificationGasLimit | callGasLimit
             preVerificationGas: 50000,
             gasFees: bytes32((uint256(20 gwei) << 128) | uint256(20 gwei)), // maxPriorityFeePerGas | maxFeePerGas
-            paymasterAndData: abi.encodePacked(address(paymaster)), // Just paymaster address for now
+            paymasterAndData: paymasterAndData,
             signature: ""
         });
 
@@ -389,5 +395,124 @@ contract SimplePrivacyPoolPaymasterE2E is IntegrationBase {
         console.log("  Fee amount:", feeAmount);
         console.log("  Max gas cost:", maxCost);
         console.log("  Fee covers gas:", feeAmount >= maxCost);
+    }
+
+
+    /*//////////////////////////////////////////////////////////////
+                    POST-OP GAS LIMIT TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Test postOpGasLimit validation - sufficient gas should pass
+     * @dev Tests that UserOperations with adequate postOpGasLimit are accepted
+     */
+    function test_postOpGasLimit_sufficientGas() public {
+        // Setup and deposit
+        _executeDeposit();
+        ProofLib.WithdrawProof memory withdrawalProof = _generateWithdrawalProofForPaymaster();
+        
+        // Create UserOp with sufficient postOpGasLimit (30,000 > 25,000 required)
+        PackedUserOperation memory userOp = _createUserOperationWithPostOpGasLimit(withdrawalProof, 30000);
+        
+        // Validation should succeed
+        vm.prank(address(erc4337EntryPoint));
+        (bytes memory context, uint256 validationData) = paymaster.validatePaymasterUserOp(userOp, bytes32(0), 60000);
+        
+        assertEq(validationData, 0, "Paymaster validation should succeed with sufficient postOpGasLimit");
+        assertTrue(context.length > 0, "Context should be returned for postOp");
+    }
+
+    /**
+     * @notice Test postOpGasLimit validation - insufficient gas should fail
+     * @dev Tests that UserOperations with inadequate postOpGasLimit are rejected
+     */
+    function test_postOpGasLimit_insufficientGas() public {
+        // Setup and deposit
+        _executeDeposit();
+        ProofLib.WithdrawProof memory withdrawalProof = _generateWithdrawalProofForPaymaster();
+        
+        // Create UserOp with insufficient postOpGasLimit (20,000 < 25,000 required)
+        PackedUserOperation memory userOp = _createUserOperationWithPostOpGasLimit(withdrawalProof, 20000);
+        
+        // Validation should fail with InsufficientPostOpGasLimit error
+        vm.prank(address(erc4337EntryPoint));
+        vm.expectRevert(SimplePrivacyPoolPaymaster.InsufficientPostOpGasLimit.selector);
+        paymaster.validatePaymasterUserOp(userOp, bytes32(0), 60000);
+    }
+
+    /**
+     * @notice Test postOpGasLimit validation - exact minimum should pass
+     * @dev Tests that UserOperations with exactly POST_OP_GAS_LIMIT gas are accepted
+     */
+    function test_postOpGasLimit_exactMinimum() public {
+        // Setup and deposit
+        _executeDeposit();
+        ProofLib.WithdrawProof memory withdrawalProof = _generateWithdrawalProofForPaymaster();
+        
+        // Create UserOp with exactly POST_OP_GAS_LIMIT (25,000 gas)
+        PackedUserOperation memory userOp = _createUserOperationWithPostOpGasLimit(withdrawalProof, 25000);
+        
+        // Validation should succeed
+        vm.prank(address(erc4337EntryPoint));
+        (bytes memory context, uint256 validationData) = paymaster.validatePaymasterUserOp(userOp, bytes32(0), 60000);
+        
+        assertEq(validationData, 0, "Paymaster validation should succeed with exact minimum postOpGasLimit");
+        assertTrue(context.length > 0, "Context should be returned for postOp");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        TEST HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Create UserOperation with specific postOpGasLimit for testing
+     * @param proof Withdrawal proof for the operation
+     * @param postOpGasLimit Specific gas limit for postOp phase
+     */
+    function _createUserOperationWithPostOpGasLimit(
+        ProofLib.WithdrawProof memory proof,
+        uint128 postOpGasLimit
+    ) internal view returns (PackedUserOperation memory) {
+        // Create withdrawal for paymaster scenario
+        IPrivacyPool.Withdrawal memory withdrawal = _createPaymasterWithdrawal();
+
+        // Build the inner callData for entrypoint.relay()
+        bytes memory relayCallData = abi.encodeCall(
+            _entrypoint.relay,
+            (withdrawal, proof, _ethPool.SCOPE())
+        );
+
+        // Build the callData for userAccount.execute() - this is what ERC-4337 expects
+        bytes memory callData = abi.encodeCall(
+            SimpleAccount.execute,
+            (
+                address(_entrypoint), // dest: Privacy Pool Entrypoint
+                0, // value: 0 ETH (no ETH sent with call)
+                relayCallData // func: encoded relay call
+            )
+        );
+
+        // Create UserOperation with specific postOpGasLimit
+        // paymasterAndData format: paymaster (20 bytes) + verificationGasLimit (16 bytes) + postOpGasLimit (16 bytes) + data
+        bytes memory paymasterAndData = abi.encodePacked(
+            address(paymaster), // paymaster address (20 bytes)
+            uint128(300000), // verificationGasLimit for paymaster (16 bytes)
+            postOpGasLimit // postOpGasLimit (16 bytes) - THIS IS THE KEY PARAMETER WE'RE TESTING
+            // No additional data bytes
+        );
+
+        return PackedUserOperation({
+            sender: address(userAccount),
+            nonce: 0,
+            initCode: "",
+            callData: callData,
+            accountGasLimits: bytes32(
+                (uint256(300000) << 128) | uint256(300000)
+            ), // verificationGasLimit | callGasLimit
+            preVerificationGas: 50000,
+            gasFees: bytes32((uint256(20 gwei) << 128) | uint256(20 gwei)), // maxPriorityFeePerGas | maxFeePerGas
+            paymasterAndData: paymasterAndData,
+            signature: ""
+        });
     }
 }
