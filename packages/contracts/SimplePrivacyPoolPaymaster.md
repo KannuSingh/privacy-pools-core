@@ -299,6 +299,153 @@ The paymaster relies on current Privacy Pool state:
 ### Upgradeability
 The paymaster is designed for specific Privacy Pool deployments and should be updated if the underlying Privacy Pool contracts change.
 
+## Testing the SimplePrivacyPoolPaymaster
+
+### Prerequisites
+
+The E2E testing environment requires Docker and Node.js to be installed on your system.
+
+### Mock AA Environment Setup
+
+The project includes a complete Account Abstraction testing environment (`mock-aa-environment/`) that forks Base Sepolia and provides:
+
+- **Anvil**: Local blockchain forking Base Sepolia
+- **Alto Bundler**: ERC-4337 bundler for UserOperation processing  
+- **Contract Deployer**: Automated deployment of required contracts
+
+
+### Running E2E Tests
+
+#### Step 1: Start the Mock AA Environment
+
+```bash
+# Navigate to the contracts directory
+cd packages/contracts
+
+# Start the Docker compose environment
+docker compose -f mock-aa-environment/docker-compose.yml up -d
+```
+
+This command starts:
+- **Anvil** blockchain forking Base Sepolia at `http://localhost:8545`
+- **Alto bundler** for UserOperation processing at `http://localhost:4337`
+- **Contract deployer** that handles ERC-4337 contract deployments
+
+#### Step 2: Run the E2E Demonstration Script
+
+```bash
+# Execute the complete E2E test
+npx tsx scripts/SimplePrivacyPoolWithPaymasterE2E.ts
+```
+
+### What the E2E Test Demonstrates
+
+The `SimplePrivacyPoolWithPaymasterE2E.ts` script performs a complete flow:
+
+#### 1. Contract Deployment
+```typescript
+// Deploy fresh contracts for each test run
+- Privacy Pool Entrypoint
+- Privacy Pool Simple (ETH)
+- SimplePrivacyPoolPaymaster
+- Verification contracts
+```
+
+#### 2. Privacy Pool Setup
+```typescript
+// Create and fund privacy pool
+- Generate commitment (nullifier + secret)
+- Deposit 1 ETH to privacy pool
+- Setup ASP tree with approved labels
+- Update ASP root via entrypoint
+```
+
+#### 3. Account Abstraction Integration
+```typescript
+// Setup ERC-4337 components
+- Create smart account for user
+- Configure paymaster for gas sponsorship
+- Setup bundler client for UserOperation submission
+```
+
+#### 4. Zero-Knowledge Proof Generation
+```typescript
+// Generate withdrawal proof
+- Create withdrawal context for paymaster flow
+- Generate real ZK proof using circuit infrastructure
+- Prepare proof data for Groth16 verification
+```
+
+#### 5. UserOperation Execution
+```typescript
+// Execute via paymaster (not relayer!)
+- Create UserOperation with withdrawal calldata
+- Paymaster validates entire withdrawal flow
+- Bundler executes sponsored transaction
+- Verify successful withdrawal and fee payment
+```
+
+
+
+### Troubleshooting
+
+#### Common Issues
+
+**Docker Environment**
+```bash
+# Check if containers are running
+docker ps
+
+# Check logs if issues occur
+docker compose -f mock-aa-environment/docker-compose.yml logs
+
+# Clean restart if needed
+docker compose -f mock-aa-environment/docker-compose.yml down
+docker compose -f mock-aa-environment/docker-compose.yml up -d
+```
+
+**Script Execution**
+```bash
+# Ensure TypeScript dependencies are installed
+npm install tsx
+
+# Check if ports are available
+lsof -i :8545  # Anvil
+lsof -i :4337  # Alto bundler
+```
+
+**Circuit Dependencies**
+The E2E test requires circuit files for proof generation. Ensure all ZK circuit artifacts are properly built and available.
+
+### Configuration Details
+
+#### Mock AA Environment Configuration
+
+The environment is configured in `mock-aa-environment/docker-compose.yml`:
+
+- **Anvil**: Forks Base Sepolia with 1-second block time
+- **Alto**: Configured with multiple EntryPoint versions
+- **Network**: Chain ID 1 for local testing
+- **Tracing**: Enabled for debugging (`-vvvv`)
+
+#### Script Configuration
+
+Key settings in `SimplePrivacyPoolWithPaymasterE2E.ts`:
+
+```typescript
+const CONFIG = {
+    RPC_URL: "http://localhost:8545",        // Local Anvil
+    BUNDLER_URL: "http://localhost:4337",    // Local Alto bundler
+    DEPOSIT_AMOUNT: parseEther("1"),         // 1 ETH deposit
+    WITHDRAW_AMOUNT: parseEther("0.5"),      // 0.5 ETH withdrawal
+    ERC4337_ENTRYPOINT: "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+};
+```
+
+This testing setup provides a complete, realistic environment for validating the SimplePrivacyPoolPaymaster functionality against real ERC-4337 infrastructure while maintaining the privacy and security guarantees of the Privacy Pool protocol.
+
 ## Conclusion
 
 The `SimplePrivacyPoolPaymaster` provides a secure, comprehensive validation layer that guarantees successful Privacy Pool withdrawals while protecting against various attack vectors. By replicating the exact validation logic of both Entrypoint and Privacy Pool contracts, it ensures reliable transaction sponsorship without risk of gas waste or economic exploitation.
+
+The complete testing environment demonstrates the successful transition from centralized relayer infrastructure to decentralized ERC-4337 paymasters, providing users with enhanced privacy, security, and user experience while maintaining the integrity of the Privacy Pool protocol.
