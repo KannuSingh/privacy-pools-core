@@ -7,6 +7,7 @@ import {PackedUserOperation} from "@account-abstraction/contracts/interfaces/Pac
 import {BasePaymaster} from "@account-abstraction/contracts/core/BasePaymaster.sol";
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
 import {IPaymaster} from "@account-abstraction/contracts/interfaces/IPaymaster.sol";
+import {UserOperationLib} from "@account-abstraction/contracts/core/UserOperationLib.sol";
 
 import {IPrivacyPool} from "interfaces/IPrivacyPool.sol";
 import {IEntrypoint} from "interfaces/IEntrypoint.sol";
@@ -23,6 +24,7 @@ import {Constants} from "./lib/Constants.sol";
  */
 contract SimplePrivacyPoolPaymaster is BasePaymaster {
     using ProofLib for ProofLib.WithdrawProof;
+    using UserOperationLib for PackedUserOperation;
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
@@ -66,6 +68,7 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
     error NullifierAlreadySpent();
     error InvalidStateRoot();
     error InvalidTreeDepth();
+    error InsufficientPostOpGasLimit();
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -122,24 +125,30 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
             return ("", _packValidationData(true, 0, 0));
         }
 
-        // 4. Decode relay call data
+        // 4. Check post-op gas limit is sufficient
+        uint256 postOpGasLimit = userOp.unpackPostOpGasLimit();
+        if (postOpGasLimit < POST_OP_GAS_LIMIT) {
+            revert InsufficientPostOpGasLimit();
+        }
+
+        // 5. Decode relay call data
         (
             IPrivacyPool.Withdrawal memory withdrawal,
             ProofLib.WithdrawProof memory proof,
             uint256 scope
         ) = _decodeRelayCallData(data);
 
-        // 5. Perform full Entrypoint.relay() validation
+        // 6. Perform full Entrypoint.relay() validation
         if (!_validateRelayCall(withdrawal, proof, scope)) {
             return ("", _packValidationData(true, 0, 0));
         }
 
-        // 6. Perform full PrivacyPool.withdraw() validation
+        // 7. Perform full PrivacyPool.withdraw() validation
         if (!_validateWithdrawCall(withdrawal, proof)) {
             return ("", _packValidationData(true, 0, 0));
         }
 
-        // 7. Validate paymaster will be paid adequately
+        // 8. Validate paymaster will be paid adequately
         IEntrypoint.RelayData memory relayData = abi.decode(
             withdrawal.data,
             (IEntrypoint.RelayData)
