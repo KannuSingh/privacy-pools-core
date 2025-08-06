@@ -103,6 +103,10 @@ const PRIVACY_POOL_ABI = parseAbi([
     // Event with detailed deposit information including label and precommitment
     "event Deposited(address indexed _depositor, uint256 _commitment, uint256 _label, uint256 _value, uint256 _precommitmentHash)",
 ]);
+// Privacy Pool contract ABI - for reading pool metadata and events
+const SIMPLE_PRIVACY_POOL_PAYMASTER_ABI = parseAbi([
+    "event PrivacyPoolWithdrawalSponsored(address userAccount, bytes32 userOpHash, uint256 actualWithdrawalCost, uint256 refunded)",
+]);
 
 // ============ UTILITY FUNCTIONS ============
 /**
@@ -421,7 +425,7 @@ async function runPrivacyPoolDemo() {
                 return {
                     paymaster: addresses.PAYMASTER as Address,
                     paymasterData: "0x" as Hex, // Empty paymaster data
-                    paymasterPostOpGasLimit: 0n,
+                    paymasterPostOpGasLimit: 25000n,
                 };
             },
             // Provide real paymaster data for actual transaction
@@ -429,7 +433,7 @@ async function runPrivacyPoolDemo() {
                 return {
                     paymaster: addresses.PAYMASTER as Address,
                     paymasterData: "0x" as Hex, // Empty - paymaster validates via callData
-                    paymasterPostOpGasLimit: 0n, // High gas limit
+                    paymasterPostOpGasLimit: 25000n, // High gas limit
                 };
             },
         },
@@ -540,6 +544,8 @@ async function runPrivacyPoolDemo() {
         functionName: "balanceOf",
         args: [addresses.PAYMASTER],
     });
+    const senderBalanceBefore = await publicClient.getBalance({ address: smartAccount.address });
+    console.log(`  Sender balance: ${formatEther(senderBalanceBefore)} ETH`);
     console.log(`  Paymaster deposit before UserOp: ${formatEther(paymasterDepositBeforeUserOp)} ETH`);
 
     const signature = await smartAccount.signUserOperation(preparedUserOperation);
@@ -555,6 +561,8 @@ async function runPrivacyPoolDemo() {
         console.log(`  UserOperation hash: ${userOpHash}`);
 
         const poolBalance = await publicClient.getBalance({ address: addresses.PRIVACY_POOL });
+        const senderBalance = await publicClient.getBalance({ address: smartAccount.address });
+
         console.log(`  Pool balance after withdrawal: ${formatEther(poolBalance)} ETH`);
 
         const paymasterDeposit = await publicClient.readContract({
@@ -563,13 +571,33 @@ async function runPrivacyPoolDemo() {
             functionName: "balanceOf",
             args: [addresses.PAYMASTER],
         });
-        console.log(`  Paymaster deposit remaining: ${formatEther(paymasterDeposit)} ETH`);
-        console.log(`  Gas paid by paymaster: ${formatEther(paymasterDepositBeforeUserOp - paymasterDeposit)} ETH`);
+
+        receipt.logs.find((log) => {
+            try {
+                const decoded = decodeEventLog({
+                    abi: SIMPLE_PRIVACY_POOL_PAYMASTER_ABI,
+                    data: log.data,
+                    topics: log.topics,
+                });
+                if (decoded.eventName === "PrivacyPoolWithdrawalSponsored") {
+                    console.log("userAccount:", decoded.args.userAccount);
+                    console.log(`actualWithdrawalCost:${formatEther(decoded.args.actualWithdrawalCost)} ETH `);
+                    console.log(`refunded User:${formatEther(decoded.args.refunded)} ETH `);
+                }
+            } catch (e) {
+                return false;
+            }
+        });
 
         const paymasterNativeBalance = await publicClient.getBalance({
             address: addresses.PAYMASTER,
         });
+        console.log(`  Paymaster deposit remaining: ${formatEther(paymasterDeposit)} ETH`);
+        console.log(`  Gas paid by paymaster: ${formatEther(paymasterDepositBeforeUserOp - paymasterDeposit)} ETH`);
+        console.log(`  Sender balance after withdrawal: ${formatEther(senderBalance)} ETH`);
+
         console.log(`  Paymaster native balance: ${formatEther(paymasterNativeBalance)} ETH`);
+        console.log(`  Paymaster profit: ${formatEther(paymasterDeposit - paymasterDepositBeforeUserOp + paymasterNativeBalance)} ETH`);
     } else {
         throw new Error(`UserOperation failed: ${userOpHash}`);
     }

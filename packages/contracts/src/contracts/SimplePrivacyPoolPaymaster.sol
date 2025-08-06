@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28;
 
+// import {console} from "forge-std/console.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
 import {BasePaymaster} from "@account-abstraction/contracts/core/BasePaymaster.sol";
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
+import {IPaymaster} from "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 
 import {IPrivacyPool} from "interfaces/IPrivacyPool.sol";
 import {IEntrypoint} from "interfaces/IEntrypoint.sol";
@@ -35,15 +37,18 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
     /// @notice Withdrawal proof verifier
     IVerifier public immutable WITHDRAWAL_VERIFIER;
 
+    /// @notice Estimated gas cost for postOp operations
+    uint256 public constant POST_OP_GAS_LIMIT = 25000;
+
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event ETHWithdrawalSponsored(
+    event PrivacyPoolWithdrawalSponsored(
         address indexed userAccount,
-        uint256 withdrawnValue,
-        uint256 feeAmount,
-        bytes32 nullifierHash
+        bytes32 indexed userOpHash,
+        uint256 actualWithdrawalCost,
+        uint256 refunded
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -92,7 +97,7 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
      * @param userOp The UserOperation to validate
      * @param userOpHash Hash of the UserOperation
      * @param maxCost Maximum gas cost the paymaster might pay
-     * @return context Empty context
+     * @return context Encoded context with user info and expected costs for postOp
      * @return validationData 0 if valid, packed failure data otherwise
      */
     function _validatePaymasterUserOp(
@@ -140,9 +145,10 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
             (IEntrypoint.RelayData)
         );
         uint256 withdrawnAmount = proof.withdrawnValue();
-        uint256 feeAmount = (withdrawnAmount * relayData.relayFeeBPS) / 10_000;
+        uint256 expectedFeeAmount = (withdrawnAmount * relayData.relayFeeBPS) /
+            10_000;
 
-        if (feeAmount < maxCost) {
+        if (expectedFeeAmount < maxCost) {
             return ("", _packValidationData(true, 0, 0));
         }
 
@@ -150,8 +156,15 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
             return ("", _packValidationData(true, 0, 0));
         }
 
-        // All validations passed
-        return ("", 0);
+        // All validations passed - encode context for postOp
+        // Context contains: userOpHash, sender address, expected cost, withdrawn amount
+        context = abi.encode(
+            userOpHash,
+            userOp.sender,
+            expectedFeeAmount // Expected feeAmount to be paid to paymaster after calldata execution
+        );
+
+        return (context, 0);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -236,7 +249,7 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
         if (!_isKnownRoot(stateRoot)) {
             return false;
         }
-        
+
         // 4. Validate ASP root is latest (same as PrivacyPool validation)
         uint256 aspRoot = proof.ASPRoot();
         if (aspRoot != PRIVACY_POOL_ENTRYPOINT.latestRoot()) {
@@ -285,7 +298,7 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
             if (_root == ETH_PRIVACY_POOL.roots(_index)) return true;
             _index = (_index + ROOT_HISTORY_SIZE - 1) % ROOT_HISTORY_SIZE;
         }
-        
+
         return false;
     }
 
@@ -345,7 +358,51 @@ contract SimplePrivacyPoolPaymaster is BasePaymaster {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Allow contract to receive ETH from Privacy Pool fees
+     * @notice Allow contract to receive ETH from Privacy Pool fees and refunds
      */
     receive() external payable {}
+
+    /*//////////////////////////////////////////////////////////////
+                            POST-OP OPERATIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Handle post-operation gas cost calculation and refunds
+     * @dev Called after UserOperation execution to calculate actual costs and refund excess
+     * @param mode Post-operation mode (success/failure)
+     * @param context Encoded context from validation containing user info and expected costs
+     * @param actualGasCost Actual gas cost of the UserOperation
+     * @param actualUserOpFeePerGas Gas price paid by the UserOperation
+     */
+    function _postOp(
+        IPaymaster.PostOpMode mode,
+        bytes calldata context,
+        uint256 actualGasCost,
+        uint256 actualUserOpFeePerGas
+    ) internal override {
+        // Decode context from validation phase
+        (bytes32 userOpHash, address sender, uint256 expectedFeeAmount) = abi
+            .decode(context, (bytes32, address, uint256));
+
+        // Calculate total actual cost including postOp overhead
+        uint256 postOpCost = POST_OP_GAS_LIMIT * actualUserOpFeePerGas;
+        uint256 actualWithdrawalCost = actualGasCost + postOpCost;
+        uint256 refundAmount = expectedFeeAmount > actualWithdrawalCost
+            ? expectedFeeAmount - actualWithdrawalCost
+            : 0;
+        // If actual cost is less than expected, refund the difference to the user
+        if (refundAmount > 0) {
+            // Transfer refund to user's smart account
+            (bool success, ) = sender.call{value: refundAmount}("");
+            // If refund fails, we keep the excess (this shouldn't happen with smart accounts)
+        }
+
+        // Emit withdrawal tracking event (regardless of mode)
+        emit PrivacyPoolWithdrawalSponsored(
+            sender,
+            userOpHash,
+            actualWithdrawalCost, // this is what user paid for withdrawal
+            refundAmount
+        );
+    }
 }
