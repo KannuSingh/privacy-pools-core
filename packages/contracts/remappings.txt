@@ -5,6 +5,7 @@ lean-imt/=../../node_modules/@zk-kit/lean-imt.sol
 @oz-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable
 @upgrades/=../../node_modules/@openzeppelin/foundry-upgrades/src/
 poseidon/=../../node_modules/poseidon-solidity
+@account-abstraction/=lib/account-abstraction/
 
 contracts/=src/contracts
 interfaces/=src/interfaces
