@@ -8,14 +8,6 @@
  * 4. Generate real ZK withdrawal proof using circuit infrastructure
  * 5. Test paymaster validation with UserOperation
  * 6. Execute withdrawal transaction via paymaster (not relayer)
- *
- * Key Technical Concepts:
- * - Privacy Pool: Anonymous deposits/withdrawals using ZK membership proofs
- * - Account Abstraction (ERC-4337): UserOperations sponsored by paymaster for gas
- * - ZK Proofs: Semaphore-style membership proofs proving approval without revealing identity
- * - ASP Tree: Merkle tree containing approved participant labels (not commitment hashes)
- * - State Tree: Merkle tree containing commitment hashes for inclusion proofs
- * - Fresh Deployments: Each test run deploys new contracts to avoid state accumulation issues
  */
 
 import {
@@ -66,9 +58,6 @@ const CONFIG = {
     // Test amounts for deposit and withdrawal
     DEPOSIT_AMOUNT: parseEther("1"), // Deposit 1 ETH
     WITHDRAW_AMOUNT: parseEther("0.5"), // Withdraw 0.5 ETH (partial withdrawal)
-
-    // Native asset address (ETH = zero address)
-    NATIVE_ASSET: "0x0000000000000000000000000000000000000000",
 } as const;
 
 // ============ CONTRACT ABIS ============
